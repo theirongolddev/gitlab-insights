@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitLab Insights - Integrated Design Concepts</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+            background: #111827;
+            color: #FDFFFC;
+            line-height: 1.5;
+        }
+
+        .showcase-container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .showcase-header {
+            background: #1F2937;
+            padding: 24px 32px;
+            border-bottom: 1px solid #374151;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .showcase-header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .showcase-header p {
+            font-size: 14px;
+            color: #9CA3AF;
+            margin-bottom: 16px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            background: #374151;
+            color: #FDFFFC;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .control-btn:hover {
+            background: #4B5563;
+        }
+
+        .control-btn.active {
+            background: #5e6b24;
+            color: white;
+        }
+
+        .direction-viewport {
+            padding: 32px;
+        }
+
+        .direction-card {
+            background: #1F2937;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 48px;
+            border: 1px solid #374151;
+        }
+
+        .direction-header {
+            background: #111827;
+            padding: 24px 32px;
+            border-bottom: 1px solid #374151;
+        }
+
+        .direction-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .direction-meta {
+            display: flex;
+            gap: 24px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .meta-item {
+            font-size: 13px;
+            color: #9CA3AF;
+        }
+
+        .meta-label {
+            font-weight: 500;
+            color: #D1D5DB;
+        }
+
+        .direction-mockup {
+            padding: 24px;
+            background: #111827;
+        }
+
+        .mockup {
+            background: #2d2e2e;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #374151;
+            position: relative;
+        }
+
+        .mockup-header {
+            background: #1F2937;
+            padding: 16px 24px;
+            border-bottom: 1px solid #374151;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mode-toggle {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .mode-btn {
+            padding: 6px 12px;
+            background: transparent;
+            border: 1px solid #4B5563;
+            color: #D1D5DB;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            background: #5e6b24;
+            border-color: #5e6b24;
+            color: white;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 4px;
+            background: #374151;
+            padding: 4px;
+            border-radius: 6px;
+        }
+
+        .view-btn {
+            padding: 4px 10px;
+            background: transparent;
+            border: none;
+            color: #9CA3AF;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .view-btn.active {
+            background: #5e6b24;
+            color: white;
+        }
+
+        .sync-indicator {
+            font-size: 12px;
+            color: #9CA3AF;
+        }
+
+        .refresh-btn {
+            padding: 6px 12px;
+            background: #374151;
+            border: none;
+            color: #D1D5DB;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background: #5e6b24;
+            color: white;
+        }
+
+        /* Sidebar Layout */
+        .sidebar-layout {
+            display: flex;
+            height: 700px;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: #1F2937;
+            border-right: 1px solid #374151;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-section-title {
+            font-size: 11px;
+            color: #6B7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+            padding: 0 12px;
+            font-weight: 600;
+        }
+
+        .sidebar-item {
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #D1D5DB;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+        }
+
+        .sidebar-item:hover {
+            background: #374151;
+        }
+
+        .sidebar-item.active {
+            background: #5e6b24;
+            color: white;
+            font-weight: 500;
+        }
+
+        .item-count {
+            background: #374151;
+            color: #9CA3AF;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .sidebar-item.active .item-count {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .new-badge {
+            background: #5e6b24;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            background: #2d2e2e;
+        }
+
+        .content-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #374151;
+            background: #1F2937;
+        }
+
+        .content-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #E5E7EB;
+            margin-bottom: 4px;
+        }
+
+        .content-subtitle {
+            font-size: 13px;
+            color: #9CA3AF;
+        }
+
+        .content-body {
+            padding: 16px 24px;
+        }
+
+        /* Dense Table */
+        .dense-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .dense-table tr {
+            height: 32px;
+            border-bottom: 1px solid #374151;
+            cursor: pointer;
+            transition: background 0.2s;
+            position: relative;
+        }
+
+        .dense-table tr:hover {
+            background: #1F2937;
+        }
+
+        .dense-table tr:hover .hover-indicator {
+            opacity: 1;
+        }
+
+        .dense-table td {
+            padding: 0 8px;
+            font-size: 13px;
+        }
+
+        .item-icon {
+            width: 20px;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .item-title {
+            color: #E5E7EB;
+            font-weight: 400;
+        }
+
+        .item-meta {
+            color: #9CA3AF;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .item-time {
+            color: #6B7280;
+            font-size: 12px;
+            text-align: right;
+            width: 80px;
+        }
+
+        .hover-indicator {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6B7280;
+            font-size: 11px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        /* Hover Tooltip */
+        .tooltip {
+            position: absolute;
+            background: #1F2937;
+            border: 1px solid #5e6b24;
+            border-radius: 8px;
+            padding: 16px;
+            z-index: 1000;
+            min-width: 400px;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+        }
+
+        .tooltip-header {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .tooltip-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #E5E7EB;
+            flex: 1;
+        }
+
+        .tooltip-body {
+            font-size: 13px;
+            color: #D1D5DB;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .tooltip-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            color: #9CA3AF;
+            padding-top: 12px;
+            border-top: 1px solid #374151;
+        }
+
+        .tooltip-matched {
+            background: #374151;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-top: 8px;
+        }
+
+        .tooltip-matched-label {
+            color: #6B7280;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .tooltip-matched-query {
+            color: #9DAA5F;
+        }
+
+        .highlight {
+            background: rgba(157, 170, 95, 0.2);
+            color: #9DAA5F;
+            padding: 1px 2px;
+            border-radius: 2px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .badge-issue {
+            background: rgba(139, 92, 246, 0.2);
+            color: #A78BFA;
+        }
+
+        .badge-mr {
+            background: rgba(14, 165, 233, 0.2);
+            color: #38BDF8;
+        }
+
+        .badge-comment {
+            background: rgba(100, 116, 139, 0.2);
+            color: #94A3B8;
+        }
+
+        /* Feed View */
+        .feed-container {
+            padding: 0;
+        }
+
+        .feed-item {
+            padding: 20px 24px;
+            border-bottom: 1px solid #374151;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .feed-item:hover {
+            background: #1F2937;
+        }
+
+        .feed-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 12px;
+        }
+
+        .feed-title {
+            font-size: 15px;
+            font-weight: 500;
+            color: #E5E7EB;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex: 1;
+        }
+
+        .feed-time {
+            color: #6B7280;
+            font-size: 12px;
+            white-space: nowrap;
+            margin-left: 16px;
+        }
+
+        .feed-snippet {
+            font-size: 13px;
+            color: #9CA3AF;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .feed-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            color: #6B7280;
+            flex-wrap: wrap;
+        }
+
+        /* Timeline Grouping */
+        .timeline-group {
+            margin-bottom: 24px;
+        }
+
+        .timeline-group-header {
+            padding: 12px 24px;
+            background: #1F2937;
+            border-bottom: 1px solid #374151;
+            font-size: 13px;
+            font-weight: 600;
+            color: #E5E7EB;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .timeline-group-count {
+            color: #6B7280;
+            font-weight: 400;
+            font-size: 12px;
+        }
+
+        /* Keyboard Shortcuts Panel */
+        .shortcuts-panel {
+            background: #1F2937;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 24px;
+        }
+
+        .shortcuts-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #E5E7EB;
+            margin-bottom: 12px;
+        }
+
+        .shortcuts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .shortcut {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-size: 12px;
+        }
+
+        .key {
+            background: #374151;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: "SF Mono", Monaco, monospace;
+            color: #D1D5DB;
+            font-weight: 500;
+            min-width: 24px;
+            text-align: center;
+        }
+
+        .shortcut-desc {
+            color: #9CA3AF;
+        }
+
+        .feature-callout {
+            background: rgba(157, 170, 95, 0.1);
+            border: 1px solid #5e6b24;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+
+        .feature-callout-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #9DAA5F;
+            margin-bottom: 8px;
+        }
+
+        .feature-callout-body {
+            font-size: 12px;
+            color: #D1D5DB;
+        }
+
+        .demo-tooltip-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .demo-tooltip {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 8px;
+        }
+
+        .demo-tooltip-container:hover .demo-tooltip {
+            display: block;
+        }
+
+        .thumbnail-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .thumbnail {
+            aspect-ratio: 16/9;
+            background: #374151;
+            border: 2px solid #4B5563;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #9CA3AF;
+            transition: all 0.2s;
+            text-align: center;
+            padding: 8px;
+        }
+
+        .thumbnail:hover {
+            border-color: #5e6b24;
+            background: #4B5563;
+        }
+
+        .thumbnail.active {
+            border-color: #5e6b24;
+            background: #5e6b24;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="showcase-container">
+        <div class="showcase-header">
+            <h1>GitLab Insights - Integrated Design Concepts</h1>
+            <p>Refined designs combining: Dense Table + Sidebar + Hover Tooltips + View Toggle + Timeline Context</p>
+
+            <div class="controls">
+                <button class="control-btn active" onclick="scrollToConcept(1)">Concept A</button>
+                <button class="control-btn" onclick="scrollToConcept(2)">Concept B</button>
+                <button class="control-btn" onclick="scrollToConcept(3)">Concept C</button>
+                <button class="control-btn" onclick="scrollToConcept(4)">Concept D</button>
+            </div>
+
+            <div class="thumbnail-grid">
+                <div class="thumbnail active" onclick="scrollToConcept(1)">Dense Table + Sidebar (MVP)</div>
+                <div class="thumbnail" onclick="scrollToConcept(2)">Hover Tooltips</div>
+                <div class="thumbnail" onclick="scrollToConcept(3)">Table/Feed Toggle</div>
+                <div class="thumbnail" onclick="scrollToConcept(4)">Timeline Groups</div>
+            </div>
+        </div>
+
+        <div class="direction-viewport">
+            <!-- Concept A: Dense Table + Sidebar (MVP Recommended) -->
+            <div class="direction-card" id="concept-1">
+                <div class="direction-header">
+                    <h2>Concept A: Dense Table + Sidebar (MVP Recommended)</h2>
+                    <p>Combines HN-style density with persistent sidebar for saved queries. Your go-to view for rapid scanning.</p>
+                    <div class="direction-meta">
+                        <div class="meta-item"><span class="meta-label">Core Features:</span> Dense scanning + Query navigation + Keyboard-primary</div>
+                        <div class="meta-item"><span class="meta-label">Density:</span> 12-15 items visible without scrolling</div>
+                        <div class="meta-item"><span class="meta-label">Best For:</span> MVP launch - balances power and usability</div>
+                    </div>
+                </div>
+                <div class="direction-mockup">
+                    <div class="mockup">
+                        <div class="mockup-header">
+                            <div class="mode-toggle">
+                                <button class="mode-btn">Dashboard</button>
+                                <button class="mode-btn active">Catch-Up Mode <span class="new-badge">12</span></button>
+                            </div>
+                            <div class="header-actions">
+                                <span class="sync-indicator">Last sync: 2m ago</span>
+                                <button class="refresh-btn">↻ Refresh</button>
+                            </div>
+                        </div>
+                        <div class="sidebar-layout">
+                            <div class="sidebar">
+                                <div class="sidebar-section">
+                                    <div class="sidebar-section-title">Saved Queries</div>
+                                    <div class="sidebar-item active">
+                                        <span>Security Items</span>
+                                        <span class="item-count">3</span>
+                                    </div>
+                                    <div class="sidebar-item">
+                                        <span>Performance Issues</span>
+                                        <span class="item-count">2</span>
+                                    </div>
+                                    <div class="sidebar-item">
+                                        <span>Backend Work</span>
+                                        <span class="item-count">4</span>
+                                    </div>
+                                    <div class="sidebar-item">
+                                        <span>API Changes</span>
+                                        <span class="item-count">2</span>
+                                    </div>
+                                    <div class="sidebar-item">
+                                        <span>Frontend Updates</span>
+                                        <span class="item-count">1</span>
+                                    </div>
+                                </div>
+
+                                <div style="border-top: 1px solid #374151; margin: 16px 0; padding-top: 16px;">
+                                    <div class="sidebar-section-title">Quick Filters</div>
+                                    <div class="sidebar-item">
+                                        <span>All Issues</span>
+                                        <span class="item-count">8</span>
+                                    </div>
+                                    <div class="sidebar-item">
+                                        <span>All MRs</span>
+                                        <span class="item-count">6</span>
+                                    </div>
+                                    <div class="sidebar-item">
+                                        <span>Comments</span>
+                                        <span class="item-count">5</span>
+                                    </div>
+                                </div>
+
+                                <div style="border-top: 1px solid #374151; margin: 16px 0; padding-top: 16px;">
+                                    <div class="sidebar-section-title">Projects</div>
+                                    <div class="sidebar-item">
+                                        <span>api-gateway</span>
+                                        <span class="item-count">7</span>
+                                    </div>
+                                    <div class="sidebar-item">
+                                        <span>frontend-app</span>
+                                        <span class="item-count">4</span>
+                                    </div>
+                                    <div class="sidebar-item">
+                                        <span>search-service</span>
+                                        <span class="item-count">3</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="main-content">
+                                <div class="content-header">
+                                    <div class="content-title">Security Items</div>
+                                    <div class="content-subtitle">label:security OR project:api-gateway · 3 new items</div>
+                                </div>
+                                <div class="content-body">
+                                    <table class="dense-table">
+                                        <tr>
+                                            <td class="item-icon">●</td>
+                                            <td class="item-title">Add support for custom webhook endpoints</td>
+                                            <td class="item-meta">@sarah · api-gateway · security</td>
+                                            <td class="item-time">3h ago</td>
+                                            <td><span class="new-badge">NEW</span></td>
+                                            <td class="hover-indicator">hover for details</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="item-icon">◐</td>
+                                            <td class="item-title">Implement rate limiting for API endpoints</td>
+                                            <td class="item-meta">@chris · security · +234 -67</td>
+                                            <td class="item-time">1h ago</td>
+                                            <td><span class="new-badge">NEW</span></td>
+                                            <td class="hover-indicator">hover for details</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="item-icon">◐</td>
+                                            <td class="item-title">Update dependencies to fix security vulnerabilities</td>
+                                            <td class="item-meta">@dependabot · security · +8 -8</td>
+                                            <td class="item-time">10h ago</td>
+                                            <td><span class="new-badge">NEW</span></td>
+                                            <td class="hover-indicator">hover for details</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="item-icon">●</td>
+                                            <td class="item-title">Review JWT token expiration strategy</td>
+                                            <td class="item-meta">@alex · auth · security</td>
+                                            <td class="item-time">12h ago</td>
+                                            <td></td>
+                                            <td class="hover-indicator">hover for details</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="item-icon">◐</td>
+                                            <td class="item-title">Add CORS configuration for new API domains</td>
+                                            <td class="item-meta">@jordan · api-gateway · +45 -12</td>
+                                            <td class="item-time">14h ago</td>
+                                            <td></td>
+                                            <td class="hover-indicator">hover for details</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="item-icon">💬</td>
+                                            <td class="item-title">Re: Add support for custom webhook endpoints</td>
+                                            <td class="item-meta">@alex · "We should also consider..."</td>
+                                            <td class="item-time">2h ago</td>
+                                            <td></td>
+                                            <td class="hover-indicator">hover for details</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="item-icon">●</td>
+                                            <td class="item-title">Implement API key rotation mechanism</td>
+                                            <td class="item-meta">@mike · api-gateway · security</td>
+                                            <td class="item-time">16h ago</td>
+                                            <td></td>
+                                            <td class="hover-indicator">hover for details</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="item-icon">◐</td>
+                                            <td class="item-title">Add request signing for webhook callbacks</td>
+                                            <td class="item-meta">@sarah · security · +89 -23</td>
+                                            <td class="item-time">18h ago</td>
+                                            <td></td>
+                                            <td class="hover-indicator">hover for details</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="item-icon">●</td>
+                                            <td class="item-title">Security audit findings: SQL injection risks</td>
+                                            <td class="item-meta">@security-team · critical</td>
+                                            <td class="item-time">20h ago</td>
+                                            <td></td>
+                                            <td class="hover-indicator">hover for details</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="item-icon">💬</td>
+                                            <td class="item-title">Re: Implement rate limiting for API endpoints</td>
+                                            <td class="item-meta">@jordan · "This looks good but..."</td>
+                                            <td class="item-time">5h ago</td>
+                                            <td></td>
+                                            <td class="hover-indicator">hover for details</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="item-icon">●</td>
+                                            <td class="item-title">Migrate to bcrypt for password hashing</td>
+                                            <td class="item-meta">@chris · auth · security</td>
+                                            <td class="item-time">22h ago</td>
+                                            <td></td>
+                                            <td class="hover-indicator">hover for details</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="item-icon">◐</td>
+                                            <td class="item-title">Enable security headers (CSP, HSTS, etc.)</td>
+                                            <td class="item-meta">@taylor · frontend · +67 -34</td>
+                                            <td class="item-time">1d ago</td>
+                                            <td></td>
+                                            <td class="hover-indicator">hover for details</td>
+                                        </tr>
+                                    </table>
+
+                                    <div class="shortcuts-panel">
+                                        <div class="shortcuts-title">Keyboard Navigation</div>
+                                        <div class="shortcuts-grid">
+                                            <div class="shortcut"><span class="key">j</span><span class="key">k</span> <span class="shortcut-desc">Navigate items</span></div>
+                                            <div class="shortcut"><span class="key">o</span> <span class="shortcut-desc">Open in GitLab</span></div>
+                                            <div class="shortcut"><span class="key">e</span> <span class="shortcut-desc">Expand details</span></div>
+                                            <div class="shortcut"><span class="key">m</span> <span class="shortcut-desc">Mark as reviewed</span></div>
+                                            <div class="shortcut"><span class="key">/</span> <span class="shortcut-desc">Search/Filter</span></div>
+                                            <div class="shortcut"><span class="key">r</span> <span class="shortcut-desc">Refresh</span></div>
+                                            <div class="shortcut"><span class="key">1</span><span class="key">2</span><span class="key">3</span> <span class="shortcut-desc">Jump to query</span></div>
+                                            <div class="shortcut"><span class="key">v</span> <span class="shortcut-desc">Toggle view</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="feature-callout" style="margin-top: 24px;">
+                        <div class="feature-callout-title">✓ MVP Recommendation: This is your starting point</div>
+                        <div class="feature-callout-body">
+                            This layout combines the best of HN-style density with query management. The sidebar provides persistent access to saved queries while the main content area maximizes scanning efficiency. Perfect for MVP launch with room to grow.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Concept B: Hover Tooltips (Progressive Disclosure) -->
+            <div class="direction-card" id="concept-2">
+                <div class="direction-header">
+                    <h2>Concept B: Hover Tooltips (Progressive Disclosure)</h2>
+                    <p>Same dense table, but hover reveals context without clicks. See preview, matched keywords, and metadata on demand.</p>
+                    <div class="direction-meta">
+                        <div class="meta-item"><span class="meta-label">Key Innovation:</span> Rich context without sacrificing density</div>
+                        <div class="meta-item"><span class="meta-label">Interaction:</span> Hover 300ms to see preview, matched keywords highlighted</div>
+                        <div class="meta-item"><span class="meta-label">Best For:</span> Users who need context before clicking through to GitLab</div>
+                    </div>
+                </div>
+                <div class="direction-mockup">
+                    <div class="mockup">
+                        <div class="mockup-header">
+                            <div class="mode-toggle">
+                                <button class="mode-btn">Dashboard</button>
+                                <button class="mode-btn active">Catch-Up Mode <span class="new-badge">12</span></button>
+                            </div>
+                            <div class="header-actions">
+                                <span class="sync-indicator">Last sync: 2m ago</span>
+                                <button class="refresh-btn">↻ Refresh</button>
+                            </div>
+                        </div>
+                        <div class="sidebar-layout">
+                            <div class="sidebar">
+                                <div class="sidebar-section">
+                                    <div class="sidebar-section-title">Saved Queries</div>
+                                    <div class="sidebar-item active">
+                                        <span>Security Items</span>
+                                        <span class="item-count">3</span>
+                                    </div>
+                                    <div class="sidebar-item">
+                                        <span>Performance Issues</span>
+                                        <span class="item-count">2</span>
+                                    </div>
+                                    <div class="sidebar-item">
+                                        <span>Backend Work</span>
+                                        <span class="item-count">4</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="main-content">
+                                <div class="content-header">
+                                    <div class="content-title">Security Items (Hover to Preview)</div>
+                                    <div class="content-subtitle">Hover over any item for ~300ms to see details, matched keywords, and context</div>
+                                </div>
+                                <div class="content-body" style="position: relative;">
+                                    <table class="dense-table">
+                                        <tr class="demo-tooltip-container">
+                                            <td class="item-icon">●</td>
+                                            <td class="item-title">Add support for custom webhook endpoints</td>
+                                            <td class="item-meta">@sarah · api-gateway · security</td>
+                                            <td class="item-time">3h ago</td>
+                                            <td><span class="new-badge">NEW</span></td>
+
+                                            <div class="demo-tooltip">
+                                                <div class="tooltip">
+                                                    <div class="tooltip-header">
+                                                        <span class="badge badge-issue">Issue</span>
+                                                        <span class="new-badge">NEW</span>
+                                                    </div>
+                                                    <div class="tooltip-title">Add support for custom webhook endpoints</div>
+                                                    <div class="tooltip-body">
+                                                        Need to allow users to configure custom <span class="highlight">webhook</span> URLs for event notifications. This would enable integration with external monitoring systems and custom alerting workflows. Should support HMAC signature verification for <span class="highlight">security</span>.
+                                                    </div>
+                                                    <div class="tooltip-meta">
+                                                        <span>@sarah</span>
+                                                        <span>api-gateway</span>
+                                                        <span>security</span>
+                                                        <span>3 hours ago</span>
+                                                    </div>
+                                                    <div class="tooltip-matched">
+                                                        <div class="tooltip-matched-label">MATCHED QUERY</div>
+                                                        <div class="tooltip-matched-query">Security Items: label:security OR project:api-gateway</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </tr>
+                                        <tr class="demo-tooltip-container">
+                                            <td class="item-icon">◐</td>
+                                            <td class="item-title">Implement rate limiting for API endpoints</td>
+                                            <td class="item-meta">@chris · security · +234 -67</td>
+                                            <td class="item-time">1h ago</td>
+                                            <td><span class="new-badge">NEW</span></td>
+
+                                            <div class="demo-tooltip">
+                                                <div class="tooltip">
+                                                    <div class="tooltip-header">
+                                                        <span class="badge badge-mr">MR</span>
+                                                        <span class="new-badge">NEW</span>
+                                                    </div>
+                                                    <div class="tooltip-title">Implement rate limiting for API endpoints</div>
+                                                    <div class="tooltip-body">
+                                                        Adds Redis-based <span class="highlight">rate limiting</span> to prevent API abuse. Implements sliding window algorithm with configurable limits per endpoint. Includes monitoring and alerting for rate limit violations. This addresses <span class="highlight">security</span> concerns raised in issue #1234.
+                                                    </div>
+                                                    <div class="tooltip-meta">
+                                                        <span>@chris</span>
+                                                        <span>security</span>
+                                                        <span>+234 -67</span>
+                                                        <span>1 hour ago</span>
+                                                        <span>3 comments</span>
+                                                    </div>
+                                                    <div class="tooltip-matched">
+                                                        <div class="tooltip-matched-label">MATCHED QUERY</div>
+                                                        <div class="tooltip-matched-query">Security Items: label:security OR project:api-gateway</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </tr>
+                                        <tr>
+                                            <td class="item-icon">◐</td>
+                                            <td class="item-title">Update dependencies to fix security vulnerabilities</td>
+                                            <td class="item-meta">@dependabot · security · +8 -8</td>
+                                            <td class="item-time">10h ago</td>
+                                            <td><span class="new-badge">NEW</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="item-icon">●</td>
+                                            <td class="item-title">Review JWT token expiration strategy</td>
+                                            <td class="item-meta">@alex · auth · security</td>
+                                            <td class="item-time">12h ago</td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="item-icon">💬</td>
+                                            <td class="item-title">Re: Add support for custom webhook endpoints</td>
+                                            <td class="item-meta">@alex · "We should also consider..."</td>
+                                            <td class="item-time">2h ago</td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="item-icon">●</td>
+                                            <td class="item-title">Implement API key rotation mechanism</td>
+                                            <td class="item-meta">@mike · api-gateway · security</td>
+                                            <td class="item-time">16h ago</td>
+                                            <td></td>
+                                        </tr>
+                                    </table>
+
+                                    <div class="feature-callout" style="margin-top: 24px;">
+                                        <div class="feature-callout-title">✓ Progressive Disclosure Pattern</div>
+                                        <div class="feature-callout-body">
+                                            <strong>Three levels of information:</strong><br>
+                                            1. Default: One-line summary (fastest scan)<br>
+                                            2. Hover: Preview snippet + matched keywords highlighted + query that matched<br>
+                                            3. Click: Full GitLab context<br><br>
+                                            <strong>Keyboard equivalent:</strong> Focus (Tab) triggers same tooltip as hover. Press 'e' to expand inline, 'o' to open in GitLab.
+                                        </div>
+                                    </div>
+
+                                    <div class="shortcuts-panel">
+                                        <div class="shortcuts-title">How Hover Works</div>
+                                        <div style="font-size: 13px; color: #D1D5DB; line-height: 1.6;">
+                                            <p style="margin-bottom: 8px;"><strong>Mouse:</strong> Hover for 300ms → Tooltip appears</p>
+                                            <p style="margin-bottom: 8px;"><strong>Keyboard:</strong> Tab to item → Tooltip appears</p>
+                                            <p style="margin-bottom: 8px;"><strong>Why it works:</strong> Dense scanning uninterrupted, context available when you need it</p>
+                                            <p><strong>Matched keywords:</strong> Highlighted in preview to show why this item matched your query</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Concept C: Table/Feed Toggle -->
+            <div class="direction-card" id="concept-3">
+                <div class="direction-header">
+                    <h2>Concept C: Table/Feed Toggle View</h2>
+                    <p>Same content, two views: Dense table for scanning, Feed reader for deeper reading. Toggle anytime with 'v' key.</p>
+                    <div class="direction-meta">
+                        <div class="meta-item"><span class="meta-label">Key Innovation:</span> User chooses consumption mode based on task</div>
+                        <div class="meta-item"><span class="meta-label">Table View:</span> Maximum density for rapid scanning</div>
+                        <div class="meta-item"><span class="meta-label">Feed View:</span> Rich context for thoughtful reading</div>
+                    </div>
+                </div>
+                <div class="direction-mockup">
+                    <div class="mockup">
+                        <div class="mockup-header">
+                            <div class="mode-toggle">
+                                <button class="mode-btn">Dashboard</button>
+                                <button class="mode-btn active">Catch-Up Mode <span class="new-badge">12</span></button>
+                            </div>
+                            <div class="header-actions">
+                                <div class="view-toggle">
+                                    <button class="view-btn active" onclick="showTableView()">≡ Table</button>
+                                    <button class="view-btn" onclick="showFeedView()">☰ Feed</button>
+                                </div>
+                                <span class="sync-indicator">Last sync: 2m ago</span>
+                                <button class="refresh-btn">↻ Refresh</button>
+                            </div>
+                        </div>
+
+                        <!-- Table View -->
+                        <div class="sidebar-layout" id="table-view">
+                            <div class="sidebar">
+                                <div class="sidebar-section">
+                                    <div class="sidebar-section-title">Saved Queries</div>
+                                    <div class="sidebar-item active">
+                                        <span>Security Items</span>
+                                        <span class="item-count">3</span>
+                                    </div>
+                                    <div class="sidebar-item">
+                                        <span>Performance Issues</span>
+                                        <span class="item-count">2</span>
+                                    </div>
+                                    <div class="sidebar-item">
+                                        <span>Backend Work</span>
+                                        <span class="item-count">4</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="main-content">
+                                <div class="content-header">
+                                    <div class="content-title">Security Items (Table View)</div>
+                                    <div class="content-subtitle">Dense scanning optimized - press 'v' to switch to Feed view</div>
+                                </div>
+                                <div class="content-body">
+                                    <table class="dense-table">
+                                        <tr>
+                                            <td class="item-icon">●</td>
+                                            <td class="item-title">Add support for custom webhook endpoints</td>
+                                            <td class="item-meta">@sarah · api-gateway · security</td>
+                                            <td class="item-time">3h ago</td>
+                                            <td><span class="new-badge">NEW</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="item-icon">◐</td>
+                                            <td class="item-title">Implement rate limiting for API endpoints</td>
+                                            <td class="item-meta">@chris · security · +234 -67</td>
+                                            <td class="item-time">1h ago</td>
+                                            <td><span class="new-badge">NEW</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="item-icon">◐</td>
+                                            <td class="item-title">Update dependencies to fix security vulnerabilities</td>
+                                            <td class="item-meta">@dependabot · security · +8 -8</td>
+                                            <td class="item-time">10h ago</td>
+                                            <td><span class="new-badge">NEW</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="item-icon">●</td>
+                                            <td class="item-title">Review JWT token expiration strategy</td>
+                                            <td class="item-meta">@alex · auth · security</td>
+                                            <td class="item-time">12h ago</td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="item-icon">💬</td>
+                                            <td class="item-title">Re: Add support for custom webhook endpoints</td>
+                                            <td class="item-meta">@alex · "We should also consider..."</td>
+                                            <td class="item-time">2h ago</td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="item-icon">●</td>
+                                            <td class="item-title">Implement API key rotation mechanism</td>
+                                            <td class="item-meta">@mike · api-gateway · security</td>
+                                            <td class="item-time">16h ago</td>
+                                            <td></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Feed View (hidden by default) -->
+                        <div class="sidebar-layout" id="feed-view" style="display: none;">
+                            <div class="sidebar">
+                                <div class="sidebar-section">
+                                    <div class="sidebar-section-title">Saved Queries</div>
+                                    <div class="sidebar-item active">
+                                        <span>Security Items</span>
+                                        <span class="item-count">3</span>
+                                    </div>
+                                    <div class="sidebar-item">
+                                        <span>Performance Issues</span>
+                                        <span class="item-count">2</span>
+                                    </div>
+                                    <div class="sidebar-item">
+                                        <span>Backend Work</span>
+                                        <span class="item-count">4</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="main-content">
+                                <div class="content-header">
+                                    <div class="content-title">Security Items (Feed View)</div>
+                                    <div class="content-subtitle">Rich reading mode - press 'v' to switch to Table view</div>
+                                </div>
+                                <div class="feed-container">
+                                    <div class="feed-item">
+                                        <div class="feed-header">
+                                            <div class="feed-title">
+                                                <span class="badge badge-issue">Issue</span>
+                                                <span>Add support for custom webhook endpoints</span>
+                                                <span class="new-badge">NEW</span>
+                                            </div>
+                                            <div class="feed-time">3h ago</div>
+                                        </div>
+                                        <div class="feed-snippet">
+                                            Need to allow users to configure custom webhook URLs for event notifications. This would enable integration with external monitoring systems and custom alerting workflows. Should support HMAC signature verification for security. This is a high-priority feature requested by several enterprise customers.
+                                        </div>
+                                        <div class="feed-meta">
+                                            <span>@sarah</span>
+                                            <span>api-gateway</span>
+                                            <span>security</span>
+                                            <span>Matched: Security Items</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="feed-item">
+                                        <div class="feed-header">
+                                            <div class="feed-title">
+                                                <span class="badge badge-mr">MR</span>
+                                                <span>Implement rate limiting for API endpoints</span>
+                                                <span class="new-badge">NEW</span>
+                                            </div>
+                                            <div class="feed-time">1h ago</div>
+                                        </div>
+                                        <div class="feed-snippet">
+                                            Adds Redis-based rate limiting to prevent API abuse. Implements sliding window algorithm with configurable limits per endpoint. Includes monitoring and alerting for rate limit violations. This addresses security concerns raised in issue #1234 and provides a foundation for future webhook rate limiting.
+                                        </div>
+                                        <div class="feed-meta">
+                                            <span>@chris</span>
+                                            <span>security</span>
+                                            <span>+234 -67</span>
+                                            <span>3 comments</span>
+                                            <span>Matched: Security Items</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="feed-item">
+                                        <div class="feed-header">
+                                            <div class="feed-title">
+                                                <span class="badge badge-mr">MR</span>
+                                                <span>Update dependencies to fix security vulnerabilities</span>
+                                                <span class="new-badge">NEW</span>
+                                            </div>
+                                            <div class="feed-time">10h ago</div>
+                                        </div>
+                                        <div class="feed-snippet">
+                                            Bumps several dependencies with known CVEs: express 4.17.1 → 4.18.2, jsonwebtoken 8.5.1 → 9.0.0, axios 0.21.1 → 1.4.0. All tests passing. No breaking changes expected.
+                                        </div>
+                                        <div class="feed-meta">
+                                            <span>@dependabot</span>
+                                            <span>security</span>
+                                            <span>+8 -8</span>
+                                            <span>Matched: Security Items</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="feed-item">
+                                        <div class="feed-header">
+                                            <div class="feed-title">
+                                                <span class="badge badge-issue">Issue</span>
+                                                <span>Review JWT token expiration strategy</span>
+                                            </div>
+                                            <div class="feed-time">12h ago</div>
+                                        </div>
+                                        <div class="feed-snippet">
+                                            Current tokens expire after 24 hours, but we have no refresh mechanism. Users get logged out mid-session. Need to implement refresh tokens or extend expiration with sliding window.
+                                        </div>
+                                        <div class="feed-meta">
+                                            <span>@alex</span>
+                                            <span>auth</span>
+                                            <span>security</span>
+                                            <span>Matched: Security Items</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="feature-callout" style="margin-top: 24px;">
+                        <div class="feature-callout-title">✓ View Toggle: Match the mode to your task</div>
+                        <div class="feature-callout-body">
+                            <strong>Table View:</strong> Fast scanning - see 12-15 items at once, quickly mark as reviewed<br>
+                            <strong>Feed View:</strong> Deep reading - full context visible, understand nuance before clicking through<br><br>
+                            <strong>Use cases:</strong><br>
+                            • Morning catch-up: Table view for rapid triage<br>
+                            • Pre-work review: Feed view to understand context deeply<br>
+                            • Query tuning: Table view to see if you're getting the right items<br><br>
+                            <strong>Toggle:</strong> Click view buttons, or press 'v' key. Same content, different consumption mode.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Concept D: Timeline Grouping -->
+            <div class="direction-card" id="concept-4">
+                <div class="direction-header">
+                    <h2>Concept D: Timeline Grouping with Relative Time</h2>
+                    <p>Dense table grouped by time periods. See temporal context: "What happened today vs. yesterday?"</p>
+                    <div class="direction-meta">
+                        <div class="meta-item"><span class="meta-label">Key Innovation:</span> Temporal context helps prioritize</div>
+                        <div class="meta-item"><span class="meta-label">Groups:</span> Last hour, Today, Yesterday, This week, Older</div>
+                        <div class="meta-item"><span class="meta-label">Best For:</span> Users who think chronologically about discussions</div>
+                    </div>
+                </div>
+                <div class="direction-mockup">
+                    <div class="mockup">
+                        <div class="mockup-header">
+                            <div class="mode-toggle">
+                                <button class="mode-btn">Dashboard</button>
+                                <button class="mode-btn active">Catch-Up Mode <span class="new-badge">12</span></button>
+                            </div>
+                            <div class="header-actions">
+                                <span class="sync-indicator">Last sync: 2m ago</span>
+                                <button class="refresh-btn">↻ Refresh</button>
+                            </div>
+                        </div>
+                        <div class="sidebar-layout">
+                            <div class="sidebar">
+                                <div class="sidebar-section">
+                                    <div class="sidebar-section-title">Saved Queries</div>
+                                    <div class="sidebar-item active">
+                                        <span>Security Items</span>
+                                        <span class="item-count">3</span>
+                                    </div>
+                                    <div class="sidebar-item">
+                                        <span>Performance Issues</span>
+                                        <span class="item-count">2</span>
+                                    </div>
+                                    <div class="sidebar-item">
+                                        <span>Backend Work</span>
+                                        <span class="item-count">4</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="main-content">
+                                <div class="content-header">
+                                    <div class="content-title">Security Items (Grouped by Time)</div>
+                                    <div class="content-subtitle">Chronological view shows temporal patterns and urgency</div>
+                                </div>
+
+                                <div class="timeline-group">
+                                    <div class="timeline-group-header">
+                                        <span>Last few hours</span>
+                                        <span class="timeline-group-count">3 items · <span class="new-badge">2 NEW</span></span>
+                                    </div>
+                                    <div style="padding: 8px 24px;">
+                                        <table class="dense-table">
+                                            <tr>
+                                                <td class="item-icon">◐</td>
+                                                <td class="item-title">Implement rate limiting for API endpoints</td>
+                                                <td class="item-meta">@chris · security · +234 -67</td>
+                                                <td class="item-time">1h ago</td>
+                                                <td><span class="new-badge">NEW</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td class="item-icon">💬</td>
+                                                <td class="item-title">Re: Add support for custom webhook endpoints</td>
+                                                <td class="item-meta">@alex · "We should also consider..."</td>
+                                                <td class="item-time">2h ago</td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td class="item-icon">●</td>
+                                                <td class="item-title">Add support for custom webhook endpoints</td>
+                                                <td class="item-meta">@sarah · api-gateway · security</td>
+                                                <td class="item-time">3h ago</td>
+                                                <td><span class="new-badge">NEW</span></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div class="timeline-group">
+                                    <div class="timeline-group-header">
+                                        <span>Earlier today</span>
+                                        <span class="timeline-group-count">2 items</span>
+                                    </div>
+                                    <div style="padding: 8px 24px;">
+                                        <table class="dense-table">
+                                            <tr>
+                                                <td class="item-icon">◐</td>
+                                                <td class="item-title">Update dependencies to fix security vulnerabilities</td>
+                                                <td class="item-meta">@dependabot · security · +8 -8</td>
+                                                <td class="item-time">10h ago</td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td class="item-icon">●</td>
+                                                <td class="item-title">Review JWT token expiration strategy</td>
+                                                <td class="item-meta">@alex · auth · security</td>
+                                                <td class="item-time">12h ago</td>
+                                                <td></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div class="timeline-group">
+                                    <div class="timeline-group-header">
+                                        <span>Yesterday</span>
+                                        <span class="timeline-group-count">3 items</span>
+                                    </div>
+                                    <div style="padding: 8px 24px;">
+                                        <table class="dense-table">
+                                            <tr>
+                                                <td class="item-icon">●</td>
+                                                <td class="item-title">Implement API key rotation mechanism</td>
+                                                <td class="item-meta">@mike · api-gateway · security</td>
+                                                <td class="item-time">16h ago</td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td class="item-icon">◐</td>
+                                                <td class="item-title">Add request signing for webhook callbacks</td>
+                                                <td class="item-meta">@sarah · security · +89 -23</td>
+                                                <td class="item-time">18h ago</td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td class="item-icon">●</td>
+                                                <td class="item-title">Security audit findings: SQL injection risks</td>
+                                                <td class="item-meta">@security-team · critical</td>
+                                                <td class="item-time">20h ago</td>
+                                                <td></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div class="timeline-group">
+                                    <div class="timeline-group-header">
+                                        <span>This week</span>
+                                        <span class="timeline-group-count">2 items</span>
+                                    </div>
+                                    <div style="padding: 8px 24px;">
+                                        <table class="dense-table">
+                                            <tr>
+                                                <td class="item-icon">●</td>
+                                                <td class="item-title">Migrate to bcrypt for password hashing</td>
+                                                <td class="item-meta">@chris · auth · security</td>
+                                                <td class="item-time">2d ago</td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td class="item-icon">◐</td>
+                                                <td class="item-title">Enable security headers (CSP, HSTS, etc.)</td>
+                                                <td class="item-meta">@taylor · frontend · +67 -34</td>
+                                                <td class="item-time">3d ago</td>
+                                                <td></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div class="feature-callout" style="margin: 24px;">
+                                    <div class="feature-callout-title">✓ Timeline Context: See urgency through time</div>
+                                    <div class="feature-callout-body">
+                                        <strong>Why timeline grouping helps:</strong><br>
+                                        • Recent activity = ongoing discussions you might want to join<br>
+                                        • Yesterday = context for today's items<br>
+                                        • Older items = lower urgency, but still relevant to your query<br><br>
+                                        <strong>Works best for:</strong> Catch-Up Mode where recency matters more than query grouping<br>
+                                        <strong>Consideration:</strong> Can be combined with query sidebar - switch grouping mode with keyboard shortcut
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function scrollToConcept(num) {
+            const element = document.getElementById(`concept-${num}`);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                // Update active button
+                document.querySelectorAll('.control-btn').forEach((btn, idx) => {
+                    btn.classList.toggle('active', idx === num - 1);
+                });
+
+                // Update active thumbnail
+                document.querySelectorAll('.thumbnail').forEach((thumb, idx) => {
+                    thumb.classList.toggle('active', idx === num - 1);
+                });
+            }
+        }
+
+        function showTableView() {
+            document.getElementById('table-view').style.display = 'flex';
+            document.getElementById('feed-view').style.display = 'none';
+            document.querySelectorAll('.view-btn')[0].classList.add('active');
+            document.querySelectorAll('.view-btn')[1].classList.remove('active');
+        }
+
+        function showFeedView() {
+            document.getElementById('table-view').style.display = 'none';
+            document.getElementById('feed-view').style.display = 'flex';
+            document.querySelectorAll('.view-btn')[0].classList.remove('active');
+            document.querySelectorAll('.view-btn')[1].classList.add('active');
+        }
+
+        // Update active button based on scroll position
+        let ticking = false;
+        document.addEventListener('scroll', () => {
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    const concepts = document.querySelectorAll('[id^="concept-"]');
+                    let currentConcept = 1;
+
+                    concepts.forEach((concept, idx) => {
+                        const rect = concept.getBoundingClientRect();
+                        if (rect.top <= 200 && rect.bottom >= 200) {
+                            currentConcept = idx + 1;
+                        }
+                    });
+
+                    document.querySelectorAll('.control-btn').forEach((btn, idx) => {
+                        btn.classList.toggle('active', idx === currentConcept - 1);
+                    });
+
+                    document.querySelectorAll('.thumbnail').forEach((thumb, idx) => {
+                        thumb.classList.toggle('active', idx === currentConcept - 1);
+                    });
+
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        });
+    </script>
+</body>
+</html>

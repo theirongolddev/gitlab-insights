@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitLab Insights - Two-Line Row Concept</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+            background: #111827;
+            color: #FDFFFC;
+            line-height: 1.5;
+        }
+
+        .showcase-container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .showcase-header {
+            background: #1F2937;
+            padding: 24px 32px;
+            border-bottom: 1px solid #374151;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .showcase-header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .showcase-header p {
+            font-size: 14px;
+            color: #9CA3AF;
+            margin-bottom: 16px;
+        }
+
+        .comparison-note {
+            background: rgba(157, 170, 95, 0.1);
+            border: 1px solid #5e6b24;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+        .comparison-note-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #9DAA5F;
+            margin-bottom: 8px;
+        }
+
+        .comparison-note-body {
+            font-size: 13px;
+            color: #D1D5DB;
+            line-height: 1.5;
+        }
+
+        .direction-viewport {
+            padding: 32px;
+        }
+
+        .direction-card {
+            background: #1F2937;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 48px;
+            border: 1px solid #374151;
+        }
+
+        .direction-header {
+            background: #111827;
+            padding: 24px 32px;
+            border-bottom: 1px solid #374151;
+        }
+
+        .direction-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .direction-meta {
+            display: flex;
+            gap: 24px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .meta-item {
+            font-size: 13px;
+            color: #9CA3AF;
+        }
+
+        .meta-label {
+            font-weight: 500;
+            color: #D1D5DB;
+        }
+
+        .direction-mockup {
+            padding: 24px;
+            background: #111827;
+        }
+
+        .mockup {
+            background: #2d2e2e;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #374151;
+        }
+
+        .mockup-header {
+            background: #1F2937;
+            padding: 16px 24px;
+            border-bottom: 1px solid #374151;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mode-toggle {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .mode-btn {
+            padding: 6px 12px;
+            background: transparent;
+            border: 1px solid #4B5563;
+            color: #D1D5DB;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            background: #5e6b24;
+            border-color: #5e6b24;
+            color: white;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .sync-indicator {
+            font-size: 12px;
+            color: #9CA3AF;
+        }
+
+        .refresh-btn {
+            padding: 6px 12px;
+            background: #374151;
+            border: none;
+            color: #D1D5DB;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background: #5e6b24;
+            color: white;
+        }
+
+        .sidebar-layout {
+            display: flex;
+            height: 700px;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: #1F2937;
+            border-right: 1px solid #374151;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .sidebar-section-title {
+            font-size: 11px;
+            color: #6B7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+            padding: 0 12px;
+            font-weight: 600;
+        }
+
+        .sidebar-item {
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #D1D5DB;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+        }
+
+        .sidebar-item:hover {
+            background: #374151;
+        }
+
+        .sidebar-item.active {
+            background: #5e6b24;
+            color: white;
+            font-weight: 500;
+        }
+
+        .item-count {
+            background: #374151;
+            color: #9CA3AF;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .sidebar-item.active .item-count {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            background: #2d2e2e;
+        }
+
+        .content-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #374151;
+            background: #1F2937;
+        }
+
+        .content-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #E5E7EB;
+            margin-bottom: 4px;
+        }
+
+        .content-subtitle {
+            font-size: 13px;
+            color: #9CA3AF;
+        }
+
+        .content-body {
+            padding: 16px 24px;
+        }
+
+        /* SINGLE-LINE TABLE (Original) */
+        .dense-table-single {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .dense-table-single tr {
+            height: 32px;
+            border-bottom: 1px solid #374151;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .dense-table-single tr:hover {
+            background: #1F2937;
+        }
+
+        .dense-table-single td {
+            padding: 0 8px;
+            font-size: 13px;
+        }
+
+        /* TWO-LINE TABLE (Enhanced) */
+        .dense-table-two {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .dense-table-two tr {
+            height: 52px;
+            border-bottom: 1px solid #374151;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .dense-table-two tr:hover {
+            background: #1F2937;
+        }
+
+        .dense-table-two td {
+            padding: 8px;
+            vertical-align: top;
+        }
+
+        .item-icon {
+            width: 20px;
+            text-align: center;
+            font-size: 12px;
+            padding-top: 4px;
+        }
+
+        .item-content {
+            flex: 1;
+        }
+
+        .item-title-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .item-title {
+            color: #E5E7EB;
+            font-weight: 400;
+            font-size: 13px;
+        }
+
+        .item-snippet {
+            color: #9CA3AF;
+            font-size: 12px;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .item-snippet.comment {
+            color: #D1D5DB;
+            font-style: italic;
+        }
+
+        .item-meta {
+            color: #9CA3AF;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .item-time {
+            color: #6B7280;
+            font-size: 12px;
+            text-align: right;
+            width: 80px;
+            padding-top: 4px;
+        }
+
+        .new-badge {
+            background: #5e6b24;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .badge-issue {
+            background: rgba(139, 92, 246, 0.2);
+            color: #A78BFA;
+        }
+
+        .badge-mr {
+            background: rgba(14, 165, 233, 0.2);
+            color: #38BDF8;
+        }
+
+        .badge-comment {
+            background: rgba(100, 116, 139, 0.2);
+            color: #94A3B8;
+        }
+
+        .feature-callout {
+            background: rgba(157, 170, 95, 0.1);
+            border: 1px solid #5e6b24;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+
+        .feature-callout-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #9DAA5F;
+            margin-bottom: 8px;
+        }
+
+        .feature-callout-body {
+            font-size: 12px;
+            color: #D1D5DB;
+            line-height: 1.6;
+        }
+
+        .metrics {
+            display: flex;
+            gap: 32px;
+            padding: 16px;
+            background: #1F2937;
+            border-radius: 8px;
+            margin: 16px 0;
+        }
+
+        .metric {
+            flex: 1;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: #6B7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #E5E7EB;
+        }
+
+        .metric-note {
+            font-size: 12px;
+            color: #9CA3AF;
+            margin-top: 4px;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 24px;
+        }
+
+        .comparison-item {
+            background: #1F2937;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .comparison-item h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #E5E7EB;
+            margin-bottom: 12px;
+        }
+
+        .comparison-item ul {
+            margin-left: 20px;
+            font-size: 12px;
+            color: #D1D5DB;
+            line-height: 1.8;
+        }
+
+        .comparison-item ul li {
+            margin-bottom: 4px;
+        }
+
+        .pro {
+            color: #22C55E;
+        }
+
+        .con {
+            color: #F59E0B;
+        }
+    </style>
+</head>
+<body>
+    <div class="showcase-container">
+        <div class="showcase-header">
+            <h1>GitLab Insights - Two-Line Row Concept</h1>
+            <p>Balancing density with context: Show title + preview snippet for better scanning without losing efficiency</p>
+
+            <div class="comparison-note">
+                <div class="comparison-note-title">💡 Key Insight</div>
+                <div class="comparison-note-body">
+                    Comments are short enough to get meaningful context from a snippet, while issues/MRs need full GitLab view anyway.
+                    Two-line rows provide the best middle ground: still dense enough for rapid scanning (8-10 items visible), but with enough context to make better decisions about what to click.
+                </div>
+            </div>
+        </div>
+
+        <div class="direction-viewport">
+            <!-- Comparison: Before (1-line) vs After (2-line) -->
+            <div class="direction-card">
+                <div class="direction-header">
+                    <h2>Visual Comparison: 1-Line vs 2-Line Rows</h2>
+                    <p>Side-by-side comparison showing the density/context tradeoff</p>
+                </div>
+                <div class="direction-mockup">
+                    <div class="metrics">
+                        <div class="metric">
+                            <div class="metric-label">1-Line Rows</div>
+                            <div class="metric-value">12-15</div>
+                            <div class="metric-note">items visible</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">2-Line Rows</div>
+                            <div class="metric-value">8-10</div>
+                            <div class="metric-note">items visible</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Context Gain</div>
+                            <div class="metric-value">+60%</div>
+                            <div class="metric-note">better decisions</div>
+                        </div>
+                    </div>
+
+                    <div class="comparison-grid">
+                        <div class="comparison-item">
+                            <h3>1-Line Dense Table</h3>
+                            <table class="dense-table-single">
+                                <tr>
+                                    <td class="item-icon">●</td>
+                                    <td class="item-title">Add webhook endpoints</td>
+                                    <td class="item-meta">@sarah · api</td>
+                                    <td style="text-align: right; font-size: 12px; color: #6B7280;">3h</td>
+                                    <td><span class="new-badge">NEW</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="item-icon">◐</td>
+                                    <td class="item-title">Rate limiting for API</td>
+                                    <td class="item-meta">@chris · +234</td>
+                                    <td style="text-align: right; font-size: 12px; color: #6B7280;">1h</td>
+                                    <td><span class="new-badge">NEW</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="item-icon">💬</td>
+                                    <td class="item-title">Re: Add webhook endpoints</td>
+                                    <td class="item-meta">@alex · 2h</td>
+                                    <td style="text-align: right; font-size: 12px; color: #6B7280;">2h</td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td class="item-icon">●</td>
+                                    <td class="item-title">Review JWT strategy</td>
+                                    <td class="item-meta">@alex · auth</td>
+                                    <td style="text-align: right; font-size: 12px; color: #6B7280;">12h</td>
+                                    <td></td>
+                                </tr>
+                            </table>
+                            <ul style="margin-top: 16px;">
+                                <li class="pro">✓ Maximum density</li>
+                                <li class="pro">✓ See most items at once</li>
+                                <li class="con">⚠ No context without hover</li>
+                                <li class="con">⚠ Hard to differentiate importance</li>
+                            </ul>
+                        </div>
+
+                        <div class="comparison-item">
+                            <h3>2-Line Enhanced Table</h3>
+                            <table class="dense-table-two">
+                                <tr>
+                                    <td class="item-icon">●</td>
+                                    <td class="item-content">
+                                        <div class="item-title-row">
+                                            <span class="item-title">Add support for custom webhook endpoints</span>
+                                            <span class="new-badge">NEW</span>
+                                        </div>
+                                        <div class="item-snippet">Need to allow users to configure custom webhook URLs for event notifications...</div>
+                                    </td>
+                                    <td class="item-meta">@sarah<br>api-gateway</td>
+                                    <td class="item-time">3h ago</td>
+                                </tr>
+                                <tr>
+                                    <td class="item-icon">◐</td>
+                                    <td class="item-content">
+                                        <div class="item-title-row">
+                                            <span class="item-title">Implement rate limiting for API endpoints</span>
+                                            <span class="new-badge">NEW</span>
+                                        </div>
+                                        <div class="item-snippet">Adds Redis-based rate limiting to prevent API abuse. Implements sliding window...</div>
+                                    </td>
+                                    <td class="item-meta">@chris<br>+234 -67</td>
+                                    <td class="item-time">1h ago</td>
+                                </tr>
+                                <tr>
+                                    <td class="item-icon">💬</td>
+                                    <td class="item-content">
+                                        <div class="item-title-row">
+                                            <span class="item-title">Re: Add support for custom webhook endpoints</span>
+                                        </div>
+                                        <div class="item-snippet comment">"We should also consider rate limiting for webhooks to prevent abuse..."</div>
+                                    </td>
+                                    <td class="item-meta">@alex<br>Issue #1234</td>
+                                    <td class="item-time">2h ago</td>
+                                </tr>
+                                <tr>
+                                    <td class="item-icon">●</td>
+                                    <td class="item-content">
+                                        <div class="item-title-row">
+                                            <span class="item-title">Review JWT token expiration strategy</span>
+                                        </div>
+                                        <div class="item-snippet">Current tokens expire after 24 hours, but we have no refresh mechanism...</div>
+                                    </td>
+                                    <td class="item-meta">@alex<br>auth</td>
+                                    <td class="item-time">12h ago</td>
+                                </tr>
+                            </table>
+                            <ul style="margin-top: 16px;">
+                                <li class="pro">✓ Context without hover</li>
+                                <li class="pro">✓ Comments show actual text</li>
+                                <li class="pro">✓ Still fast scanning</li>
+                                <li class="con">⚠ Fewer items visible (8-10)</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="feature-callout" style="margin-top: 24px;">
+                        <div class="feature-callout-title">💡 The Sweet Spot</div>
+                        <div class="feature-callout-body">
+                            Two-line rows give you context <strong>immediately</strong> without requiring hover or click. You can scan 8-10 items with enough context to make intelligent decisions about what to dig into.
+                            <br><br>
+                            <strong>The key insight:</strong> For comments especially, you often don't need to click through to GitLab - the snippet IS the context you need.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Full Mockup: Two-Line Rows in Context -->
+            <div class="direction-card">
+                <div class="direction-header">
+                    <h2>Full Concept: Two-Line Rows with Sidebar</h2>
+                    <p>The complete MVP experience with enhanced context</p>
+                    <div class="direction-meta">
+                        <div class="meta-item"><span class="meta-label">Density:</span> 8-10 items visible (vs 12-15 single-line)</div>
+                        <div class="meta-item"><span class="meta-label">Context:</span> First 80-100 chars of description/comment visible</div>
+                        <div class="meta-item"><span class="meta-label">Best For:</span> Balancing speed with decision quality</div>
+                    </div>
+                </div>
+                <div class="direction-mockup">
+                    <div class="mockup">
+                        <div class="mockup-header">
+                            <div class="mode-toggle">
+                                <button class="mode-btn">Dashboard</button>
+                                <button class="mode-btn active">Catch-Up Mode <span class="new-badge">12</span></button>
+                            </div>
+                            <div class="header-actions">
+                                <span class="sync-indicator">Last sync: 2m ago</span>
+                                <button class="refresh-btn">↻ Refresh</button>
+                            </div>
+                        </div>
+                        <div class="sidebar-layout">
+                            <div class="sidebar">
+                                <div class="sidebar-section-title">Saved Queries</div>
+                                <div class="sidebar-item active">
+                                    <span>Security Items</span>
+                                    <span class="item-count">3</span>
+                                </div>
+                                <div class="sidebar-item">
+                                    <span>Performance Issues</span>
+                                    <span class="item-count">2</span>
+                                </div>
+                                <div class="sidebar-item">
+                                    <span>Backend Work</span>
+                                    <span class="item-count">4</span>
+                                </div>
+                                <div class="sidebar-item">
+                                    <span>API Changes</span>
+                                    <span class="item-count">2</span>
+                                </div>
+                                <div class="sidebar-item">
+                                    <span>Frontend Updates</span>
+                                    <span class="item-count">1</span>
+                                </div>
+
+                                <div style="border-top: 1px solid #374151; margin: 16px 0; padding-top: 16px;">
+                                    <div class="sidebar-section-title">Quick Filters</div>
+                                    <div class="sidebar-item">
+                                        <span>All Issues</span>
+                                        <span class="item-count">8</span>
+                                    </div>
+                                    <div class="sidebar-item">
+                                        <span>All MRs</span>
+                                        <span class="item-count">6</span>
+                                    </div>
+                                    <div class="sidebar-item">
+                                        <span>Comments</span>
+                                        <span class="item-count">5</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="main-content">
+                                <div class="content-header">
+                                    <div class="content-title">Security Items</div>
+                                    <div class="content-subtitle">label:security OR project:api-gateway · 3 new items</div>
+                                </div>
+                                <div class="content-body">
+                                    <table class="dense-table-two">
+                                        <tr>
+                                            <td class="item-icon">●</td>
+                                            <td class="item-content">
+                                                <div class="item-title-row">
+                                                    <span class="badge badge-issue">Issue</span>
+                                                    <span class="item-title">Add support for custom webhook endpoints</span>
+                                                    <span class="new-badge">NEW</span>
+                                                </div>
+                                                <div class="item-snippet">Need to allow users to configure custom webhook URLs for event notifications. This would enable integration with external monitoring...</div>
+                                            </td>
+                                            <td class="item-meta">@sarah<br>api-gateway<br>security</td>
+                                            <td class="item-time">3h ago</td>
+                                        </tr>
+
+                                        <tr>
+                                            <td class="item-icon">◐</td>
+                                            <td class="item-content">
+                                                <div class="item-title-row">
+                                                    <span class="badge badge-mr">MR</span>
+                                                    <span class="item-title">Implement rate limiting for API endpoints</span>
+                                                    <span class="new-badge">NEW</span>
+                                                </div>
+                                                <div class="item-snippet">Adds Redis-based rate limiting to prevent API abuse. Implements sliding window algorithm with configurable limits per endpoint...</div>
+                                            </td>
+                                            <td class="item-meta">@chris<br>security<br>+234 -67</td>
+                                            <td class="item-time">1h ago</td>
+                                        </tr>
+
+                                        <tr>
+                                            <td class="item-icon">💬</td>
+                                            <td class="item-content">
+                                                <div class="item-title-row">
+                                                    <span class="badge badge-comment">Comment</span>
+                                                    <span class="item-title">Re: Add support for custom webhook endpoints</span>
+                                                </div>
+                                                <div class="item-snippet comment">"We should also consider rate limiting for webhooks to prevent abuse. If someone configures a webhook that responds slowly, we don't want to DOS our own system."</div>
+                                            </td>
+                                            <td class="item-meta">@alex<br>Issue #1234</td>
+                                            <td class="item-time">2h ago</td>
+                                        </tr>
+
+                                        <tr>
+                                            <td class="item-icon">◐</td>
+                                            <td class="item-content">
+                                                <div class="item-title-row">
+                                                    <span class="badge badge-mr">MR</span>
+                                                    <span class="item-title">Update dependencies to fix security vulnerabilities</span>
+                                                    <span class="new-badge">NEW</span>
+                                                </div>
+                                                <div class="item-snippet">Bumps several dependencies with known CVEs: express 4.17.1 → 4.18.2, jsonwebtoken 8.5.1 → 9.0.0, axios 0.21.1 → 1.4.0. All tests passing...</div>
+                                            </td>
+                                            <td class="item-meta">@dependabot<br>security<br>+8 -8</td>
+                                            <td class="item-time">10h ago</td>
+                                        </tr>
+
+                                        <tr>
+                                            <td class="item-icon">●</td>
+                                            <td class="item-content">
+                                                <div class="item-title-row">
+                                                    <span class="badge badge-issue">Issue</span>
+                                                    <span class="item-title">Review JWT token expiration strategy</span>
+                                                </div>
+                                                <div class="item-snippet">Current tokens expire after 24 hours, but we have no refresh mechanism. Users get logged out mid-session. Need to implement refresh tokens or extend expiration...</div>
+                                            </td>
+                                            <td class="item-meta">@alex<br>auth<br>security</td>
+                                            <td class="item-time">12h ago</td>
+                                        </tr>
+
+                                        <tr>
+                                            <td class="item-icon">◐</td>
+                                            <td class="item-content">
+                                                <div class="item-title-row">
+                                                    <span class="badge badge-mr">MR</span>
+                                                    <span class="item-title">Add CORS configuration for new API domains</span>
+                                                </div>
+                                                <div class="item-snippet">Configures CORS headers to allow requests from new staging and production domains. Includes wildcard support for dynamic subdomains...</div>
+                                            </td>
+                                            <td class="item-meta">@jordan<br>api-gateway<br>+45 -12</td>
+                                            <td class="item-time">14h ago</td>
+                                        </tr>
+
+                                        <tr>
+                                            <td class="item-icon">●</td>
+                                            <td class="item-content">
+                                                <div class="item-title-row">
+                                                    <span class="badge badge-issue">Issue</span>
+                                                    <span class="item-title">Implement API key rotation mechanism</span>
+                                                </div>
+                                                <div class="item-snippet">We need automatic API key rotation for security compliance. Keys should rotate every 90 days with grace period for migration...</div>
+                                            </td>
+                                            <td class="item-meta">@mike<br>api-gateway<br>security</td>
+                                            <td class="item-time">16h ago</td>
+                                        </tr>
+
+                                        <tr>
+                                            <td class="item-icon">💬</td>
+                                            <td class="item-content">
+                                                <div class="item-title-row">
+                                                    <span class="badge badge-comment">Comment</span>
+                                                    <span class="item-title">Re: Implement rate limiting for API endpoints</span>
+                                                </div>
+                                                <div class="item-snippet comment">"This looks good but we should make the limits configurable per user/org. Enterprise customers will need higher limits than free tier."</div>
+                                            </td>
+                                            <td class="item-meta">@jordan<br>MR !456</td>
+                                            <td class="item-time">5h ago</td>
+                                        </tr>
+
+                                        <tr>
+                                            <td class="item-icon">◐</td>
+                                            <td class="item-content">
+                                                <div class="item-title-row">
+                                                    <span class="badge badge-mr">MR</span>
+                                                    <span class="item-title">Add request signing for webhook callbacks</span>
+                                                </div>
+                                                <div class="item-snippet">Implements HMAC-SHA256 signing for all webhook payloads. Recipients can verify requests actually came from us. Includes signature verification example code...</div>
+                                            </td>
+                                            <td class="item-meta">@sarah<br>security<br>+89 -23</td>
+                                            <td class="item-time">18h ago</td>
+                                        </tr>
+                                    </table>
+
+                                    <div class="feature-callout" style="margin-top: 24px;">
+                                        <div class="feature-callout-title">✓ Notice: Comments are fully readable</div>
+                                        <div class="feature-callout-body">
+                                            Look at the comment rows - you get the complete context without needing to click through. For issues and MRs, you see enough of the description to decide if it's relevant. This is the key improvement over pure single-line density.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analysis & Recommendation -->
+            <div class="direction-card">
+                <div class="direction-header">
+                    <h2>Analysis: Why Two-Line Rows Work</h2>
+                    <p>Breaking down the benefits and tradeoffs</p>
+                </div>
+                <div class="direction-mockup">
+                    <div class="comparison-grid">
+                        <div class="comparison-item">
+                            <h3>Benefits of 2-Line Rows</h3>
+                            <ul>
+                                <li class="pro">✓ <strong>Comments are readable:</strong> Most comments fit in snippet, no click needed</li>
+                                <li class="pro">✓ <strong>Better triage:</strong> Can judge relevance without hover/click</li>
+                                <li class="pro">✓ <strong>Still fast:</strong> 8-10 items is plenty for rapid scanning</li>
+                                <li class="pro">✓ <strong>Reduces clicks:</strong> Many items can be marked as reviewed after scanning</li>
+                                <li class="pro">✓ <strong>Progressive disclosure still works:</strong> Hover for even more context if needed</li>
+                                <li class="pro">✓ <strong>Differentiation:</strong> Easy to spot comments vs issues vs MRs</li>
+                            </ul>
+                        </div>
+
+                        <div class="comparison-item">
+                            <h3>Tradeoffs Accepted</h3>
+                            <ul>
+                                <li class="con">⚠ <strong>Less density:</strong> 8-10 items instead of 12-15 (still good!)</li>
+                                <li class="con">⚠ <strong>More scrolling:</strong> To get through 100+ items in Catch-Up Mode</li>
+                                <li class="con">⚠ <strong>Row height:</strong> 52px vs 32px (63% taller)</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="feature-callout" style="margin-top: 24px;">
+                        <div class="feature-callout-title">🎯 MVP Recommendation: Two-Line Rows</div>
+                        <div class="feature-callout-body">
+                            <strong>Start with two-line rows as your MVP default.</strong> Here's why:
+                            <br><br>
+                            <strong>1. Better User Decisions:</strong> With context visible, users can confidently mark items as reviewed or click through to GitLab. No guessing.
+                            <br><br>
+                            <strong>2. Comments Shine:</strong> Your insight is spot-on - comments are often short enough to read completely in the snippet. This is huge value without any extra clicks.
+                            <br><br>
+                            <strong>3. Still Fast:</strong> 8-10 items visible is plenty for rapid scanning. You're not losing that much vs 12-15.
+                            <br><br>
+                            <strong>4. Room to Optimize:</strong> After launch, if users want more density, you can:
+                            <br>• Add view toggle (1-line vs 2-line)
+                            <br>• Make row height user-configurable
+                            <br>• Collapse older items to 1-line (keep recent items 2-line)
+                            <br><br>
+                            <strong>5. Hover Tooltips Still Useful:</strong> For items where the snippet isn't enough, hover shows the full preview with matched keywords.
+                            <br><br>
+                            <strong>The key insight:</strong> It's easier to remove context (if users want more density) than to add it (if users feel blind). Start with more context, tune based on real usage.
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 24px; padding: 16px; background: #1F2937; border-radius: 8px; border: 1px solid #5e6b24;">
+                        <div style="font-size: 14px; font-weight: 600; color: #9DAA5F; margin-bottom: 12px;">Implementation Notes</div>
+                        <div style="font-size: 13px; color: #D1D5DB; line-height: 1.6;">
+                            <strong>Snippet Generation:</strong>
+                            <ul style="margin-left: 20px; margin-top: 8px;">
+                                <li><strong>Issues/MRs:</strong> First 80-100 characters of description (strip markdown formatting)</li>
+                                <li><strong>Comments:</strong> Full comment text up to ~150 characters (style as italic/quoted)</li>
+                                <li><strong>Truncation:</strong> Use ellipsis (...) when content exceeds limit</li>
+                                <li><strong>Performance:</strong> Snippets generated during API polling, stored with event data</li>
+                            </ul>
+                            <br>
+                            <strong>Hover Enhancement:</strong> Still include hover tooltips for full preview with matched keywords highlighted. Two-line rows + hover = maximum context flexibility.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

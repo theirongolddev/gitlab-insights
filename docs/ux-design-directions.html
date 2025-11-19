@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitLab Insights - Design Direction Showcase</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+            background: #111827;
+            color: #FDFFFC;
+            line-height: 1.5;
+        }
+
+        .showcase-container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .showcase-header {
+            background: #1F2937;
+            padding: 24px 32px;
+            border-bottom: 1px solid #374151;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .showcase-header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .showcase-header p {
+            font-size: 14px;
+            color: #9CA3AF;
+        }
+
+        .controls {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            background: #374151;
+            color: #FDFFFC;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .control-btn:hover {
+            background: #4B5563;
+        }
+
+        .control-btn.active {
+            background: #5e6b24;
+            color: white;
+        }
+
+        .direction-viewport {
+            padding: 32px;
+            min-height: calc(100vh - 200px);
+        }
+
+        .direction-card {
+            background: #1F2937;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 48px;
+            border: 1px solid #374151;
+        }
+
+        .direction-header {
+            background: #111827;
+            padding: 24px 32px;
+            border-bottom: 1px solid #374151;
+        }
+
+        .direction-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .direction-meta {
+            display: flex;
+            gap: 24px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .meta-item {
+            font-size: 13px;
+            color: #9CA3AF;
+        }
+
+        .meta-label {
+            font-weight: 500;
+            color: #D1D5DB;
+        }
+
+        .direction-mockup {
+            padding: 24px;
+            background: #111827;
+        }
+
+        /* Common mockup styles */
+        .mockup {
+            background: #2d2e2e;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #374151;
+        }
+
+        .mockup-header {
+            background: #1F2937;
+            padding: 16px 24px;
+            border-bottom: 1px solid #374151;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mode-toggle {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .mode-btn {
+            padding: 6px 12px;
+            background: transparent;
+            border: 1px solid #4B5563;
+            color: #D1D5DB;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            background: #5e6b24;
+            border-color: #5e6b24;
+            color: white;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .sync-indicator {
+            font-size: 12px;
+            color: #9CA3AF;
+        }
+
+        .refresh-btn {
+            padding: 6px 12px;
+            background: #374151;
+            border: none;
+            color: #D1D5DB;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background: #5e6b24;
+            color: white;
+        }
+
+        .mockup-body {
+            padding: 24px;
+        }
+
+        .section-header {
+            font-size: 14px;
+            font-weight: 600;
+            color: #E5E7EB;
+            margin-bottom: 12px;
+            padding-left: 8px;
+        }
+
+        /* Direction 1: Dense Table (HN-inspired) */
+        .dense-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .dense-table tr {
+            height: 32px;
+            border-bottom: 1px solid #374151;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .dense-table tr:hover {
+            background: #1F2937;
+        }
+
+        .dense-table td {
+            padding: 0 8px;
+            font-size: 13px;
+        }
+
+        .item-icon {
+            width: 16px;
+            text-align: center;
+        }
+
+        .item-title {
+            color: #E5E7EB;
+            font-weight: 400;
+        }
+
+        .item-meta {
+            color: #9CA3AF;
+            font-size: 12px;
+        }
+
+        .new-badge {
+            background: #5e6b24;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        /* Direction 2: Card Grid */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 16px;
+        }
+
+        .info-card {
+            background: #1F2937;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .info-card:hover {
+            background: #374151;
+            border-color: #5e6b24;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 8px;
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #E5E7EB;
+        }
+
+        .card-meta {
+            font-size: 12px;
+            color: #9CA3AF;
+            margin-top: 8px;
+        }
+
+        /* Direction 3: Grouped Lists */
+        .grouped-section {
+            background: #1F2937;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .group-header {
+            background: #374151;
+            padding: 12px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #E5E7EB;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .group-count {
+            color: #9CA3AF;
+            font-weight: 400;
+        }
+
+        .group-items {
+            padding: 8px;
+        }
+
+        .list-item {
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-bottom: 4px;
+        }
+
+        .list-item:hover {
+            background: #374151;
+        }
+
+        /* Direction 4: Sidebar Navigation */
+        .sidebar-layout {
+            display: flex;
+            height: 600px;
+        }
+
+        .sidebar {
+            width: 240px;
+            background: #1F2937;
+            border-right: 1px solid #374151;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .sidebar-item {
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #D1D5DB;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar-item:hover {
+            background: #374151;
+        }
+
+        .sidebar-item.active {
+            background: #5e6b24;
+            color: white;
+        }
+
+        .item-count {
+            background: #374151;
+            color: #9CA3AF;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+        }
+
+        .sidebar-item.active .item-count {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        /* Direction 5: Feed Reader */
+        .feed-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .feed-item {
+            background: #1F2937;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .feed-item:hover {
+            border-color: #5e6b24;
+        }
+
+        .feed-title {
+            font-size: 15px;
+            font-weight: 500;
+            color: #E5E7EB;
+            margin-bottom: 8px;
+        }
+
+        .feed-snippet {
+            font-size: 13px;
+            color: #9CA3AF;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .feed-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: #6B7280;
+        }
+
+        /* Direction 6: Split View */
+        .split-layout {
+            display: flex;
+            height: 600px;
+            gap: 16px;
+        }
+
+        .list-pane {
+            width: 400px;
+            background: #1F2937;
+            border-radius: 8px;
+            overflow-y: auto;
+            border: 1px solid #374151;
+        }
+
+        .detail-pane {
+            flex: 1;
+            background: #1F2937;
+            border-radius: 8px;
+            padding: 24px;
+            border: 1px solid #374151;
+            overflow-y: auto;
+        }
+
+        .split-list-item {
+            padding: 16px;
+            border-bottom: 1px solid #374151;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .split-list-item:hover {
+            background: #374151;
+        }
+
+        .split-list-item.active {
+            background: #374151;
+            border-left: 3px solid #5e6b24;
+        }
+
+        /* Direction 7: Kanban Columns */
+        .kanban-layout {
+            display: flex;
+            gap: 16px;
+            overflow-x: auto;
+            padding-bottom: 16px;
+        }
+
+        .kanban-column {
+            min-width: 300px;
+            background: #1F2937;
+            border-radius: 8px;
+            border: 1px solid #374151;
+        }
+
+        .column-header {
+            padding: 16px;
+            border-bottom: 1px solid #374151;
+            font-weight: 600;
+            color: #E5E7EB;
+            font-size: 14px;
+        }
+
+        .column-items {
+            padding: 12px;
+        }
+
+        .kanban-card {
+            background: #374151;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .kanban-card:hover {
+            background: #4B5563;
+            transform: translateY(-2px);
+        }
+
+        /* Direction 8: Timeline View */
+        .timeline-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .timeline-day {
+            margin-bottom: 32px;
+        }
+
+        .day-header {
+            font-size: 14px;
+            font-weight: 600;
+            color: #E5E7EB;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #374151;
+        }
+
+        .timeline-item {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .timeline-time {
+            width: 60px;
+            font-size: 12px;
+            color: #6B7280;
+            text-align: right;
+            padding-top: 4px;
+        }
+
+        .timeline-content {
+            flex: 1;
+            background: #1F2937;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .timeline-content:hover {
+            border-color: #5e6b24;
+        }
+
+        .keyboard-hint {
+            margin-top: 24px;
+            padding: 16px;
+            background: #1F2937;
+            border: 1px solid #374151;
+            border-radius: 8px;
+        }
+
+        .keyboard-hint h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #E5E7EB;
+            margin-bottom: 12px;
+        }
+
+        .keyboard-shortcuts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .shortcut {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-size: 12px;
+        }
+
+        .key {
+            background: #374151;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: "SF Mono", Monaco, monospace;
+            color: #D1D5DB;
+        }
+
+        .shortcut-desc {
+            color: #9CA3AF;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .badge-issue {
+            background: rgba(139, 92, 246, 0.2);
+            color: #A78BFA;
+        }
+
+        .badge-mr {
+            background: rgba(14, 165, 233, 0.2);
+            color: #38BDF8;
+        }
+
+        .badge-comment {
+            background: rgba(100, 116, 139, 0.2);
+            color: #94A3B8;
+        }
+
+        .thumbnail-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-top: 24px;
+            padding: 16px;
+            background: #1F2937;
+            border-radius: 8px;
+        }
+
+        .thumbnail {
+            aspect-ratio: 16/9;
+            background: #374151;
+            border: 2px solid #4B5563;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #9CA3AF;
+            transition: all 0.2s;
+        }
+
+        .thumbnail:hover {
+            border-color: #5e6b24;
+            background: #4B5563;
+        }
+
+        .thumbnail.active {
+            border-color: #5e6b24;
+            background: #5e6b24;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="showcase-container">
+        <div class="showcase-header">
+            <h1>GitLab Insights - Design Direction Showcase</h1>
+            <p>8 different design approaches exploring layout, density, and interaction patterns</p>
+
+            <div class="controls">
+                <button class="control-btn active" onclick="scrollToDirection(1)">Direction 1</button>
+                <button class="control-btn" onclick="scrollToDirection(2)">Direction 2</button>
+                <button class="control-btn" onclick="scrollToDirection(3)">Direction 3</button>
+                <button class="control-btn" onclick="scrollToDirection(4)">Direction 4</button>
+                <button class="control-btn" onclick="scrollToDirection(5)">Direction 5</button>
+                <button class="control-btn" onclick="scrollToDirection(6)">Direction 6</button>
+                <button class="control-btn" onclick="scrollToDirection(7)">Direction 7</button>
+                <button class="control-btn" onclick="scrollToDirection(8)">Direction 8</button>
+            </div>
+
+            <div class="thumbnail-grid">
+                <div class="thumbnail active" onclick="scrollToDirection(1)">Dense Table</div>
+                <div class="thumbnail" onclick="scrollToDirection(2)">Card Grid</div>
+                <div class="thumbnail" onclick="scrollToDirection(3)">Grouped Lists</div>
+                <div class="thumbnail" onclick="scrollToDirection(4)">Sidebar Nav</div>
+                <div class="thumbnail" onclick="scrollToDirection(5)">Feed Reader</div>
+                <div class="thumbnail" onclick="scrollToDirection(6)">Split View</div>
+                <div class="thumbnail" onclick="scrollToDirection(7)">Kanban</div>
+                <div class="thumbnail" onclick="scrollToDirection(8)">Timeline</div>
+            </div>
+        </div>
+
+        <div class="direction-viewport">
+            <!-- Direction 1: Dense Table (HN-inspired) -->
+            <div class="direction-card" id="direction-1">
+                <div class="direction-header">
+                    <h2>Direction 1: Dense Table (Hacker News Inspired)</h2>
+                    <p>Maximum information density with one-line items optimized for rapid scanning</p>
+                    <div class="direction-meta">
+                        <div class="meta-item"><span class="meta-label">Personality:</span> Efficient & No-Nonsense</div>
+                        <div class="meta-item"><span class="meta-label">Density:</span> Very High (15+ items visible)</div>
+                        <div class="meta-item"><span class="meta-label">Best For:</span> Power users who scan 100+ items daily</div>
+                        <div class="meta-item"><span class="meta-label">Navigation:</span> Keyboard-primary (j/k)</div>
+                    </div>
+                </div>
+                <div class="direction-mockup">
+                    <div class="mockup">
+                        <div class="mockup-header">
+                            <div class="mode-toggle">
+                                <button class="mode-btn">Dashboard</button>
+                                <button class="mode-btn active">Catch-Up Mode <span class="new-badge">12</span></button>
+                            </div>
+                            <div class="header-actions">
+                                <span class="sync-indicator">Last sync: 2m ago</span>
+                                <button class="refresh-btn">↻ Refresh</button>
+                            </div>
+                        </div>
+                        <div class="mockup-body">
+                            <div class="section-header">Issues (5 new)</div>
+                            <table class="dense-table">
+                                <tr>
+                                    <td class="item-icon">●</td>
+                                    <td class="item-title">Add support for custom webhook endpoints</td>
+                                    <td class="item-meta">@sarah · api-gateway · security · 3h</td>
+                                    <td><span class="new-badge">NEW</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="item-icon">●</td>
+                                    <td class="item-title">Performance regression in search indexing after v2.3</td>
+                                    <td class="item-meta">@mike · search-service · bug · 5h</td>
+                                    <td><span class="new-badge">NEW</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="item-icon">●</td>
+                                    <td class="item-title">Migrate authentication to OAuth 2.1</td>
+                                    <td class="item-meta">@alex · auth · enhancement · 7h</td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td class="item-icon">●</td>
+                                    <td class="item-title">Database connection pool exhaustion during peak load</td>
+                                    <td class="item-meta">@jordan · infrastructure · critical · 9h</td>
+                                    <td><span class="new-badge">NEW</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="item-icon">●</td>
+                                    <td class="item-title">Add TypeScript definitions for public API</td>
+                                    <td class="item-meta">@taylor · api-client · dx · 12h</td>
+                                    <td></td>
+                                </tr>
+                            </table>
+
+                            <div class="section-header" style="margin-top: 24px;">Merge Requests (4 new)</div>
+                            <table class="dense-table">
+                                <tr>
+                                    <td class="item-icon">◐</td>
+                                    <td class="item-title">Implement rate limiting for API endpoints</td>
+                                    <td class="item-meta">@chris · security · +234 -67 · 1h</td>
+                                    <td><span class="new-badge">NEW</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="item-icon">◐</td>
+                                    <td class="item-title">Refactor user service to use repository pattern</td>
+                                    <td class="item-meta">@sam · backend · +445 -312 · 4h</td>
+                                    <td><span class="new-badge">NEW</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="item-icon">◐</td>
+                                    <td class="item-title">Add dark mode support to dashboard</td>
+                                    <td class="item-meta">@riley · frontend · +156 -23 · 6h</td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td class="item-icon">◐</td>
+                                    <td class="item-title">Update dependencies to fix security vulnerabilities</td>
+                                    <td class="item-meta">@dependabot · security · +8 -8 · 10h</td>
+                                    <td><span class="new-badge">NEW</span></td>
+                                </tr>
+                            </table>
+
+                            <div class="section-header" style="margin-top: 24px;">Comments (3 new)</div>
+                            <table class="dense-table">
+                                <tr>
+                                    <td class="item-icon">💬</td>
+                                    <td class="item-title">Re: Add support for custom webhook endpoints</td>
+                                    <td class="item-meta">@alex · "We should also consider rate limiting..." · 2h</td>
+                                    <td><span class="new-badge">NEW</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="item-icon">💬</td>
+                                    <td class="item-title">Re: Performance regression in search indexing</td>
+                                    <td class="item-meta">@sarah · "I can reproduce this consistently on..." · 3h</td>
+                                    <td><span class="new-badge">NEW</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="item-icon">💬</td>
+                                    <td class="item-title">Re: Implement rate limiting for API endpoints</td>
+                                    <td class="item-meta">@jordan · "Looks good, but we need tests for..." · 5h</td>
+                                    <td></td>
+                                </tr>
+                            </table>
+
+                            <div class="keyboard-hint">
+                                <h3>Keyboard Navigation</h3>
+                                <div class="keyboard-shortcuts">
+                                    <div class="shortcut"><span class="key">j/k</span> <span class="shortcut-desc">Navigate items</span></div>
+                                    <div class="shortcut"><span class="key">o</span> <span class="shortcut-desc">Open in GitLab</span></div>
+                                    <div class="shortcut"><span class="key">e</span> <span class="shortcut-desc">Expand details</span></div>
+                                    <div class="shortcut"><span class="key">m</span> <span class="shortcut-desc">Mark as reviewed</span></div>
+                                    <div class="shortcut"><span class="key">/</span> <span class="shortcut-desc">Search/Filter</span></div>
+                                    <div class="shortcut"><span class="key">r</span> <span class="shortcut-desc">Refresh</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Direction 2: Card Grid -->
+            <div class="direction-card" id="direction-2">
+                <div class="direction-header">
+                    <h2>Direction 2: Card Grid</h2>
+                    <p>Spacious cards with rich previews for visual scanning</p>
+                    <div class="direction-meta">
+                        <div class="meta-item"><span class="meta-label">Personality:</span> Friendly & Approachable</div>
+                        <div class="meta-item"><span class="meta-label">Density:</span> Low (6-8 items visible)</div>
+                        <div class="meta-item"><span class="meta-label">Best For:</span> Users who prefer visual context over speed</div>
+                        <div class="meta-item"><span class="meta-label">Navigation:</span> Mouse-optimized with keyboard support</div>
+                    </div>
+                </div>
+                <div class="direction-mockup">
+                    <div class="mockup">
+                        <div class="mockup-header">
+                            <div class="mode-toggle">
+                                <button class="mode-btn">Dashboard</button>
+                                <button class="mode-btn active">Catch-Up Mode <span class="new-badge">12</span></button>
+                            </div>
+                            <div class="header-actions">
+                                <span class="sync-indicator">Last sync: 2m ago</span>
+                                <button class="refresh-btn">↻ Refresh</button>
+                            </div>
+                        </div>
+                        <div class="mockup-body">
+                            <div class="section-header">Issues</div>
+                            <div class="card-grid">
+                                <div class="info-card">
+                                    <div class="card-header">
+                                        <div>
+                                            <span class="badge badge-issue">Issue</span>
+                                            <span class="new-badge" style="margin-left: 8px;">NEW</span>
+                                        </div>
+                                    </div>
+                                    <div class="card-title">Add support for custom webhook endpoints</div>
+                                    <div class="card-meta">@sarah · api-gateway · security · 3 hours ago</div>
+                                    <div style="margin-top: 8px; font-size: 12px; color: #9CA3AF;">Need to allow users to configure custom webhook URLs for event notifications...</div>
+                                </div>
+                                <div class="info-card">
+                                    <div class="card-header">
+                                        <div>
+                                            <span class="badge badge-issue">Issue</span>
+                                            <span class="new-badge" style="margin-left: 8px;">NEW</span>
+                                        </div>
+                                    </div>
+                                    <div class="card-title">Performance regression in search indexing</div>
+                                    <div class="card-meta">@mike · search-service · bug · 5 hours ago</div>
+                                    <div style="margin-top: 8px; font-size: 12px; color: #9CA3AF;">After deploying v2.3, search indexing is taking 3x longer than before...</div>
+                                </div>
+                                <div class="info-card">
+                                    <div class="card-header">
+                                        <div><span class="badge badge-mr">MR</span></div>
+                                    </div>
+                                    <div class="card-title">Implement rate limiting for API endpoints</div>
+                                    <div class="card-meta">@chris · security · +234 -67 · 1 hour ago</div>
+                                    <div style="margin-top: 8px; font-size: 12px; color: #9CA3AF;">Adds Redis-based rate limiting to prevent API abuse...</div>
+                                </div>
+                                <div class="info-card">
+                                    <div class="card-header">
+                                        <div><span class="badge badge-comment">Comment</span></div>
+                                    </div>
+                                    <div class="card-title">Re: Add support for custom webhook endpoints</div>
+                                    <div class="card-meta">@alex · 2 hours ago</div>
+                                    <div style="margin-top: 8px; font-size: 12px; color: #9CA3AF;">"We should also consider rate limiting for webhooks to prevent abuse..."</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Direction 3: Grouped Lists -->
+            <div class="direction-card" id="direction-3">
+                <div class="direction-header">
+                    <h2>Direction 3: Grouped Lists</h2>
+                    <p>Query-based sections with collapsible groups for organized scanning</p>
+                    <div class="direction-meta">
+                        <div class="meta-item"><span class="meta-label">Personality:</span> Organized & Structured</div>
+                        <div class="meta-item"><span class="meta-label">Density:</span> Medium-High (10-12 items visible)</div>
+                        <div class="meta-item"><span class="meta-label">Best For:</span> Users managing multiple saved queries</div>
+                        <div class="meta-item"><span class="meta-label">Navigation:</span> Balanced mouse/keyboard</div>
+                    </div>
+                </div>
+                <div class="direction-mockup">
+                    <div class="mockup">
+                        <div class="mockup-header">
+                            <div class="mode-toggle">
+                                <button class="mode-btn">Dashboard</button>
+                                <button class="mode-btn active">Catch-Up Mode <span class="new-badge">12</span></button>
+                            </div>
+                            <div class="header-actions">
+                                <span class="sync-indicator">Last sync: 2m ago</span>
+                                <button class="refresh-btn">↻ Refresh</button>
+                            </div>
+                        </div>
+                        <div class="mockup-body">
+                            <div class="grouped-section">
+                                <div class="group-header">
+                                    <span>Security-related Items</span>
+                                    <span class="group-count">3 new</span>
+                                </div>
+                                <div class="group-items">
+                                    <div class="list-item">
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <div>
+                                                <span class="badge badge-issue">Issue</span>
+                                                <span style="margin-left: 12px; color: #E5E7EB; font-size: 14px;">Add support for custom webhook endpoints</span>
+                                                <span class="new-badge" style="margin-left: 8px;">NEW</span>
+                                            </div>
+                                            <span style="font-size: 12px; color: #6B7280;">3h</span>
+                                        </div>
+                                        <div style="margin-top: 4px; font-size: 12px; color: #9CA3AF; margin-left: 56px;">@sarah · api-gateway · security</div>
+                                    </div>
+                                    <div class="list-item">
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <div>
+                                                <span class="badge badge-mr">MR</span>
+                                                <span style="margin-left: 12px; color: #E5E7EB; font-size: 14px;">Implement rate limiting for API endpoints</span>
+                                                <span class="new-badge" style="margin-left: 8px;">NEW</span>
+                                            </div>
+                                            <span style="font-size: 12px; color: #6B7280;">1h</span>
+                                        </div>
+                                        <div style="margin-top: 4px; font-size: 12px; color: #9CA3AF; margin-left: 56px;">@chris · security · +234 -67</div>
+                                    </div>
+                                    <div class="list-item">
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <div>
+                                                <span class="badge badge-mr">MR</span>
+                                                <span style="margin-left: 12px; color: #E5E7EB; font-size: 14px;">Update dependencies to fix security vulnerabilities</span>
+                                                <span class="new-badge" style="margin-left: 8px;">NEW</span>
+                                            </div>
+                                            <span style="font-size: 12px; color: #6B7280;">10h</span>
+                                        </div>
+                                        <div style="margin-top: 4px; font-size: 12px; color: #9CA3AF; margin-left: 56px;">@dependabot · security · +8 -8</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grouped-section">
+                                <div class="group-header">
+                                    <span>Performance Issues</span>
+                                    <span class="group-count">2 new</span>
+                                </div>
+                                <div class="group-items">
+                                    <div class="list-item">
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <div>
+                                                <span class="badge badge-issue">Issue</span>
+                                                <span style="margin-left: 12px; color: #E5E7EB; font-size: 14px;">Performance regression in search indexing after v2.3</span>
+                                                <span class="new-badge" style="margin-left: 8px;">NEW</span>
+                                            </div>
+                                            <span style="font-size: 12px; color: #6B7280;">5h</span>
+                                        </div>
+                                        <div style="margin-top: 4px; font-size: 12px; color: #9CA3AF; margin-left: 56px;">@mike · search-service · bug</div>
+                                    </div>
+                                    <div class="list-item">
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <div>
+                                                <span class="badge badge-issue">Issue</span>
+                                                <span style="margin-left: 12px; color: #E5E7EB; font-size: 14px;">Database connection pool exhaustion during peak load</span>
+                                                <span class="new-badge" style="margin-left: 8px;">NEW</span>
+                                            </div>
+                                            <span style="font-size: 12px; color: #6B7280;">9h</span>
+                                        </div>
+                                        <div style="margin-top: 4px; font-size: 12px; color: #9CA3AF; margin-left: 56px;">@jordan · infrastructure · critical</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grouped-section">
+                                <div class="group-header">
+                                    <span>Backend Refactoring</span>
+                                    <span class="group-count">1 new</span>
+                                </div>
+                                <div class="group-items">
+                                    <div class="list-item">
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <div>
+                                                <span class="badge badge-mr">MR</span>
+                                                <span style="margin-left: 12px; color: #E5E7EB; font-size: 14px;">Refactor user service to use repository pattern</span>
+                                            </div>
+                                            <span style="font-size: 12px; color: #6B7280;">4h</span>
+                                        </div>
+                                        <div style="margin-top: 4px; font-size: 12px; color: #9CA3AF; margin-left: 56px;">@sam · backend · +445 -312</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Direction 4: Sidebar Navigation -->
+            <div class="direction-card" id="direction-4">
+                <div class="direction-header">
+                    <h2>Direction 4: Sidebar Navigation</h2>
+                    <p>Persistent sidebar with query navigation and main content area</p>
+                    <div class="direction-meta">
+                        <div class="meta-item"><span class="meta-label">Personality:</span> Professional & Familiar</div>
+                        <div class="meta-item"><span class="meta-label">Density:</span> Medium (8-10 items visible)</div>
+                        <div class="meta-item"><span class="meta-label">Best For:</span> Users familiar with traditional app layouts</div>
+                        <div class="meta-item"><span class="meta-label">Navigation:</span> Click-primary with keyboard shortcuts</div>
+                    </div>
+                </div>
+                <div class="direction-mockup">
+                    <div class="mockup">
+                        <div class="mockup-header">
+                            <div class="mode-toggle">
+                                <button class="mode-btn">Dashboard</button>
+                                <button class="mode-btn active">Catch-Up Mode <span class="new-badge">12</span></button>
+                            </div>
+                            <div class="header-actions">
+                                <span class="sync-indicator">Last sync: 2m ago</span>
+                                <button class="refresh-btn">↻ Refresh</button>
+                            </div>
+                        </div>
+                        <div class="sidebar-layout">
+                            <div class="sidebar">
+                                <div style="font-size: 11px; color: #6B7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; padding: 0 12px;">Saved Queries</div>
+                                <div class="sidebar-item active">
+                                    <span>Security Items</span>
+                                    <span class="item-count">3</span>
+                                </div>
+                                <div class="sidebar-item">
+                                    <span>Performance Issues</span>
+                                    <span class="item-count">2</span>
+                                </div>
+                                <div class="sidebar-item">
+                                    <span>Backend Refactoring</span>
+                                    <span class="item-count">1</span>
+                                </div>
+                                <div class="sidebar-item">
+                                    <span>Frontend Changes</span>
+                                    <span class="item-count">1</span>
+                                </div>
+                                <div style="border-top: 1px solid #374151; margin: 12px 0; padding-top: 12px;">
+                                    <div style="font-size: 11px; color: #6B7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; padding: 0 12px;">Event Types</div>
+                                    <div class="sidebar-item">
+                                        <span>Issues</span>
+                                        <span class="item-count">5</span>
+                                    </div>
+                                    <div class="sidebar-item">
+                                        <span>Merge Requests</span>
+                                        <span class="item-count">4</span>
+                                    </div>
+                                    <div class="sidebar-item">
+                                        <span>Comments</span>
+                                        <span class="item-count">3</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="main-content">
+                                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">Security Items (3)</h3>
+                                <table class="dense-table">
+                                    <tr>
+                                        <td class="item-icon">●</td>
+                                        <td class="item-title">Add support for custom webhook endpoints</td>
+                                        <td class="item-meta">@sarah · api-gateway · 3h</td>
+                                        <td><span class="new-badge">NEW</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="item-icon">◐</td>
+                                        <td class="item-title">Implement rate limiting for API endpoints</td>
+                                        <td class="item-meta">@chris · security · 1h</td>
+                                        <td><span class="new-badge">NEW</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="item-icon">◐</td>
+                                        <td class="item-title">Update dependencies to fix security vulnerabilities</td>
+                                        <td class="item-meta">@dependabot · security · 10h</td>
+                                        <td><span class="new-badge">NEW</span></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Direction 5: Feed Reader -->
+            <div class="direction-card" id="direction-5">
+                <div class="direction-header">
+                    <h2>Direction 5: Feed Reader (Feedly-inspired)</h2>
+                    <p>Centered feed with rich previews optimized for reading flow</p>
+                    <div class="direction-meta">
+                        <div class="meta-item"><span class="meta-label">Personality:</span> Clean & Focused</div>
+                        <div class="meta-item"><span class="meta-label">Density:</span> Medium (8-10 items visible)</div>
+                        <div class="meta-item"><span class="meta-label">Best For:</span> Users who read deeply, not just scan</div>
+                        <div class="meta-item"><span class="meta-label">Navigation:</span> Scroll-optimized with keyboard support</div>
+                    </div>
+                </div>
+                <div class="direction-mockup">
+                    <div class="mockup">
+                        <div class="mockup-header">
+                            <div class="mode-toggle">
+                                <button class="mode-btn">Dashboard</button>
+                                <button class="mode-btn active">Catch-Up Mode <span class="new-badge">12</span></button>
+                            </div>
+                            <div class="header-actions">
+                                <span class="sync-indicator">Last sync: 2m ago</span>
+                                <button class="refresh-btn">↻ Refresh</button>
+                            </div>
+                        </div>
+                        <div class="mockup-body">
+                            <div class="feed-container">
+                                <div class="feed-item">
+                                    <div class="feed-title">
+                                        <span class="badge badge-issue">Issue</span>
+                                        <span style="margin-left: 8px;">Add support for custom webhook endpoints</span>
+                                        <span class="new-badge" style="margin-left: 8px;">NEW</span>
+                                    </div>
+                                    <div class="feed-snippet">
+                                        Need to allow users to configure custom webhook URLs for event notifications. This would enable integration with external monitoring systems and custom alerting workflows. Should support HMAC signature verification for security.
+                                    </div>
+                                    <div class="feed-meta">
+                                        <span>@sarah</span>
+                                        <span>api-gateway</span>
+                                        <span>security</span>
+                                        <span>3 hours ago</span>
+                                    </div>
+                                </div>
+
+                                <div class="feed-item">
+                                    <div class="feed-title">
+                                        <span class="badge badge-issue">Issue</span>
+                                        <span style="margin-left: 8px;">Performance regression in search indexing after v2.3</span>
+                                        <span class="new-badge" style="margin-left: 8px;">NEW</span>
+                                    </div>
+                                    <div class="feed-snippet">
+                                        After deploying v2.3, search indexing is taking 3x longer than before. Elasticsearch CPU usage has spiked to 80%+ during index operations. Need to investigate what changed in the indexing pipeline.
+                                    </div>
+                                    <div class="feed-meta">
+                                        <span>@mike</span>
+                                        <span>search-service</span>
+                                        <span>bug</span>
+                                        <span>5 hours ago</span>
+                                    </div>
+                                </div>
+
+                                <div class="feed-item">
+                                    <div class="feed-title">
+                                        <span class="badge badge-mr">MR</span>
+                                        <span style="margin-left: 8px;">Implement rate limiting for API endpoints</span>
+                                        <span class="new-badge" style="margin-left: 8px;">NEW</span>
+                                    </div>
+                                    <div class="feed-snippet">
+                                        Adds Redis-based rate limiting to prevent API abuse. Implements sliding window algorithm with configurable limits per endpoint. Includes monitoring and alerting for rate limit violations.
+                                    </div>
+                                    <div class="feed-meta">
+                                        <span>@chris</span>
+                                        <span>security</span>
+                                        <span>+234 -67</span>
+                                        <span>1 hour ago</span>
+                                    </div>
+                                </div>
+
+                                <div class="feed-item">
+                                    <div class="feed-title">
+                                        <span class="badge badge-comment">Comment</span>
+                                        <span style="margin-left: 8px;">Re: Add support for custom webhook endpoints</span>
+                                    </div>
+                                    <div class="feed-snippet">
+                                        "We should also consider rate limiting for webhooks to prevent abuse. If someone configures a webhook that responds slowly, we don't want to DOS our own system."
+                                    </div>
+                                    <div class="feed-meta">
+                                        <span>@alex</span>
+                                        <span>on Issue #1234</span>
+                                        <span>2 hours ago</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Direction 6: Split View -->
+            <div class="direction-card" id="direction-6">
+                <div class="direction-header">
+                    <h2>Direction 6: Split View (Email-inspired)</h2>
+                    <p>List on left, detail preview on right - no navigation required</p>
+                    <div class="direction-meta">
+                        <div class="meta-item"><span class="meta-label">Personality:</span> Efficient & Familiar</div>
+                        <div class="meta-item"><span class="meta-label">Density:</span> High (12-15 items visible)</div>
+                        <div class="meta-item"><span class="meta-label">Best For:</span> Users who want instant preview without clicks</div>
+                        <div class="meta-item"><span class="meta-label">Navigation:</span> Keyboard-optimized (arrow keys)</div>
+                    </div>
+                </div>
+                <div class="direction-mockup">
+                    <div class="mockup">
+                        <div class="mockup-header">
+                            <div class="mode-toggle">
+                                <button class="mode-btn">Dashboard</button>
+                                <button class="mode-btn active">Catch-Up Mode <span class="new-badge">12</span></button>
+                            </div>
+                            <div class="header-actions">
+                                <span class="sync-indicator">Last sync: 2m ago</span>
+                                <button class="refresh-btn">↻ Refresh</button>
+                            </div>
+                        </div>
+                        <div class="split-layout">
+                            <div class="list-pane">
+                                <div class="split-list-item active">
+                                    <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
+                                        <span class="badge badge-issue">Issue</span>
+                                        <span class="new-badge">NEW</span>
+                                    </div>
+                                    <div style="font-size: 14px; color: #E5E7EB; margin-bottom: 4px;">Add support for custom webhook endpoints</div>
+                                    <div style="font-size: 12px; color: #6B7280;">@sarah · 3h ago</div>
+                                </div>
+                                <div class="split-list-item">
+                                    <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
+                                        <span class="badge badge-issue">Issue</span>
+                                        <span class="new-badge">NEW</span>
+                                    </div>
+                                    <div style="font-size: 14px; color: #E5E7EB; margin-bottom: 4px;">Performance regression in search indexing</div>
+                                    <div style="font-size: 12px; color: #6B7280;">@mike · 5h ago</div>
+                                </div>
+                                <div class="split-list-item">
+                                    <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
+                                        <span class="badge badge-mr">MR</span>
+                                        <span class="new-badge">NEW</span>
+                                    </div>
+                                    <div style="font-size: 14px; color: #E5E7EB; margin-bottom: 4px;">Implement rate limiting for API endpoints</div>
+                                    <div style="font-size: 12px; color: #6B7280;">@chris · 1h ago</div>
+                                </div>
+                                <div class="split-list-item">
+                                    <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
+                                        <span class="badge badge-comment">Comment</span>
+                                    </div>
+                                    <div style="font-size: 14px; color: #E5E7EB; margin-bottom: 4px;">Re: Custom webhook endpoints</div>
+                                    <div style="font-size: 12px; color: #6B7280;">@alex · 2h ago</div>
+                                </div>
+                                <div class="split-list-item">
+                                    <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
+                                        <span class="badge badge-issue">Issue</span>
+                                        <span class="new-badge">NEW</span>
+                                    </div>
+                                    <div style="font-size: 14px; color: #E5E7EB; margin-bottom: 4px;">Database connection pool exhaustion</div>
+                                    <div style="font-size: 12px; color: #6B7280;">@jordan · 9h ago</div>
+                                </div>
+                            </div>
+                            <div class="detail-pane">
+                                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px;">
+                                    <span class="badge badge-issue">Issue</span>
+                                    <span class="new-badge">NEW</span>
+                                </div>
+                                <h2 style="font-size: 18px; font-weight: 600; color: #FDFFFC; margin-bottom: 16px;">Add support for custom webhook endpoints</h2>
+                                <div style="display: flex; gap: 16px; margin-bottom: 24px; font-size: 13px; color: #9CA3AF;">
+                                    <span>@sarah</span>
+                                    <span>api-gateway</span>
+                                    <span>security</span>
+                                    <span>3 hours ago</span>
+                                </div>
+                                <div style="font-size: 14px; color: #D1D5DB; line-height: 1.6; margin-bottom: 24px;">
+                                    <p style="margin-bottom: 12px;">Need to allow users to configure custom webhook URLs for event notifications. This would enable integration with external monitoring systems and custom alerting workflows.</p>
+                                    <p style="margin-bottom: 12px;">Requirements:</p>
+                                    <ul style="margin-left: 20px; margin-bottom: 12px;">
+                                        <li>Support for multiple webhook URLs per user</li>
+                                        <li>HMAC signature verification for security</li>
+                                        <li>Configurable event types to subscribe to</li>
+                                        <li>Retry logic with exponential backoff</li>
+                                    </ul>
+                                    <p>This is a high-priority feature requested by several enterprise customers.</p>
+                                </div>
+                                <div style="background: #374151; border-radius: 6px; padding: 16px;">
+                                    <div style="font-size: 12px; font-weight: 600; color: #9CA3AF; margin-bottom: 8px;">MATCHED QUERY</div>
+                                    <div style="font-size: 13px; color: #E5E7EB;">Security Items: label:security OR project:api-gateway</div>
+                                </div>
+                                <div style="margin-top: 16px;">
+                                    <button style="background: #5e6b24; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; margin-right: 8px;">Open in GitLab →</button>
+                                    <button style="background: #374151; color: #D1D5DB; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px;">Mark as Reviewed</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Direction 7: Kanban Columns -->
+            <div class="direction-card" id="direction-7">
+                <div class="direction-header">
+                    <h2>Direction 7: Kanban Columns</h2>
+                    <p>Vertical columns for visual organization by category</p>
+                    <div class="direction-meta">
+                        <div class="meta-item"><span class="meta-label">Personality:</span> Visual & Organized</div>
+                        <div class="meta-item"><span class="meta-label">Density:</span> Medium-Low (6-8 items per column)</div>
+                        <div class="meta-item"><span class="meta-label">Best For:</span> Users who think visually and spatially</div>
+                        <div class="meta-item"><span class="meta-label">Navigation:</span> Mouse-primary with drag support</div>
+                    </div>
+                </div>
+                <div class="direction-mockup">
+                    <div class="mockup">
+                        <div class="mockup-header">
+                            <div class="mode-toggle">
+                                <button class="mode-btn">Dashboard</button>
+                                <button class="mode-btn active">Catch-Up Mode <span class="new-badge">12</span></button>
+                            </div>
+                            <div class="header-actions">
+                                <span class="sync-indicator">Last sync: 2m ago</span>
+                                <button class="refresh-btn">↻ Refresh</button>
+                            </div>
+                        </div>
+                        <div class="mockup-body">
+                            <div class="kanban-layout">
+                                <div class="kanban-column">
+                                    <div class="column-header">Issues (5) <span class="new-badge" style="margin-left: 8px;">2</span></div>
+                                    <div class="column-items">
+                                        <div class="kanban-card">
+                                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                                                <span style="font-size: 14px; font-weight: 500; color: #E5E7EB;">Custom webhook endpoints</span>
+                                                <span class="new-badge">NEW</span>
+                                            </div>
+                                            <div style="font-size: 12px; color: #9CA3AF; margin-bottom: 8px;">@sarah · api-gateway</div>
+                                            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                                                <span style="background: #5e6b24; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">security</span>
+                                            </div>
+                                        </div>
+                                        <div class="kanban-card">
+                                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                                                <span style="font-size: 14px; font-weight: 500; color: #E5E7EB;">Search indexing regression</span>
+                                                <span class="new-badge">NEW</span>
+                                            </div>
+                                            <div style="font-size: 12px; color: #9CA3AF; margin-bottom: 8px;">@mike · search-service</div>
+                                            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                                                <span style="background: #DC2626; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">bug</span>
+                                            </div>
+                                        </div>
+                                        <div class="kanban-card">
+                                            <div style="font-size: 14px; font-weight: 500; color: #E5E7EB; margin-bottom: 8px;">Migrate to OAuth 2.1</div>
+                                            <div style="font-size: 12px; color: #9CA3AF; margin-bottom: 8px;">@alex · auth</div>
+                                            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                                                <span style="background: #4B5563; color: #D1D5DB; padding: 2px 8px; border-radius: 4px; font-size: 11px;">enhancement</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="kanban-column">
+                                    <div class="column-header">Merge Requests (4) <span class="new-badge" style="margin-left: 8px;">3</span></div>
+                                    <div class="column-items">
+                                        <div class="kanban-card">
+                                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                                                <span style="font-size: 14px; font-weight: 500; color: #E5E7EB;">API rate limiting</span>
+                                                <span class="new-badge">NEW</span>
+                                            </div>
+                                            <div style="font-size: 12px; color: #9CA3AF; margin-bottom: 8px;">@chris · +234 -67</div>
+                                            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                                                <span style="background: #5e6b24; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">security</span>
+                                            </div>
+                                        </div>
+                                        <div class="kanban-card">
+                                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                                                <span style="font-size: 14px; font-weight: 500; color: #E5E7EB;">Repository pattern refactor</span>
+                                                <span class="new-badge">NEW</span>
+                                            </div>
+                                            <div style="font-size: 12px; color: #9CA3AF; margin-bottom: 8px;">@sam · +445 -312</div>
+                                            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                                                <span style="background: #4B5563; color: #D1D5DB; padding: 2px 8px; border-radius: 4px; font-size: 11px;">backend</span>
+                                            </div>
+                                        </div>
+                                        <div class="kanban-card">
+                                            <div style="font-size: 14px; font-weight: 500; color: #E5E7EB; margin-bottom: 8px;">Dark mode support</div>
+                                            <div style="font-size: 12px; color: #9CA3AF; margin-bottom: 8px;">@riley · +156 -23</div>
+                                            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                                                <span style="background: #4B5563; color: #D1D5DB; padding: 2px 8px; border-radius: 4px; font-size: 11px;">frontend</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="kanban-column">
+                                    <div class="column-header">Comments (3) <span class="new-badge" style="margin-left: 8px;">2</span></div>
+                                    <div class="column-items">
+                                        <div class="kanban-card">
+                                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                                                <span style="font-size: 14px; font-weight: 500; color: #E5E7EB;">Re: Webhook endpoints</span>
+                                                <span class="new-badge">NEW</span>
+                                            </div>
+                                            <div style="font-size: 12px; color: #9CA3AF; margin-bottom: 8px;">@alex · 2h ago</div>
+                                            <div style="font-size: 12px; color: #6B7280;">"We should also consider rate limiting..."</div>
+                                        </div>
+                                        <div class="kanban-card">
+                                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                                                <span style="font-size: 14px; font-weight: 500; color: #E5E7EB;">Re: Search regression</span>
+                                                <span class="new-badge">NEW</span>
+                                            </div>
+                                            <div style="font-size: 12px; color: #9CA3AF; margin-bottom: 8px;">@sarah · 3h ago</div>
+                                            <div style="font-size: 12px; color: #6B7280;">"I can reproduce this consistently..."</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Direction 8: Timeline View -->
+            <div class="direction-card" id="direction-8">
+                <div class="direction-header">
+                    <h2>Direction 8: Timeline View</h2>
+                    <p>Chronological timeline with time-based grouping for temporal context</p>
+                    <div class="direction-meta">
+                        <div class="meta-item"><span class="meta-label">Personality:</span> Temporal & Contextual</div>
+                        <div class="meta-item"><span class="meta-label">Density:</span> Medium (8-10 items visible)</div>
+                        <div class="meta-item"><span class="meta-label">Best For:</span> Users who think chronologically about updates</div>
+                        <div class="meta-item"><span class="meta-label">Navigation:</span> Scroll-optimized</div>
+                    </div>
+                </div>
+                <div class="direction-mockup">
+                    <div class="mockup">
+                        <div class="mockup-header">
+                            <div class="mode-toggle">
+                                <button class="mode-btn">Dashboard</button>
+                                <button class="mode-btn active">Catch-Up Mode <span class="new-badge">12</span></button>
+                            </div>
+                            <div class="header-actions">
+                                <span class="sync-indicator">Last sync: 2m ago</span>
+                                <button class="refresh-btn">↻ Refresh</button>
+                            </div>
+                        </div>
+                        <div class="mockup-body">
+                            <div class="timeline-container">
+                                <div class="timeline-day">
+                                    <div class="day-header">Today</div>
+                                    <div class="timeline-item">
+                                        <div class="timeline-time">1h ago</div>
+                                        <div class="timeline-content">
+                                            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+                                                <span class="badge badge-mr">MR</span>
+                                                <span class="new-badge">NEW</span>
+                                            </div>
+                                            <div style="font-size: 15px; font-weight: 500; color: #E5E7EB; margin-bottom: 8px;">Implement rate limiting for API endpoints</div>
+                                            <div style="font-size: 13px; color: #9CA3AF; margin-bottom: 12px;">Adds Redis-based rate limiting to prevent API abuse. Implements sliding window algorithm with configurable limits.</div>
+                                            <div style="font-size: 12px; color: #6B7280;">@chris · security · +234 -67</div>
+                                        </div>
+                                    </div>
+                                    <div class="timeline-item">
+                                        <div class="timeline-time">2h ago</div>
+                                        <div class="timeline-content">
+                                            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+                                                <span class="badge badge-comment">Comment</span>
+                                            </div>
+                                            <div style="font-size: 15px; font-weight: 500; color: #E5E7EB; margin-bottom: 8px;">Re: Add support for custom webhook endpoints</div>
+                                            <div style="font-size: 13px; color: #9CA3AF; margin-bottom: 12px;">"We should also consider rate limiting for webhooks to prevent abuse..."</div>
+                                            <div style="font-size: 12px; color: #6B7280;">@alex on Issue #1234</div>
+                                        </div>
+                                    </div>
+                                    <div class="timeline-item">
+                                        <div class="timeline-time">3h ago</div>
+                                        <div class="timeline-content">
+                                            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+                                                <span class="badge badge-issue">Issue</span>
+                                                <span class="new-badge">NEW</span>
+                                            </div>
+                                            <div style="font-size: 15px; font-weight: 500; color: #E5E7EB; margin-bottom: 8px;">Add support for custom webhook endpoints</div>
+                                            <div style="font-size: 13px; color: #9CA3AF; margin-bottom: 12px;">Need to allow users to configure custom webhook URLs for event notifications...</div>
+                                            <div style="font-size: 12px; color: #6B7280;">@sarah · api-gateway · security</div>
+                                        </div>
+                                    </div>
+                                    <div class="timeline-item">
+                                        <div class="timeline-time">4h ago</div>
+                                        <div class="timeline-content">
+                                            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+                                                <span class="badge badge-mr">MR</span>
+                                                <span class="new-badge">NEW</span>
+                                            </div>
+                                            <div style="font-size: 15px; font-weight: 500; color: #E5E7EB; margin-bottom: 8px;">Refactor user service to use repository pattern</div>
+                                            <div style="font-size: 13px; color: #9CA3AF; margin-bottom: 12px;">Improves testability and separates data access logic from business logic...</div>
+                                            <div style="font-size: 12px; color: #6B7280;">@sam · backend · +445 -312</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="timeline-day">
+                                    <div class="day-header">Earlier Today</div>
+                                    <div class="timeline-item">
+                                        <div class="timeline-time">5h ago</div>
+                                        <div class="timeline-content">
+                                            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+                                                <span class="badge badge-issue">Issue</span>
+                                                <span class="new-badge">NEW</span>
+                                            </div>
+                                            <div style="font-size: 15px; font-weight: 500; color: #E5E7EB; margin-bottom: 8px;">Performance regression in search indexing after v2.3</div>
+                                            <div style="font-size: 13px; color: #9CA3AF; margin-bottom: 12px;">Search indexing is taking 3x longer. Elasticsearch CPU usage has spiked...</div>
+                                            <div style="font-size: 12px; color: #6B7280;">@mike · search-service · bug</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function scrollToDirection(num) {
+            const element = document.getElementById(`direction-${num}`);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                // Update active button
+                document.querySelectorAll('.control-btn').forEach((btn, idx) => {
+                    btn.classList.toggle('active', idx === num - 1);
+                });
+
+                // Update active thumbnail
+                document.querySelectorAll('.thumbnail').forEach((thumb, idx) => {
+                    thumb.classList.toggle('active', idx === num - 1);
+                });
+            }
+        }
+
+        // Update active button based on scroll position
+        let ticking = false;
+        document.addEventListener('scroll', () => {
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    const directions = document.querySelectorAll('[id^="direction-"]');
+                    let currentDirection = 1;
+
+                    directions.forEach((dir, idx) => {
+                        const rect = dir.getBoundingClientRect();
+                        if (rect.top <= 200 && rect.bottom >= 200) {
+                            currentDirection = idx + 1;
+                        }
+                    });
+
+                    document.querySelectorAll('.control-btn').forEach((btn, idx) => {
+                        btn.classList.toggle('active', idx === currentDirection - 1);
+                    });
+
+                    document.querySelectorAll('.thumbnail').forEach((thumb, idx) => {
+                        thumb.classList.toggle('active', idx === currentDirection - 1);
+                    });
+
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        });
+    </script>
+</body>
+</html>

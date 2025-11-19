@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitLab Insights - Tooltip & Preview Designs</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+            background: #111827;
+            color: #FDFFFC;
+            line-height: 1.5;
+            padding: 32px;
+        }
+
+        .showcase-header {
+            max-width: 1400px;
+            margin: 0 auto 32px;
+            background: #1F2937;
+            padding: 24px 32px;
+            border-radius: 12px;
+            border: 1px solid #374151;
+        }
+
+        .showcase-header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .showcase-header p {
+            font-size: 14px;
+            color: #9CA3AF;
+        }
+
+        .design-section {
+            max-width: 1400px;
+            margin: 0 auto 48px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #E5E7EB;
+            margin-bottom: 8px;
+        }
+
+        .section-subtitle {
+            font-size: 14px;
+            color: #9CA3AF;
+            margin-bottom: 24px;
+        }
+
+        .mockup-container {
+            background: #1F2937;
+            border-radius: 12px;
+            border: 1px solid #374151;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        .mockup-header {
+            background: #111827;
+            padding: 16px 24px;
+            border-bottom: 1px solid #374151;
+        }
+
+        .mockup-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #E5E7EB;
+            margin-bottom: 4px;
+        }
+
+        .mockup-description {
+            font-size: 13px;
+            color: #9CA3AF;
+        }
+
+        .mockup-body {
+            padding: 24px;
+            background: #2d2e2e;
+            position: relative;
+        }
+
+        /* Common Table Styles */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table tr {
+            height: 52px;
+            border-bottom: 1px solid #374151;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .data-table tr.hovered {
+            background: #1F2937;
+            box-shadow: 0 0 0 2px #5e6b24;
+        }
+
+        .data-table tr.dimmed {
+            opacity: 0.4;
+        }
+
+        .data-table td {
+            padding: 8px;
+            vertical-align: top;
+        }
+
+        .item-icon {
+            width: 20px;
+            text-align: center;
+            font-size: 12px;
+            padding-top: 4px;
+        }
+
+        .item-content {
+            flex: 1;
+        }
+
+        .item-title-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .item-title {
+            color: #E5E7EB;
+            font-weight: 400;
+            font-size: 13px;
+        }
+
+        .item-snippet {
+            color: #9CA3AF;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .item-meta {
+            color: #9CA3AF;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .item-time {
+            color: #6B7280;
+            font-size: 12px;
+            text-align: right;
+            width: 80px;
+            padding-top: 4px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .badge-issue {
+            background: rgba(139, 92, 246, 0.2);
+            color: #A78BFA;
+        }
+
+        .badge-mr {
+            background: rgba(14, 165, 233, 0.2);
+            color: #38BDF8;
+        }
+
+        .badge-comment {
+            background: rgba(100, 116, 139, 0.2);
+            color: #94A3B8;
+        }
+
+        .new-badge {
+            background: #5e6b24;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        /* Tooltip Styles - Design 1: Compact Floating */
+        .tooltip-compact {
+            position: absolute;
+            background: #1F2937;
+            border: 2px solid #5e6b24;
+            border-radius: 8px;
+            padding: 16px;
+            width: 380px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+            z-index: 100;
+        }
+
+        .tooltip-compact .tooltip-header {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #374151;
+        }
+
+        .tooltip-compact .tooltip-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: #E5E7EB;
+            flex: 1;
+        }
+
+        .tooltip-compact .tooltip-preview {
+            font-size: 13px;
+            color: #D1D5DB;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .tooltip-compact .tooltip-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 11px;
+            color: #9CA3AF;
+        }
+
+        /* Tooltip Styles - Design 2: Rich Context */
+        .tooltip-rich {
+            position: absolute;
+            background: #1F2937;
+            border: 2px solid #5e6b24;
+            border-radius: 8px;
+            padding: 20px;
+            width: 480px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+            z-index: 100;
+        }
+
+        .tooltip-rich .tooltip-type {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .tooltip-rich .tooltip-title {
+            font-size: 15px;
+            font-weight: 500;
+            color: #E5E7EB;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .tooltip-rich .tooltip-preview {
+            font-size: 13px;
+            color: #D1D5DB;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .tooltip-rich .highlight {
+            background: rgba(157, 170, 95, 0.25);
+            color: #9DAA5F;
+            padding: 1px 3px;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+
+        .tooltip-rich .tooltip-meta-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            padding: 12px;
+            background: #374151;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+
+        .tooltip-rich .meta-item {
+            font-size: 11px;
+        }
+
+        .tooltip-rich .meta-label {
+            color: #9CA3AF;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 2px;
+        }
+
+        .tooltip-rich .meta-value {
+            color: #E5E7EB;
+            font-weight: 500;
+        }
+
+        .tooltip-rich .tooltip-matched {
+            background: rgba(157, 170, 95, 0.1);
+            border: 1px solid #5e6b24;
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        .tooltip-rich .matched-label {
+            font-size: 10px;
+            color: #9CA3AF;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+
+        .tooltip-rich .matched-query {
+            font-size: 12px;
+            color: #9DAA5F;
+            font-family: "SF Mono", Monaco, monospace;
+        }
+
+        /* Tooltip Styles - Design 3: Card Style */
+        .tooltip-card {
+            position: absolute;
+            background: linear-gradient(135deg, #1F2937 0%, #111827 100%);
+            border: 2px solid #5e6b24;
+            border-radius: 12px;
+            padding: 0;
+            width: 420px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+            z-index: 100;
+            overflow: hidden;
+        }
+
+        .tooltip-card .card-header {
+            background: rgba(94, 107, 36, 0.2);
+            padding: 16px 20px;
+            border-bottom: 1px solid #5e6b24;
+        }
+
+        .tooltip-card .card-type {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .tooltip-card .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #E5E7EB;
+            line-height: 1.4;
+        }
+
+        .tooltip-card .card-body {
+            padding: 16px 20px;
+        }
+
+        .tooltip-card .card-preview {
+            font-size: 13px;
+            color: #D1D5DB;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .tooltip-card .card-footer {
+            padding: 12px 20px;
+            background: #111827;
+            border-top: 1px solid #374151;
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #9CA3AF;
+        }
+
+        /* Split Pane Styles - Design 4: Email Style */
+        .split-pane {
+            display: flex;
+            height: 600px;
+            background: #2d2e2e;
+        }
+
+        .split-list {
+            width: 480px;
+            border-right: 1px solid #374151;
+            overflow-y: auto;
+        }
+
+        .split-list .list-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid #374151;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .split-list .list-item.selected {
+            background: #1F2937;
+            border-left: 3px solid #5e6b24;
+        }
+
+        .split-list .list-item.dimmed {
+            opacity: 0.4;
+        }
+
+        .split-list .list-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: #E5E7EB;
+            margin-bottom: 4px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .split-list .list-snippet {
+            font-size: 12px;
+            color: #9CA3AF;
+            margin-bottom: 6px;
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .split-list .list-meta {
+            font-size: 11px;
+            color: #6B7280;
+        }
+
+        .split-detail {
+            flex: 1;
+            padding: 32px;
+            overflow-y: auto;
+            background: #1F2937;
+        }
+
+        .split-detail .detail-header {
+            margin-bottom: 24px;
+        }
+
+        .split-detail .detail-type {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .split-detail .detail-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #E5E7EB;
+            line-height: 1.4;
+            margin-bottom: 16px;
+        }
+
+        .split-detail .detail-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+            color: #9CA3AF;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #374151;
+        }
+
+        .split-detail .detail-content {
+            font-size: 14px;
+            color: #D1D5DB;
+            line-height: 1.7;
+            margin-top: 24px;
+            margin-bottom: 24px;
+        }
+
+        .split-detail .detail-matched {
+            background: rgba(157, 170, 95, 0.1);
+            border: 1px solid #5e6b24;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .split-detail .detail-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .detail-actions .btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .detail-actions .btn-primary {
+            background: #5e6b24;
+            color: white;
+        }
+
+        .detail-actions .btn-secondary {
+            background: #374151;
+            color: #D1D5DB;
+        }
+
+        /* Split Pane Styles - Design 5: Master-Detail (Wider Preview) */
+        .split-pane-wide {
+            display: flex;
+            height: 600px;
+            background: #2d2e2e;
+        }
+
+        .split-pane-wide .split-list {
+            width: 380px;
+        }
+
+        /* Inline Expansion - Design 6 */
+        .inline-expansion {
+            background: #1F2937;
+            border-left: 3px solid #5e6b24;
+            padding: 16px 24px;
+            margin: 0 0 1px 0;
+        }
+
+        .inline-expansion .expansion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 16px;
+        }
+
+        .inline-expansion .expansion-title {
+            font-size: 15px;
+            font-weight: 500;
+            color: #E5E7EB;
+            line-height: 1.4;
+        }
+
+        .inline-expansion .expansion-close {
+            color: #9CA3AF;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .inline-expansion .expansion-content {
+            font-size: 13px;
+            color: #D1D5DB;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .inline-expansion .expansion-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: #9CA3AF;
+            padding-top: 16px;
+            border-top: 1px solid #374151;
+        }
+
+        .inline-expansion .expansion-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .highlight {
+            background: rgba(157, 170, 95, 0.25);
+            color: #9DAA5F;
+            padding: 1px 3px;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+
+        .pros-cons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 16px;
+            padding: 16px;
+            background: #111827;
+            border-radius: 8px;
+        }
+
+        .pros-cons h4 {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #E5E7EB;
+        }
+
+        .pros-cons ul {
+            margin-left: 20px;
+            font-size: 12px;
+            line-height: 1.8;
+        }
+
+        .pros-cons .pro {
+            color: #22C55E;
+        }
+
+        .pros-cons .con {
+            color: #F59E0B;
+        }
+    </style>
+</head>
+<body>
+    <div class="showcase-header">
+        <h1>Tooltip & Preview Design Proposals</h1>
+        <p>Static mockups showing different approaches for displaying item details - captured at the moment of hover/selection</p>
+    </div>
+
+    <!-- Design 1: Compact Floating Tooltip -->
+    <div class="design-section">
+        <div class="section-title">Design 1: Compact Floating Tooltip</div>
+        <div class="section-subtitle">Minimal tooltip with essential preview - appears on hover, doesn't interfere with scanning</div>
+
+        <div class="mockup-container">
+            <div class="mockup-header">
+                <div class="mockup-title">Compact Tooltip (380px wide)</div>
+                <div class="mockup-description">Small, focused tooltip showing just the preview text and basic metadata</div>
+            </div>
+            <div class="mockup-body">
+                <table class="data-table">
+                    <tr class="hovered">
+                        <td class="item-icon">●</td>
+                        <td class="item-content">
+                            <div class="item-title-row">
+                                <span class="badge badge-issue">Issue</span>
+                                <span class="item-title">Add support for custom webhook endpoints</span>
+                                <span class="new-badge">NEW</span>
+                            </div>
+                            <div class="item-snippet">Need to allow users to configure custom webhook URLs for event notifications...</div>
+                        </td>
+                        <td class="item-meta">@sarah<br>api-gateway<br>security</td>
+                        <td class="item-time">3h ago</td>
+                    </tr>
+                    <tr class="dimmed">
+                        <td class="item-icon">◐</td>
+                        <td class="item-content">
+                            <div class="item-title-row">
+                                <span class="badge badge-mr">MR</span>
+                                <span class="item-title">Implement rate limiting for API endpoints</span>
+                                <span class="new-badge">NEW</span>
+                            </div>
+                            <div class="item-snippet">Adds Redis-based rate limiting to prevent API abuse...</div>
+                        </td>
+                        <td class="item-meta">@chris<br>security<br>+234 -67</td>
+                        <td class="item-time">1h ago</td>
+                    </tr>
+                    <tr class="dimmed">
+                        <td class="item-icon">💬</td>
+                        <td class="item-content">
+                            <div class="item-title-row">
+                                <span class="badge badge-comment">Comment</span>
+                                <span class="item-title">Re: Add support for custom webhook endpoints</span>
+                            </div>
+                            <div class="item-snippet">"We should also consider rate limiting for webhooks..."</div>
+                        </td>
+                        <td class="item-meta">@alex<br>Issue #1234</td>
+                        <td class="item-time">2h ago</td>
+                    </tr>
+                </table>
+
+                <!-- Tooltip positioned near hovered row -->
+                <div class="tooltip-compact" style="top: 80px; left: 400px;">
+                    <div class="tooltip-header">
+                        <span class="badge badge-issue">Issue</span>
+                        <span class="new-badge">NEW</span>
+                    </div>
+                    <div class="tooltip-title">Add support for custom webhook endpoints</div>
+                    <div class="tooltip-preview">
+                        Need to allow users to configure custom webhook URLs for event notifications. This would enable integration with external monitoring systems and custom alerting workflows. Should support HMAC signature verification for security.
+                    </div>
+                    <div class="tooltip-meta">
+                        <span>@sarah</span>
+                        <span>api-gateway</span>
+                        <span>security</span>
+                        <span>3h ago</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pros-cons">
+                <div>
+                    <h4>Pros</h4>
+                    <ul>
+                        <li class="pro">✓ Minimal visual disruption</li>
+                        <li class="pro">✓ Fast to scan and dismiss</li>
+                        <li class="pro">✓ Doesn't obscure other rows</li>
+                        <li class="pro">✓ Clear preview of content</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Cons</h4>
+                    <ul>
+                        <li class="con">⚠ Limited space for context</li>
+                        <li class="con">⚠ No matched keywords shown</li>
+                        <li class="con">⚠ Can't show full comment threads</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Design 2: Rich Context Tooltip -->
+    <div class="design-section">
+        <div class="section-title">Design 2: Rich Context Tooltip</div>
+        <div class="section-subtitle">Comprehensive tooltip with matched keywords highlighted and query information</div>
+
+        <div class="mockup-container">
+            <div class="mockup-header">
+                <div class="mockup-title">Rich Context Tooltip (480px wide)</div>
+                <div class="mockup-description">Larger tooltip showing preview, metadata grid, and which query matched</div>
+            </div>
+            <div class="mockup-body">
+                <table class="data-table">
+                    <tr class="dimmed">
+                        <td class="item-icon">●</td>
+                        <td class="item-content">
+                            <div class="item-title-row">
+                                <span class="badge badge-issue">Issue</span>
+                                <span class="item-title">Add support for custom webhook endpoints</span>
+                                <span class="new-badge">NEW</span>
+                            </div>
+                            <div class="item-snippet">Need to allow users to configure custom webhook URLs for event notifications...</div>
+                        </td>
+                        <td class="item-meta">@sarah<br>api-gateway<br>security</td>
+                        <td class="item-time">3h ago</td>
+                    </tr>
+                    <tr class="hovered">
+                        <td class="item-icon">💬</td>
+                        <td class="item-content">
+                            <div class="item-title-row">
+                                <span class="badge badge-comment">Comment</span>
+                                <span class="item-title">Re: Add support for custom webhook endpoints</span>
+                            </div>
+                            <div class="item-snippet">"We should also consider rate limiting for webhooks..."</div>
+                        </td>
+                        <td class="item-meta">@alex<br>Issue #1234</td>
+                        <td class="item-time">2h ago</td>
+                    </tr>
+                    <tr class="dimmed">
+                        <td class="item-icon">◐</td>
+                        <td class="item-content">
+                            <div class="item-title-row">
+                                <span class="badge badge-mr">MR</span>
+                                <span class="item-title">Implement rate limiting for API endpoints</span>
+                                <span class="new-badge">NEW</span>
+                            </div>
+                            <div class="item-snippet">Adds Redis-based rate limiting to prevent API abuse...</div>
+                        </td>
+                        <td class="item-meta">@chris<br>security<br>+234 -67</td>
+                        <td class="item-time">1h ago</td>
+                    </tr>
+                </table>
+
+                <!-- Rich tooltip positioned near hovered row -->
+                <div class="tooltip-rich" style="top: 140px; left: 350px;">
+                    <div class="tooltip-type">
+                        <span class="badge badge-comment">Comment</span>
+                        <span style="font-size: 11px; color: #9CA3AF;">on Issue #1234</span>
+                    </div>
+                    <div class="tooltip-title">Re: Add support for custom webhook endpoints</div>
+                    <div class="tooltip-preview">
+                        "We should also consider <span class="highlight">rate limiting</span> for <span class="highlight">webhooks</span> to prevent abuse. If someone configures a webhook that responds slowly, we don't want to DOS our own system. Maybe implement a per-user limit on concurrent webhook requests?"
+                    </div>
+                    <div class="tooltip-meta-grid">
+                        <div class="meta-item">
+                            <div class="meta-label">Author</div>
+                            <div class="meta-value">@alex</div>
+                        </div>
+                        <div class="meta-item">
+                            <div class="meta-label">Posted</div>
+                            <div class="meta-value">2 hours ago</div>
+                        </div>
+                        <div class="meta-item">
+                            <div class="meta-label">Thread</div>
+                            <div class="meta-value">Issue #1234</div>
+                        </div>
+                        <div class="meta-item">
+                            <div class="meta-label">Project</div>
+                            <div class="meta-value">api-gateway</div>
+                        </div>
+                    </div>
+                    <div class="tooltip-matched">
+                        <div class="matched-label">Matched Query</div>
+                        <div class="matched-query">Security Items: label:security OR project:api-gateway</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pros-cons">
+                <div>
+                    <h4>Pros</h4>
+                    <ul>
+                        <li class="pro">✓ Shows matched keywords (transparency)</li>
+                        <li class="pro">✓ Full comment text visible</li>
+                        <li class="pro">✓ Clear which query matched</li>
+                        <li class="pro">✓ Organized metadata grid</li>
+                        <li class="pro">✓ Best for understanding relevance</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Cons</h4>
+                    <ul>
+                        <li class="con">⚠ Larger, may obscure content</li>
+                        <li class="con">⚠ More visual weight</li>
+                        <li class="con">⚠ Slower to parse (more info)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Design 3: Card Style Tooltip -->
+    <div class="design-section">
+        <div class="section-title">Design 3: Card Style Tooltip</div>
+        <div class="section-subtitle">Polished card design with gradient and visual hierarchy</div>
+
+        <div class="mockup-container">
+            <div class="mockup-header">
+                <div class="mockup-title">Card Style Tooltip (420px wide)</div>
+                <div class="mockup-description">Premium feel with gradient background, distinct header/body/footer sections</div>
+            </div>
+            <div class="mockup-body">
+                <table class="data-table">
+                    <tr class="dimmed">
+                        <td class="item-icon">💬</td>
+                        <td class="item-content">
+                            <div class="item-title-row">
+                                <span class="badge badge-comment">Comment</span>
+                                <span class="item-title">Re: Add support for custom webhook endpoints</span>
+                            </div>
+                            <div class="item-snippet">"We should also consider rate limiting for webhooks..."</div>
+                        </td>
+                        <td class="item-meta">@alex<br>Issue #1234</td>
+                        <td class="item-time">2h ago</td>
+                    </tr>
+                    <tr class="hovered">
+                        <td class="item-icon">◐</td>
+                        <td class="item-content">
+                            <div class="item-title-row">
+                                <span class="badge badge-mr">MR</span>
+                                <span class="item-title">Implement rate limiting for API endpoints</span>
+                                <span class="new-badge">NEW</span>
+                            </div>
+                            <div class="item-snippet">Adds Redis-based rate limiting to prevent API abuse...</div>
+                        </td>
+                        <td class="item-meta">@chris<br>security<br>+234 -67</td>
+                        <td class="item-time">1h ago</td>
+                    </tr>
+                    <tr class="dimmed">
+                        <td class="item-icon">●</td>
+                        <td class="item-content">
+                            <div class="item-title-row">
+                                <span class="badge badge-issue">Issue</span>
+                                <span class="item-title">Review JWT token expiration strategy</span>
+                            </div>
+                            <div class="item-snippet">Current tokens expire after 24 hours, but we have no refresh mechanism...</div>
+                        </td>
+                        <td class="item-meta">@alex<br>auth<br>security</td>
+                        <td class="item-time">12h ago</td>
+                    </tr>
+                </table>
+
+                <!-- Card tooltip positioned near hovered row -->
+                <div class="tooltip-card" style="top: 130px; left: 370px;">
+                    <div class="card-header">
+                        <div class="card-type">
+                            <span class="badge badge-mr">Merge Request</span>
+                            <span class="new-badge">NEW</span>
+                            <span style="font-size: 11px; color: #9CA3AF; margin-left: auto;">!456</span>
+                        </div>
+                        <div class="card-title">Implement rate limiting for API endpoints</div>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-preview">
+                            Adds Redis-based rate limiting to prevent API abuse. Implements sliding window algorithm with configurable limits per endpoint. Includes monitoring and alerting for rate limit violations. This addresses security concerns raised in issue #1234.
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <span>@chris · security</span>
+                        <span>+234 -67 · 3 comments</span>
+                        <span>1 hour ago</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pros-cons">
+                <div>
+                    <h4>Pros</h4>
+                    <ul>
+                        <li class="pro">✓ Polished, premium appearance</li>
+                        <li class="pro">✓ Clear visual hierarchy</li>
+                        <li class="pro">✓ Distinct sections easy to scan</li>
+                        <li class="pro">✓ Good balance of info/space</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Cons</h4>
+                    <ul>
+                        <li class="con">⚠ More decorative than functional</li>
+                        <li class="con">⚠ Gradient may be distracting</li>
+                        <li class="con">⚠ No matched keywords shown</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Design 4: Email-Style Split Pane -->
+    <div class="design-section">
+        <div class="section-title">Design 4: Email-Style Split Pane</div>
+        <div class="section-subtitle">List on left, full preview on right - always visible, no hover needed (your preferred approach)</div>
+
+        <div class="mockup-container">
+            <div class="mockup-header">
+                <div class="mockup-title">Split Pane: List (480px) + Detail Preview</div>
+                <div class="mockup-description">Selected row shows full preview in right pane - click or keyboard to change selection</div>
+            </div>
+            <div class="split-pane">
+                <div class="split-list">
+                    <div class="list-item dimmed">
+                        <div class="list-title">
+                            <span class="badge badge-issue">Issue</span>
+                            <span>Add support for custom webhook endpoints</span>
+                            <span class="new-badge">NEW</span>
+                        </div>
+                        <div class="list-snippet">Need to allow users to configure custom webhook URLs for event notifications...</div>
+                        <div class="list-meta">@sarah · api-gateway · security · 3h ago</div>
+                    </div>
+
+                    <div class="list-item selected">
+                        <div class="list-title">
+                            <span class="badge badge-mr">MR</span>
+                            <span>Implement rate limiting for API endpoints</span>
+                            <span class="new-badge">NEW</span>
+                        </div>
+                        <div class="list-snippet">Adds Redis-based rate limiting to prevent API abuse. Implements sliding window algorithm...</div>
+                        <div class="list-meta">@chris · security · +234 -67 · 1h ago</div>
+                    </div>
+
+                    <div class="list-item dimmed">
+                        <div class="list-title">
+                            <span class="badge badge-comment">Comment</span>
+                            <span>Re: Add support for custom webhook endpoints</span>
+                        </div>
+                        <div class="list-snippet">"We should also consider rate limiting for webhooks to prevent abuse..."</div>
+                        <div class="list-meta">@alex · Issue #1234 · 2h ago</div>
+                    </div>
+
+                    <div class="list-item dimmed">
+                        <div class="list-title">
+                            <span class="badge badge-issue">Issue</span>
+                            <span>Review JWT token expiration strategy</span>
+                        </div>
+                        <div class="list-snippet">Current tokens expire after 24 hours, but we have no refresh mechanism...</div>
+                        <div class="list-meta">@alex · auth · security · 12h ago</div>
+                    </div>
+
+                    <div class="list-item dimmed">
+                        <div class="list-title">
+                            <span class="badge badge-mr">MR</span>
+                            <span>Add CORS configuration for new API domains</span>
+                        </div>
+                        <div class="list-snippet">Configures CORS headers to allow requests from new staging and production domains...</div>
+                        <div class="list-meta">@jordan · api-gateway · +45 -12 · 14h ago</div>
+                    </div>
+                </div>
+
+                <div class="split-detail">
+                    <div class="detail-header">
+                        <div class="detail-type">
+                            <span class="badge badge-mr">Merge Request !456</span>
+                            <span class="new-badge">NEW</span>
+                        </div>
+                        <div class="detail-title">Implement rate limiting for API endpoints</div>
+                        <div class="detail-meta">
+                            <span>@chris</span>
+                            <span>security</span>
+                            <span>+234 -67</span>
+                            <span>3 comments</span>
+                            <span>1 hour ago</span>
+                        </div>
+                    </div>
+
+                    <div class="detail-matched">
+                        <div style="font-size: 11px; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">Matched Query</div>
+                        <div style="font-size: 13px; color: #9DAA5F; font-family: 'SF Mono', Monaco, monospace;">Security Items: label:<span class="highlight">security</span> OR project:api-gateway</div>
+                    </div>
+
+                    <div class="detail-content">
+                        <p style="margin-bottom: 16px;">Adds Redis-based rate limiting to prevent API abuse. Implements sliding window algorithm with configurable limits per endpoint. Includes monitoring and alerting for rate limit violations.</p>
+
+                        <p style="margin-bottom: 16px;">This addresses security concerns raised in issue #1234 and provides a foundation for future webhook rate limiting mentioned by @alex.</p>
+
+                        <p style="margin-bottom: 16px;"><strong>Implementation details:</strong></p>
+                        <ul style="margin-left: 20px; margin-bottom: 16px; line-height: 1.8;">
+                            <li>Redis sliding window with 100 req/min default limit</li>
+                            <li>Per-endpoint configuration via YAML</li>
+                            <li>Prometheus metrics for monitoring</li>
+                            <li>429 responses with Retry-After header</li>
+                        </ul>
+
+                        <p>Ready for review. All tests passing.</p>
+                    </div>
+
+                    <div class="detail-actions">
+                        <button class="btn btn-primary">Open in GitLab →</button>
+                        <button class="btn btn-secondary">Mark as Reviewed</button>
+                        <button class="btn btn-secondary">Next (j/k)</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pros-cons">
+                <div>
+                    <h4>Pros</h4>
+                    <ul>
+                        <li class="pro">✓ Full context always visible</li>
+                        <li class="pro">✓ No hover delays or timing issues</li>
+                        <li class="pro">✓ Can read full descriptions/comments</li>
+                        <li class="pro">✓ Familiar email-style pattern</li>
+                        <li class="pro">✓ Easy keyboard navigation (j/k)</li>
+                        <li class="pro">✓ Shows matched query clearly</li>
+                        <li class="pro">✓ Action buttons readily available</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Cons</h4>
+                    <ul>
+                        <li class="con">⚠ Reduces list width (fewer items visible?)</li>
+                        <li class="con">⚠ Always takes screen space (can't dismiss)</li>
+                        <li class="con">⚠ Not ideal for rapid scanning (forces selection)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Design 5: Wide Master-Detail Split -->
+    <div class="design-section">
+        <div class="section-title">Design 5: Narrow List + Wide Detail</div>
+        <div class="section-subtitle">Optimized for reading full content - narrower list, wider preview pane</div>
+
+        <div class="mockup-container">
+            <div class="mockup-header">
+                <div class="mockup-title">Split Pane: Narrow List (380px) + Wide Detail</div>
+                <div class="mockup-description">Better for deep reading of long descriptions, comments threads</div>
+            </div>
+            <div class="split-pane-wide">
+                <div class="split-list">
+                    <div class="list-item dimmed">
+                        <div class="list-title">
+                            <span class="badge badge-issue">Issue</span>
+                            <span>Webhook endpoints</span>
+                            <span class="new-badge">NEW</span>
+                        </div>
+                        <div class="list-snippet">Need to allow custom webhook URLs...</div>
+                        <div class="list-meta">@sarah · 3h ago</div>
+                    </div>
+
+                    <div class="list-item dimmed">
+                        <div class="list-title">
+                            <span class="badge badge-mr">MR</span>
+                            <span>API rate limiting</span>
+                            <span class="new-badge">NEW</span>
+                        </div>
+                        <div class="list-snippet">Redis-based rate limiting...</div>
+                        <div class="list-meta">@chris · 1h ago</div>
+                    </div>
+
+                    <div class="list-item selected">
+                        <div class="list-title">
+                            <span class="badge badge-comment">Comment</span>
+                            <span>Re: Webhook endpoints</span>
+                        </div>
+                        <div class="list-snippet">Consider rate limiting...</div>
+                        <div class="list-meta">@alex · 2h ago</div>
+                    </div>
+
+                    <div class="list-item dimmed">
+                        <div class="list-title">
+                            <span class="badge badge-issue">Issue</span>
+                            <span>JWT token strategy</span>
+                        </div>
+                        <div class="list-snippet">Tokens expire after 24h...</div>
+                        <div class="list-meta">@alex · 12h ago</div>
+                    </div>
+
+                    <div class="list-item dimmed">
+                        <div class="list-title">
+                            <span class="badge badge-mr">MR</span>
+                            <span>CORS configuration</span>
+                        </div>
+                        <div class="list-snippet">New domain support...</div>
+                        <div class="list-meta">@jordan · 14h ago</div>
+                    </div>
+                </div>
+
+                <div class="split-detail">
+                    <div class="detail-header">
+                        <div class="detail-type">
+                            <span class="badge badge-comment">Comment</span>
+                            <span style="font-size: 12px; color: #9CA3AF; margin-left: 8px;">on Issue #1234</span>
+                        </div>
+                        <div class="detail-title">Re: Add support for custom webhook endpoints</div>
+                        <div class="detail-meta">
+                            <span>@alex</span>
+                            <span>Issue #1234</span>
+                            <span>api-gateway</span>
+                            <span>2 hours ago</span>
+                        </div>
+                    </div>
+
+                    <div class="detail-matched">
+                        <div style="font-size: 11px; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">Matched Query</div>
+                        <div style="font-size: 13px; color: #9DAA5F; font-family: 'SF Mono', Monaco, monospace;">Security Items: label:<span class="highlight">security</span> OR project:<span class="highlight">api-gateway</span></div>
+                    </div>
+
+                    <div class="detail-content">
+                        <p style="margin-bottom: 16px; font-style: italic; padding-left: 16px; border-left: 3px solid #5e6b24;">
+                            "We should also consider <span class="highlight">rate limiting</span> for <span class="highlight">webhooks</span> to prevent abuse. If someone configures a webhook that responds slowly, we don't want to DOS our own system. Maybe implement a per-user limit on concurrent webhook requests?"
+                        </p>
+
+                        <p style="margin-bottom: 16px; color: #9CA3AF; font-size: 13px;">This comment raises an important security consideration for the webhook feature proposed in the parent issue. The concern about webhook response times affecting system resources is valid and should be addressed in the initial implementation.</p>
+
+                        <p style="margin-bottom: 16px;"><strong>Context from thread:</strong></p>
+                        <ul style="margin-left: 20px; margin-bottom: 16px; line-height: 1.8; color: #D1D5DB;">
+                            <li>Parent issue proposes custom webhook endpoints for notifications</li>
+                            <li>This comment suggests adding rate limiting to protect the system</li>
+                            <li>Related to MR !456 which implements general API rate limiting</li>
+                            <li>Could reuse Redis sliding window implementation from that MR</li>
+                        </ul>
+                    </div>
+
+                    <div class="detail-actions">
+                        <button class="btn btn-primary">Open Thread in GitLab →</button>
+                        <button class="btn btn-secondary">Mark as Reviewed</button>
+                        <button class="btn btn-secondary">Next (j/k)</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pros-cons">
+                <div>
+                    <h4>Pros</h4>
+                    <ul>
+                        <li class="pro">✓ Maximum reading space for content</li>
+                        <li class="pro">✓ Great for comment threads</li>
+                        <li class="pro">✓ Can show full context and analysis</li>
+                        <li class="pro">✓ List still scannable (compressed titles)</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Cons</h4>
+                    <ul>
+                        <li class="con">⚠ List items very compressed</li>
+                        <li class="con">⚠ Harder to scan list quickly</li>
+                        <li class="con">⚠ Detail pane dominates screen</li>
+                        <li class="con">⚠ Not ideal for rapid triage</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Design 6: Inline Expansion -->
+    <div class="design-section">
+        <div class="section-title">Design 6: Inline Expansion</div>
+        <div class="section-subtitle">Expand row inline - keeps context of surrounding items, no separate pane</div>
+
+        <div class="mockup-container">
+            <div class="mockup-header">
+                <div class="mockup-title">Inline Expansion (Press 'e' to expand row)</div>
+                <div class="mockup-description">Selected row expands in place showing full content - press 'e' again or Esc to collapse</div>
+            </div>
+            <div class="mockup-body">
+                <table class="data-table">
+                    <tr>
+                        <td class="item-icon">●</td>
+                        <td class="item-content">
+                            <div class="item-title-row">
+                                <span class="badge badge-issue">Issue</span>
+                                <span class="item-title">Add support for custom webhook endpoints</span>
+                                <span class="new-badge">NEW</span>
+                            </div>
+                            <div class="item-snippet">Need to allow users to configure custom webhook URLs for event notifications...</div>
+                        </td>
+                        <td class="item-meta">@sarah<br>api-gateway<br>security</td>
+                        <td class="item-time">3h ago</td>
+                    </tr>
+                </table>
+
+                <!-- Inline expansion -->
+                <div class="inline-expansion">
+                    <div class="expansion-header">
+                        <div>
+                            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+                                <span class="badge badge-mr">Merge Request !456</span>
+                                <span class="new-badge">NEW</span>
+                            </div>
+                            <div class="expansion-title">Implement rate limiting for API endpoints</div>
+                        </div>
+                        <div class="expansion-close">✕</div>
+                    </div>
+                    <div class="expansion-content">
+                        Adds Redis-based rate limiting to prevent API abuse. Implements sliding window algorithm with configurable limits per endpoint. Includes monitoring and alerting for rate limit violations. This addresses security concerns raised in issue #1234 and provides a foundation for future webhook rate limiting.
+                        <br><br>
+                        <strong>Changes:</strong> +234 -67 lines across 8 files
+                        <br>
+                        <strong>Comments:</strong> 3 (latest from @jordan 5h ago)
+                    </div>
+                    <div style="background: rgba(157, 170, 95, 0.1); border: 1px solid #5e6b24; border-radius: 6px; padding: 12px; margin-bottom: 16px;">
+                        <div style="font-size: 11px; color: #9CA3AF; text-transform: uppercase; margin-bottom: 4px;">Matched Query</div>
+                        <div style="font-size: 12px; color: #9DAA5F; font-family: 'SF Mono', Monaco, monospace;">Security Items: label:<span class="highlight">security</span></div>
+                    </div>
+                    <div class="expansion-actions">
+                        <button class="btn btn-primary">Open in GitLab →</button>
+                        <button class="btn btn-secondary">Mark as Reviewed</button>
+                    </div>
+                </div>
+
+                <table class="data-table">
+                    <tr>
+                        <td class="item-icon">💬</td>
+                        <td class="item-content">
+                            <div class="item-title-row">
+                                <span class="badge badge-comment">Comment</span>
+                                <span class="item-title">Re: Add support for custom webhook endpoints</span>
+                            </div>
+                            <div class="item-snippet">"We should also consider rate limiting for webhooks..."</div>
+                        </td>
+                        <td class="item-meta">@alex<br>Issue #1234</td>
+                        <td class="item-time">2h ago</td>
+                    </tr>
+                    <tr>
+                        <td class="item-icon">●</td>
+                        <td class="item-content">
+                            <div class="item-title-row">
+                                <span class="badge badge-issue">Issue</span>
+                                <span class="item-title">Review JWT token expiration strategy</span>
+                            </div>
+                            <div class="item-snippet">Current tokens expire after 24 hours, but we have no refresh mechanism...</div>
+                        </td>
+                        <td class="item-meta">@alex<br>auth<br>security</td>
+                        <td class="item-time">12h ago</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="pros-cons">
+                <div>
+                    <h4>Pros</h4>
+                    <ul>
+                        <li class="pro">✓ Keeps context of surrounding items</li>
+                        <li class="pro">✓ No screen real estate always occupied</li>
+                        <li class="pro">✓ Easy to collapse and continue scanning</li>
+                        <li class="pro">✓ Clear keyboard shortcut (e = expand)</li>
+                        <li class="pro">✓ Good for occasional deep dives</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Cons</h4>
+                    <ul>
+                        <li class="con">⚠ Disrupts table flow when expanded</li>
+                        <li class="con">⚠ Items below get pushed down</li>
+                        <li class="con">⚠ Can't compare multiple items easily</li>
+                        <li class="con">⚠ Collapse required to continue scanning</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

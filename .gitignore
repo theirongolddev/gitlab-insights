@@ -1,0 +1,12 @@
+.bmad/
+.cursor/
+.claude/
+
+node_modules/
+output/
+build/
+
+.env
+.env.local
+.env.staging
+.env.production
