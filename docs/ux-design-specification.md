@@ -18,7 +18,12 @@ _Generated using BMad Method - Create UX Design Workflow v1.0_
 
 **Platform:** Web application (SPA) - modern browsers, internal tool
 
-**MVP Architecture:** Polling-based with scheduled GitLab API fetching every 5-15 minutes, manual refresh capability, and aggressive caching for sub-500ms performance. Real-time webhook infrastructure moved to post-MVP validation phase.
+**MVP Architecture:** Polling-based with scheduled GitLab API fetching every 5-15 minutes (configurable), user-triggered manual refresh for immediate updates, and aggressive caching for sub-500ms performance. Real-time webhook infrastructure and Live Mode moved to Phase 2 post-MVP validation.
+
+**Implementation Phasing:**
+- **Phase 1 (MVP - 3-4 weeks):** Mouse-driven UI delivering complete user value (search, saved queries, catch-up mode, split view) with **polling-based architecture** (GitLab API polling every 5-15 minutes + manual refresh button)
+- **Phase 2 (Power User - 2-3 weeks):** Layer vim-style keyboard shortcuts onto existing mouse UI + **real-time infrastructure** (webhook-based event capture, Live Mode with automatic updates) + reliability and production polish
+- **Rationale:** Fast validation of core value proposition (attention-efficient discovery) before investing in real-time infrastructure and power-user features. Polling-based MVP reduces complexity, validates filtering effectiveness. Mouse UI is fully functional, not degraded.
 
 **Design Philosophy (First Principles + Devil's Advocate Refinement):**
 
@@ -46,11 +51,13 @@ The vibe is **"feed reader for code discussions"** - think Feedly, Inoreader, Ne
    - GitLab link: Full context when needed
    - Don't show everything upfront - show enough to decide whether to expand
 
-3. **Keyboard-Primary Identity**
-   - Vim-style navigation is the CORE identity (j/k, o, /, f)
-   - Mouse works, but keyboard is the optimized path
-   - This is a feature, not a compromise - appeals to target users
-   - Power users will evangelize a keyboard-first tool; no one evangelizes "it works fine with mouse too"
+3. **Keyboard-First Enhancement (Phase 2)**
+   - **Phase 1 MVP:** Mouse-driven UI with buttons, nav links, clickable elements (fully functional, 3-4 weeks)
+   - **Phase 2:** Layer vim-style keyboard shortcuts onto existing mouse UI (2-3 days additional implementation)
+   - Phasing enables fast validation of core value proposition (polling-based discovery, filter effectiveness) before investing in power-user features
+   - Architecture uses React Aria Components (supports both mouse AND keyboard from day 1 - no refactoring needed)
+   - Mouse UI is fully functional (not degraded) - keyboard shortcuts enhance existing interactions
+   - Target users will appreciate keyboard shortcuts, but MVP validates attention-efficient discovery first
 
 4. **Transparency on Demand**
    - Hover to see matched keywords highlighted
@@ -84,7 +91,8 @@ The vibe is **"feed reader for code discussions"** - think Feedly, Inoreader, Ne
 - <500ms page loads (enables time-to-insight)
 - <1s search results
 - <3s manual refresh (API fetch + UI update)
-- Keyboard shortcuts available (j/k, /, o, Ctrl+d/u, r for refresh) but not required
+- Background polling: 5-15 minutes (configurable interval)
+- Keyboard shortcuts available in Phase 2 (j/k, /, o, Ctrl+d/u, r) but not required for MVP
 
 ---
 
@@ -96,16 +104,17 @@ The vibe is **"feed reader for code discussions"** - think Feedly, Inoreader, Ne
 
 **Decision Rationale:**
 
-React Aria Components chosen for its exceptional keyboard navigation and accessibility support, aligning perfectly with the keyboard-primary identity established in our design philosophy.
+React Aria Components chosen for its exceptional keyboard navigation foundation and progressive enhancement architecture, aligning perfectly with Phase 1 (mouse-driven) → Phase 2 (keyboard layer) implementation strategy.
 
 **Why React Aria Components:**
 
-1. **Best-in-class keyboard navigation:** Industry-leading focus management, arrow keys, escape handling - essential for keyboard-primary experience
-2. **Accessibility without compromise:** WCAG AA+ out of the box, ensures screen reader and keyboard-only users fully supported
-3. **Complete design control:** Unstyled components allow creation of unique visual identity with custom accent color
-4. **Clean architecture:** Behavior (React Aria) + Styling (Tailwind) = maintainable separation of concerns
-5. **Battle-tested:** Built and maintained by Adobe, powers Spectrum design system, mature and stable
-6. **Composable primitives:** Build complex interactions (progressive disclosure, dual-mode toggle) from well-designed primitives
+1. **Progressive enhancement ready:** Components work with mouse in Phase 1, keyboard shortcuts layer on in Phase 2 without refactoring
+2. **Best-in-class keyboard navigation:** Industry-leading focus management when we add shortcuts - architecture supports both input methods
+3. **Accessibility without compromise:** WCAG AA+ out of the box, ensures screen reader and keyboard-only users fully supported
+4. **Complete design control:** Unstyled components allow creation of unique visual identity with custom olive/moss green accent
+5. **Clean architecture:** Behavior (React Aria) + Styling (Tailwind) = maintainable separation of concerns
+6. **Battle-tested:** Built and maintained by Adobe, powers Spectrum design system, mature and stable
+7. **Composable primitives:** Build complex interactions (progressive disclosure, split pane toggle) from well-designed primitives
 
 **Components Provided:**
 - Tables (customize for dense one-line layout)
@@ -150,7 +159,8 @@ React Aria Components chosen for its exceptional keyboard navigation and accessi
 - Dense table view by default (10-15 items visible)
 - One-line summaries for rapid pattern recognition
 - Expand on-demand for items that pass initial filter
-- Keyboard-primary navigation (j/k, o, /, f, m)
+- Mouse-driven in Phase 1 (click to select, buttons for actions)
+- Keyboard shortcuts added in Phase 2 (j/k, o, /, f, m)
 
 **What must be effortless:**
 - Scanning 10-15 items in <30 seconds
@@ -163,11 +173,12 @@ React Aria Components chosen for its exceptional keyboard navigation and accessi
 - Discovering relevant discussions DURING debate (not after decisions made)
 - Query relevance tuning (5-15 items, not 0, not 100)
 
-**Dashboard with Catch-Up Mode:**
-- **Dashboard:** Shows all stored events from periodic API polling (refreshed every 5-15 min + manual refresh)
-- **Catch-Up Mode:** Toggle to show "What's new since last visit" grouped by saved queries
-- **Manual refresh:** User-triggered button to fetch latest data immediately from GitLab API
-- **Auto-refresh indicator:** Shows last sync timestamp and next scheduled refresh time
+**Dashboard with Catch-Up Mode (Phase 1 MVP):**
+- **Dashboard:** Shows all stored events from periodic API polling (background sync every 5-15 min configurable)
+- **Catch-Up Mode:** Toggle button to show "What's new since last visit" grouped by saved queries
+- **Manual refresh button:** User-triggered click to fetch latest data immediately from GitLab API (<3s)
+- **Sync indicator:** Shows last sync timestamp ("Last sync: 5m ago") and next scheduled refresh time
+- **Polling architecture:** Background job polls GitLab API, stores events locally for fast querying
 
 **Platform:**
 - Web application (SPA)
@@ -622,13 +633,14 @@ Based on the core workflows identified in the PRD, here are the detailed user jo
 **Flow:**
 
 1. **Land on Dashboard**
-   - App loads, shows last sync time: "Last sync: 5m ago"
-   - Dashboard mode shows all recent items (full feed)
+   - App loads from cached data (<500ms), shows last sync time: "Last sync: 5m ago"
+   - Background polling has kept data fresh (syncs every 5-15 minutes)
+   - Dashboard mode shows all recent items (full feed from local database)
    - User sees badge on "Catch-Up Mode" button: "●12"
 
 2. **Switch to Catch-Up Mode**
-   - Click "Catch-Up Mode" button OR press `c` key
-   - View transitions to grouped layout
+   - Click "Catch-Up Mode" button (Phase 2: OR press `c` key)
+   - View transitions to grouped layout (no API call needed - data already local)
    - Items grouped by saved queries, only showing items since last visit
    - Each query section shows count: "Security Items (3 new)"
 
@@ -640,13 +652,13 @@ Based on the core workflows identified in the PRD, here are the detailed user jo
 
 4. **Deep Dive on Interesting Item** (Optional)
    - User sees interesting item: "Add support for custom webhook endpoints"
-   - Press `d` key to toggle split pane
+   - Click item row to toggle split pane (Phase 2: OR press `d` key)
    - Detail pane slides in smoothly (200ms animation)
-   - Full description loads, matched keywords highlighted
+   - Full description loads from local cache (instant), matched keywords highlighted
    - Shows: "Matched Query: Security Items: label:security OR project:api-gateway"
 
 5. **Mark Query as Reviewed**
-   - Press `m` key to mark current query as reviewed
+   - Click "Mark as Reviewed" button (Phase 2: OR press `m` key)
    - All items in "Security Items" marked as seen
    - Badge updates: "●12" → "●9"
    - Auto-advance to next query with new items
@@ -661,12 +673,19 @@ Based on the core workflows identified in the PRD, here are the detailed user jo
 
 **Time to Complete:** 5-10 minutes depending on number of new items
 
-**Key Interactions:**
+**Key Interactions (Phase 1 - Mouse):**
+- Click "Catch-Up Mode" button to toggle
+- Click item rows to navigate/select
+- Click item to toggle detail pane
+- Click "Mark as Reviewed" button
+- Click "Open in GitLab" link
+
+**Key Shortcuts (Phase 2 - Keyboard):**
 - `c` - Toggle Catch-Up Mode
 - `j/k` - Navigate items
 - `d` - Toggle detail pane
 - `m` - Mark current query as reviewed
-- `o` - Open in GitLab (if needs full context)
+- `o` - Open in GitLab
 
 ---
 
@@ -679,14 +698,14 @@ Based on the core workflows identified in the PRD, here are the detailed user jo
 **Flow:**
 
 1. **Focus Search**
-   - Press `/` key from anywhere
-   - Search input appears at top of main content
-   - Keyboard focus in search field
+   - Click search input at top (Phase 2: OR press `/` key from anywhere)
+   - Search input gains focus
+   - Ready to type query
 
 2. **Enter Search Query**
    - Type: "webhook rate limiting"
-   - As they type, search narrows items in real-time
-   - Results update in table below (<1s response)
+   - As they type, search queries local database in real-time (debounced 300ms)
+   - Results update in table below (<1s response from local DB, no GitLab API call)
 
 3. **Scan Results**
    - See 3 relevant items:
@@ -696,29 +715,37 @@ Based on the core workflows identified in the PRD, here are the detailed user jo
    - All show in 2-line format with snippets
 
 4. **Check Detail on MR**
-   - Press `d` to open split pane on MR
-   - See full description: "Adds Redis-based rate limiting..."
+   - Click MR row (Phase 2: OR press `d`) to open split pane
+   - See full description from local cache: "Adds Redis-based rate limiting..."
    - Realize: Rate limiting already implemented, can reuse for webhooks!
 
 5. **Open in GitLab**
-   - Press `o` to open MR in GitLab
+   - Click "Open in GitLab" button (Phase 2: OR press `o`)
+   - New tab opens to MR in GitLab
    - Review code, understand implementation
    - Can reuse this pattern instead of reimplementing
 
 6. **Save as Query** (Optional)
    - Search was useful, want to monitor this topic
-   - Press `s` (save) while search is active
+   - Click "Save as Query" button (Phase 2: OR press `s`)
    - Modal appears: "Save as query"
    - Enter name: "Webhook Related"
-   - Query saved to sidebar
+   - Click "Save" - query saved to sidebar
 
 **Success State:** User discovers existing work, avoids 4-6 hours of duplicate effort
 
 **Time to Complete:** 3-5 minutes
 
-**Key Interactions:**
+**Key Interactions (Phase 1 - Mouse):**
+- Click search input
+- Type to filter (queries local database)
+- Click rows to navigate/select
+- Click to open detail pane
+- Click "Open in GitLab" button
+- Click "Save as Query" button
+
+**Key Shortcuts (Phase 2 - Keyboard):**
 - `/` - Focus search
-- Type to filter
 - `j/k` - Navigate results
 - `d` - Detail pane
 - `o` - Open in GitLab
@@ -735,34 +762,36 @@ Based on the core workflows identified in the PRD, here are the detailed user jo
 **Flow:**
 
 1. **Quick Glance at Dashboard**
-   - App already open in browser tab
-   - See "Last sync: 8m ago" in header
+   - App already open in browser tab (data from local cache, instant load)
+   - See "Last sync: 8m ago" in header (background polling keeps data fresh)
    - Notice badge on sidebar: "Security Items" shows "●2"
 
 2. **Manual Refresh** (Optional)
-   - Want latest data immediately
-   - Click refresh button OR press `r` key
-   - Indicator shows: "Syncing..." for 1-2 seconds
+   - Want latest data immediately (don't want to wait for next scheduled poll)
+   - Click refresh button in header (Phase 2: OR press `r` key)
+   - Indicator shows: "Syncing..." while GitLab API fetch in progress (1-3 seconds)
+   - Background: API call fetches latest events, stores in database
    - Updates to: "Last sync: just now"
-   - New items appear with "NEW" badges
+   - New items appear with "NEW" badges (pulled from updated local data)
 
 3. **Check New Items in Security Query**
-   - Click "Security Items" in sidebar OR press `1` (query shortcut)
+   - Click "Security Items" in sidebar (Phase 2: OR press `1`)
+   - View loads instantly from local database
    - See 2 new items at top:
      - NEW: "Security audit findings: SQL injection risks"
      - NEW: Comment on "Implement rate limiting..."
 
 4. **Quick Scan**
    - First item (SQL injection) looks critical
-   - Read snippet: "Security audit findings: SQL injection risks"
-   - Press `o` to open immediately in GitLab
-   - Needs attention now
+   - Read 2-line snippet: "Security audit findings: SQL injection risks in..."
+   - Click "Open in GitLab" button (Phase 2: OR press `o`)
+   - New tab opens, needs attention now
 
 5. **Mark Second as Reviewed**
-   - Navigate to comment with `j` key
+   - Click second item row to select (Phase 2: OR navigate with `j` key)
    - Read full comment in 2-line snippet
    - Not urgent, just FYI
-   - Press `m` to mark as reviewed
+   - Click "Mark Reviewed" button (Phase 2: OR press `m`)
    - Badge updates: "●2" → "●1"
 
 6. **Return to Work**
@@ -774,10 +803,17 @@ Based on the core workflows identified in the PRD, here are the detailed user jo
 
 **Time to Complete:** 30 seconds - 2 minutes
 
-**Key Interactions:**
+**Key Interactions (Phase 1 - Mouse):**
+- Click refresh button (triggers immediate API fetch)
+- Click sidebar query items
+- Click item rows to select
+- Click "Open in GitLab" button
+- Click "Mark Reviewed" button
+
+**Key Shortcuts (Phase 2 - Keyboard):**
 - `r` - Manual refresh
 - `1/2/3` - Jump to query by number
-- `j/k` - Navigate
+- `j/k` - Navigate items
 - `o` - Open in GitLab
 - `m` - Mark as reviewed
 
@@ -1836,85 +1872,174 @@ These patterns ensure consistent behavior across the entire application, prevent
 
 ### 9.1 MVP Scope Decisions
 
-**Included in MVP (Polling-Based Architecture):**
-- Dense table view by default with progressive disclosure
-- Catch-Up Mode toggle (in-app digest showing "what's new")
-- Keyboard-primary navigation (vim-style shortcuts)
-- **API polling architecture:** Scheduled background sync every 5-15 minutes
-- **Manual refresh button:** User-triggered immediate API fetch
-- **Auto-refresh indicator:** Shows last sync time and next scheduled refresh
-- Basic filter creation and query saving
-- Sectioned dashboard (Issues/MRs/Comments sections)
-- GitLab project scoping (per-user selection on first login)
+**Phase 1: MVP - Mouse-Driven Core (3-4 weeks)**
 
-**Moved to Post-MVP (Real-Time Phase):**
-- **Webhook-based event capture** (replaces polling with push model)
-- **Live Mode with real-time UI updates** (<5s latency via WebSocket/polling)
-- **Browser notifications** for high-priority filters
-- **Automatic event appearance** without manual refresh
-- Unified discovery bar (smart auto-complete)
-- Visual filter builder (click-to-filter)
-- Dynamic grouping modes (by project, by author, etc.)
+**Architecture: Polling-Based**
+- GitLab API polling: Scheduled background sync every 5-15 minutes (configurable)
+- Manual refresh button: User-triggered immediate API fetch (<3s)
+- Sync indicator: Shows last sync time and next scheduled refresh
+- Local database: All events stored locally for fast querying (<1s search)
+- No webhooks: Avoids infrastructure complexity, validates filtering first
+
+**Core Features:**
+- Dense 2-line table view by default with progressive disclosure
+- Toggleable split pane view (email-style detail preview)
+- Catch-Up Mode toggle (in-app digest showing "what's new")
+- Mouse-driven interactions: Click buttons, nav links, item rows
+- Filter creation and query saving (temporary → persistent workflow)
+- Search across stored events (4 weeks historical data)
+- Sectioned dashboard (Issues/MRs/Comments with scroll/jump navigation)
+- GitLab project scoping (per-user selection on first login)
+- Basic accessibility (semantic HTML, tab navigation)
+
+**Phase 2: Power User Experience (2-3 weeks)**
+
+**Enhanced Architecture: Real-Time Infrastructure**
+- Webhook-based event capture (replaces polling with push model)
+- Live Mode with real-time UI updates (<5s latency via WebSocket)
+- Browser notifications for high-priority filters
+- Automatic event appearance without manual refresh
+
+**Enhanced Features:**
+- Vim-style keyboard shortcuts (j/k, /, o, d, m, r, s, c, 1-9)
+- Full keyboard navigation (no mouse required for core workflows)
+- Advanced keyboard shortcut help (`?` key)
+- Unified discovery bar (smart auto-complete, natural query syntax)
+- Visual filter builder (click labels/authors to build filters)
+- Dynamic grouping modes (by project, by author, by recency)
+- Production reliability and monitoring
+- Performance optimization and polish
+
+**Post-MVP (Future Validation):**
 - Browser extension with push notifications and badge counts
+- Mobile companion app
+- Smart relevance scoring (ML-based filtering)
+- Pattern detection across team work
+- Role-based dashboards (IC vs Tech Lead vs Manager)
 
 **Never Planned:**
 - Email digests (Catch-Up Mode serves this purpose in-app)
-- Live query tuning feedback (no clear value add)
+- Always-on real-time for MVP (polling validates core hypothesis first)
 
-### 9.2 Post-MVP Enhancement Roadmap
+### 9.2 Phase 2 Enhancement Roadmap
 
-Based on SCAMPER creative analysis, these enhancements should be considered after core hypothesis validation:
+These enhancements layer onto the Phase 1 MVP after core hypothesis validation (polling-based discovery + filter effectiveness):
 
-**Phase 1: Enhanced Discovery (Post-MVP)**
-1. **Unified Discovery Bar**
+**Real-Time Infrastructure (Phase 2 Priority):**
+
+1. **Webhook-Based Event Capture**
+   - Replace API polling with GitLab webhooks (push-based events)
+   - GitLab webhooks trigger immediate event capture and storage
+   - Eliminates 5-15 minute polling delay
+   - Reduces GitLab API load (webhooks more efficient than polling)
+   - **Validates:** Does real-time delivery improve engagement vs polling?
+
+2. **Live Mode Dashboard**
+   - Real-time UI updates when webhook events arrive (<5s latency)
+   - Automatic event appearance without manual refresh
+   - Real-time sidebar badges showing live counts
+   - WebSocket or long-polling for UI updates
+   - Toggle between Live Mode and Catch-Up Mode
+   - **Validates:** Is real-time worth the infrastructure complexity?
+
+3. **Browser Notifications**
+   - Desktop notifications for high-priority matches (user-configurable)
+   - Badge count on browser tab
+   - Configurable priority levels per query
+   - Sound/visual notification preferences
+   - **Validates:** Does ambient awareness increase adoption?
+
+**Keyboard Navigation (Phase 2 Priority):**
+
+4. **Vim-Style Keyboard Shortcuts**
+   - Layer keyboard handlers onto existing click handlers (2-3 days work)
+   - Full navigation without mouse: j/k, /, o, d, m, r, s, c, 1-9
+   - Keyboard shortcut help (`?` key)
+   - Visible focus indicators (already in Phase 1 via React Aria)
+   - **Validates:** Does keyboard-first appeal to target users?
+
+**Enhanced Discovery (Phase 2 Optional):**
+
+5. **Unified Discovery Bar**
    - Single intelligent search/filter/query interface
    - Auto-complete for authors, labels, projects
    - Natural query syntax (`@john label:security project:api`)
    - One-click save as query
    - **Validates:** Can unified interface improve filter discovery?
 
-2. **Visual Filter Builder**
+6. **Visual Filter Builder**
    - Click labels/authors/projects from items to build filters
    - Filter chips with easy removal
    - Exploration-driven filtering
    - **Validates:** Does click-to-filter accelerate query creation?
 
-**Phase 2: Flexible Views (Post-MVP)**
-3. **Dynamic Grouping Modes**
+7. **Dynamic Grouping Modes**
    - By Event Type (default)
-   - By Project
-   - By Recency (chronological)
-   - By Author
+   - By Project, By Recency, By Author
+   - User-selectable per query
    - **Validates:** Do different users scan differently?
 
-**Phase 3: Real-Time Infrastructure (Post-MVP)**
-4. **Webhook-Based Event Capture**
-   - Replace polling with push-based events from GitLab
-   - GitLab webhooks trigger immediate event capture
-   - Live Mode dashboard with real-time UI updates (<5s latency)
-   - Automatic event appearance without manual refresh
-   - Real-time sidebar badges showing live counts
-   - **Validates:** Does real-time delivery improve engagement vs polling?
+**Decision Criteria for Phase 2:**
+Only pursue Phase 2 if Phase 1 achieves:
+- 3+ daily active users by week 4
+- Users demonstrate engagement with Catch-Up Mode (40%+ click-through)
+- Core hypothesis validated: polling-based filtered queries solve "unknown unknowns"
+- Users request keyboard shortcuts or real-time updates
 
-5. **Browser Extension & Notifications**
-   - Background monitoring of queries
-   - Badge count on extension icon
-   - Desktop notifications for high-priority matches
-   - Lightweight popup for quick scanning
-   - Configurable priority levels
-   - **Validates:** Does ambient awareness increase adoption?
+### 9.3 Implementation Priority Order
 
-**Decision Criteria for Post-MVP:**
-Only pursue these if:
-- MVP achieves 3+ daily active users by week 4
-- Users demonstrate engagement with Catch-Up Mode
-- Core hypothesis validated: filtered queries solve "unknown unknowns"
+**Phase 1 MVP Implementation Sequence (3-4 weeks):**
 
-### 9.3 Completion Summary
+1. **Foundation (Week 1)**
+   - Design system setup: React Aria Components + Tailwind + olive color system
+   - Core layout: Sidebar + Dashboard + Header components
+   - GitLab OAuth authentication
+   - Database schema and API polling infrastructure
+
+2. **Core Features (Week 2)**
+   - Event display: ItemRow component (2-line dense format)
+   - Dashboard: Issues/MRs/Comments sections with mouse navigation
+   - Search: Local database query (<1s target)
+   - Manual refresh: Button triggers API fetch + UI update
+
+3. **Query Management (Week 3)**
+   - Filter UI: Temporary filters on dashboard
+   - Save as Query: Persistent sidebar queries
+   - Query pages: Dedicated routes with same sectioned layout
+   - Catch-Up Mode: Toggle + "new since last visit" logic
+
+4. **Polish & Testing (Week 4)**
+   - Split pane component with animation
+   - Sync indicator with polling status
+   - Performance optimization (<500ms loads, <1s search)
+   - Accessibility testing (tab navigation, semantic HTML)
+   - User acceptance testing with beta users
+
+**Phase 2 Implementation Sequence (2-3 weeks):**
+
+1. **Real-Time Infrastructure (Week 5-6)**
+   - GitLab webhook configuration and event capture
+   - WebSocket/long-polling for live UI updates
+   - Live Mode toggle (vs Catch-Up Mode)
+   - Browser notifications setup
+
+2. **Keyboard Navigation (Week 6)**
+   - Keyboard event handlers calling existing click handlers
+   - Vim-style shortcuts (j/k, /, o, d, m, r, s, c)
+   - Keyboard shortcut help modal (`?` key)
+   - Focus management polish
+
+3. **Production Readiness (Week 7)**
+   - Monitoring and observability
+   - Error handling and resilience
+   - Performance optimization
+   - Production deployment
+
+### 9.4 Completion Summary
 
 **UX Design Specification Status: Complete**
 
-This UX Design Specification documents the complete user experience design for GitLab Insights v1.0 MVP. Through collaborative visual exploration and iterative refinement, we've established a clear design direction optimized for engineer workflows.
+This UX Design Specification documents the complete user experience design for GitLab Insights MVP (Phase 1) and Power User enhancements (Phase 2). Through collaborative visual exploration and iterative refinement, we've established a clear design direction optimized for engineer workflows with progressive enhancement architecture.
 
 ---
 
@@ -1922,30 +2047,37 @@ This UX Design Specification documents the complete user experience design for G
 
 **1. Core Layout: Two-Line Dense Table with Toggleable Split Pane**
 - **Default View:** 2-line rows (52px height) showing 8-10 items on screen
-- **Progressive Disclosure:** Press `d` to toggle email-style split pane (200ms animation)
+- **Progressive Disclosure:** Click item (Phase 2: OR press `d`) to toggle email-style split pane (200ms animation)
 - **Rationale:** Balances maximum scanning density with on-demand deep context
 
 **2. Design System: React Aria Components + Tailwind CSS**
-- **Foundation:** Adobe's React Aria Components for accessibility and keyboard navigation
+- **Foundation:** Adobe's React Aria Components for progressive enhancement (mouse → keyboard)
 - **Styling:** Custom Tailwind implementation with olive/moss green accent (#5e6b24 light, #9DAA5F dark)
-- **Rationale:** Industry-leading keyboard support matches keyboard-primary identity
+- **Rationale:** Components work with mouse in Phase 1, keyboard layer added in Phase 2 without refactoring
 
-**3. Polling-Based MVP Architecture**
-- **Sync Strategy:** Scheduled background polling every 5-15 minutes + manual refresh
-- **Trade-off:** Real-time webhooks deferred to post-MVP validation phase
-- **Rationale:** Reduces infrastructure complexity, validates core hypothesis faster
+**3. Polling-Based MVP Architecture (Phase 1)**
+- **Sync Strategy:** Scheduled background polling every 5-15 minutes + manual refresh button
+- **Trade-off:** Real-time webhooks deferred to Phase 2 after core validation
+- **Rationale:** Reduces infrastructure complexity, validates filtering effectiveness and attention-efficient discovery before investing in real-time infrastructure
 
-**4. Desktop-Only MVP**
+**4. Progressive Enhancement: Mouse → Keyboard (Phase 1 → Phase 2)**
+- **Phase 1:** Mouse-driven UI with buttons, nav links, clickable elements (fully functional)
+- **Phase 2:** Layer vim-style keyboard shortcuts onto existing mouse UI (2-3 days implementation)
+- **Architecture:** React Aria Components support both input methods from day 1
+- **Rationale:** Fast validation of core value proposition (polling + filtering) before investing in power-user keyboard features
+
+**5. Desktop-Only MVP**
 - **Minimum Width:** 1920px (1080p baseline)
 - **Optimized For:** 2560px (1440p - standard in office)
 - **Responsive Strategy:** Adaptive layouts for 1080p, 1440p, and 4K displays
 - **Rationale:** All engineers have 1440p+ displays; optimize for actual hardware, support 1080p for compatibility
 
-**5. WCAG 2.1 Level AA Accessibility**
-- **Keyboard Navigation:** Full vim-style keyboard support, no mouse required
+**6. WCAG 2.1 Level AA Accessibility (Phase 1 Foundation)**
+- **Phase 1:** Tab navigation, semantic HTML, proper ARIA labels, color contrast compliance
+- **Phase 2:** Full vim-style keyboard support (j/k, /, o, d, m), no mouse required
 - **Screen Readers:** Semantic HTML, ARIA labels, live regions
 - **Color Contrast:** All text meets 4.5:1 minimum ratio
-- **Rationale:** Ensures usability for all team members, keyboard navigation benefits power users
+- **Rationale:** Ensures usability for all team members from day 1, keyboard navigation enhances power users in Phase 2
 
 ---
 
@@ -2035,30 +2167,36 @@ Through this collaborative design process, we created interactive HTML mockups t
 **1. Architecture Workflow**
 - Input: This UX Design Specification + PRD
 - Output: Technical architecture with component design decisions
-- Focus: State management, API polling implementation, component structure
+- Focus: State management, API polling implementation, component structure, database schema
 
 **2. Epic & Story Creation**
 - Input: UX Design Specification + PRD + Architecture
 - Output: Implementation epics broken into development stories
-- Focus: Component development order, feature phasing, MVP delivery
+- Focus: Component development order, Phase 1/2 separation, MVP delivery sequence
 
-**3. Development Implementation**
-- Story-by-story implementation following component hierarchy
-- Priority order suggested:
-  1. Design system setup (React Aria + Tailwind + color system)
-  2. Core components (Table, ItemRow, QuerySidebar)
-  3. SplitPane component with animation
-  4. Keyboard navigation system
-  5. Catch-Up Mode toggle and logic
-  6. API polling infrastructure
-  7. Search and filter system
-  8. Accessibility polish (ARIA, focus management, screen readers)
+**3. Phase 1 Development (3-4 weeks)**
+- Story-by-story implementation following priority order (see Section 9.3)
+- Week 1: Foundation (design system, auth, polling infrastructure)
+- Week 2: Core features (event display, dashboard, search, manual refresh)
+- Week 3: Query management (filters, save as query, Catch-Up Mode)
+- Week 4: Polish & testing (split pane, sync indicator, performance, accessibility)
 
-**4. Testing & Validation**
-- Automated accessibility testing (axe DevTools, Lighthouse CI)
-- Manual keyboard-only testing
+**4. Phase 1 Validation**
+- Performance testing: <500ms loads, <1s search, <3s manual refresh
+- Accessibility testing: Tab navigation, semantic HTML, ARIA labels, color contrast
+- User acceptance testing with beta users (3+ engineers)
+- Success criteria: 3+ DAU by week 4, 40%+ click-through, one high-value discovery per user
+
+**5. Phase 2 Development (2-3 weeks) - Only if Phase 1 validates**
+- Week 5-6: Real-time infrastructure (webhooks, Live Mode, browser notifications)
+- Week 6: Keyboard navigation (vim-style shortcuts layered onto existing handlers)
+- Week 7: Production readiness (monitoring, error handling, performance optimization)
+
+**6. Phase 2 Testing & Validation**
+- Keyboard-only testing (all workflows accessible without mouse)
 - Screen reader testing (NVDA/VoiceOver)
-- User acceptance testing with target engineers
+- Real-time latency testing (<5s webhook → UI update)
+- Enhanced user acceptance testing
 
 ---
 
@@ -2066,11 +2204,11 @@ Through this collaborative design process, we created interactive HTML mockups t
 
 This UX specification will be successful if it enables:
 
-1. **Clear Implementation Path:** Developers can implement features without ambiguity
-2. **Consistent Experience:** All UX patterns documented, no "figure it out" moments
-3. **Accessible by Default:** WCAG AA compliance from day one
-4. **Performance-Optimized:** Design decisions support <500ms loads, <1s search
-5. **Keyboard-First Identity:** Vim-style navigation feels natural and empowering
+1. **Clear Implementation Path:** Developers can implement Phase 1 (mouse-driven) and Phase 2 (keyboard layer) without ambiguity
+2. **Consistent Experience:** All UX patterns documented for both phases, no "figure it out" moments
+3. **Accessible by Default:** WCAG AA foundation in Phase 1, keyboard navigation excellence in Phase 2
+4. **Performance-Optimized:** Design decisions support <500ms loads, <1s search, <3s manual refresh (polling architecture)
+5. **Progressive Enhancement:** Phase 1 fully functional with mouse, Phase 2 enhances with keyboard shortcuts without refactoring
 
 ---
 
@@ -2078,17 +2216,27 @@ This UX specification will be successful if it enables:
 
 **"Feed reader for code discussions"** - This mental model guided every decision:
 
-- **Dense scanning** over rich cards (see 15 items at once)
-- **Progressive disclosure** over always-visible detail (expand on demand)
-- **Keyboard-primary** over mouse-optimized (vim-style is the identity)
-- **Transparency on-demand** over inline metadata (hover for "why matched")
-- **Performance enables exploration** over feature richness
+- **Dense scanning** over rich cards (see 10-15 items at once in 2-line format)
+- **Progressive disclosure** over always-visible detail (click to expand on demand)
+- **Mouse-first MVP → Keyboard enhancement** (Phase 1 validates core, Phase 2 adds vim-style shortcuts)
+- **Polling-based simplicity → Real-time infrastructure** (Phase 1 validates filtering, Phase 2 adds webhooks)
+- **Transparency on-demand** over inline metadata (hover/expand for "why matched")
+- **Performance enables exploration** over feature richness (<500ms, <1s, <3s targets)
 
-The result is a tool optimized for engineer workflows: rapid scanning, relevance tuning, and preventing duplicate work through ambient awareness.
+The result is a tool optimized for engineer workflows with progressive enhancement: Phase 1 validates attention-efficient discovery and filter effectiveness through polling-based architecture and mouse-driven UI. Phase 2 adds real-time infrastructure and vim-style keyboard shortcuts after core hypothesis proves valuable.
 
 ---
 
-**Status:** UX Design Specification is complete and ready for technical architecture workflow.
+**Status:** UX Design Specification is complete and aligned with PRD v1.1 (2025-11-21).
+
+---
+
+## Document History
+
+| Date       | Version | Changes                                                                 | Author |
+| ---------- | ------- | ----------------------------------------------------------------------- | ------ |
+| 2025-11-20 | 1.0     | Initial UX Design Specification                                         | BMad   |
+| 2025-11-21 | 1.1     | Aligned with PRD v1.1: Updated architecture (polling-based MVP), clarified Phase 1/2 implementation strategy, updated user flows to reflect manual refresh pattern | BMad   |
 
 ---
 
