@@ -1,12 +1,45 @@
+# BMAD directories
 .bmad/
 .cursor/
 .claude/
+.jj/
 
+# Dependencies
 node_modules/
+
+# Build outputs
 output/
 build/
+.next/
+out/
+dist/
 
+# Environment variables
 .env
 .env.local
 .env.staging
 .env.production
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# OS files
+.DS_Store
+*.pem
+
+# Local development
+.vscode/
+.idea/
+
+# Database
+generated/
