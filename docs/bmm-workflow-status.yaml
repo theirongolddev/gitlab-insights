@@ -59,9 +59,9 @@ workflow_status:
         name: "UX Design"
         agent: "ux-designer"
         command: "/bmad:bmm:workflows:create-ux-design"
-        status: "conditional"
+        status: "docs/ux-design-specification.md"
         condition: "if_has_ui"
-        note: "Determined after PRD - this project will likely need UI"
+        note: "Complete: React Aria Components, progressive enhancement, WCAG AA"
 
   # Phase 2: Solutioning
   - phase: 2
@@ -79,8 +79,8 @@ workflow_status:
         name: "Epics & Stories"
         agent: "pm"
         command: "/bmad:bmm:workflows:create-epics-and-stories"
-        status: "required"
-        note: "Break down PRD into implementable epics and stories"
+        status: "docs/epics.md"
+        note: "Complete: 7 epics, 99 FRs mapped, Phase 1/2 breakdown"
 
       - id: "test-design"
         name: "Test Design"
@@ -101,8 +101,8 @@ workflow_status:
         name: "Implementation Readiness"
         agent: "architect"
         command: "/bmad:bmm:workflows:implementation-readiness"
-        status: "required"
-        note: "Validates PRD + UX + Architecture + Epics cohesion"
+        status: "docs/implementation-readiness-report-2025-11-21.md"
+        note: "✅ READY WITH CONDITIONS - 99/99 FRs covered, strong alignment, low risk"
 
   # Phase 3: Implementation
   - phase: 3
