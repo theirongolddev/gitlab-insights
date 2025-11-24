@@ -255,6 +255,24 @@ After completing this story:
 - T3 Stack initialized in temporary directory then moved to main project to preserve existing git history and docs
 - Tailwind v4 uses CSS-based configuration instead of JS/TS config file
 - Environment schema updated to use GitLab OAuth variables instead of Discord (T3 default)
+
+**Implementation Stack (Actual):**
+
+**Versions Used:**
+- Next.js 16.0.4 (not 15 as originally planned)
+- React 19.2.0
+- TypeScript 5.8.2
+- Prisma 6.6.0 (not 5.x)
+- tRPC 11.0.0
+- Tailwind CSS 4.0.15
+- BetterAuth 1.4.1 (installed separately, not NextAuth via T3 flag)
+
+**Rationale for Version Changes:**
+- Next.js 16: Latest stable release with performance improvements
+- Prisma 6: Major version with enhanced type safety
+- BetterAuth: NextAuth 5.0-beta has compatibility issues with Next.js 16; official recommendation is BetterAuth
+
+See ADR-012 in Architecture document for full rationale.
 - Database name changed from "gitlab-insights-temp" to "gitlab_insights" for consistency
 
 **Key Accomplishments:**

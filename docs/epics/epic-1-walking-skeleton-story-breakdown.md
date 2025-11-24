@@ -15,16 +15,23 @@
 **Acceptance Criteria:**
 - Given a new project directory
 - When I run `npm create t3-app@latest gitlab-insights`
-- Then project is created with Next.js, TypeScript, tRPC, Prisma, NextAuth, Tailwind
+- Then project is created with Next.js 16, TypeScript, tRPC, Prisma, Tailwind
 - And I can run `npm run dev` and see Next.js dev server running
 - And tsconfig is configured for absolute imports (`@/` alias)
 - And ESLint and Prettier are configured
 
 **Technical Notes:**
-- Command: `npm create t3-app@latest gitlab-insights -- --trpc --prisma --nextAuth --tailwind --typescript --dbProvider postgres`
+- Command: `npm create t3-app@latest gitlab-insights -- --trpc --prisma --tailwind --typescript --dbProvider postgres`
+- Note: `--nextAuth` flag NOT used; BetterAuth installed separately after initialization
+- Install BetterAuth: `npm install better-auth`
 - Upgrade to Tailwind v4 (required per architecture)
 - Add olive accent color to Tailwind config (#5e6b24 light mode, #9DAA5F dark mode)
 - Configure dark mode only for MVP
+
+**Actual Implementation:**
+- Next.js 16.0.4, React 19.2.0, TypeScript 5.8.2
+- Prisma 6.6.0, tRPC 11.0.0, Tailwind 4.0.15
+- BetterAuth 1.4.1 (not NextAuth)
 
 **Prerequisites:** None (first story)
 
@@ -47,7 +54,7 @@
 **Acceptance Criteria:**
 - Given the initialized T3 project
 - When I define Prisma schema in `prisma/schema.prisma`
-- Then schema includes tables: User, Account, Session (NextAuth), Event, UserQuery, MonitoredProject
+- Then schema includes tables: User, Account, Session (BetterAuth compatible), Event, UserQuery, MonitoredProject
 - And Event table has fields: id, type, title, body, author, project, labels[], createdAt, updatedAt, gitlabUrl, gitlabEventId
 - And UserQuery table has fields: id, userId, name, filters (JSON), lastViewedAt, createdAt
 - And MonitoredProject table has fields: id, userId, gitlabProjectId, projectName
@@ -60,6 +67,7 @@
 - Use `cuid()` for user-facing IDs
 - Add indexes: `@@index([userId, createdAt])` on Event, `@@index([userId])` on UserQuery
 - Add GIN index for full-text search: `@@index([title, body])` with `gin` type
+- **Auth schema**: BetterAuth uses similar User/Account/Session structure to NextAuth (compatible)
 
 **Prerequisites:** Story 1.1
 
@@ -88,11 +96,12 @@
 - And I can see my GitLab username/avatar displayed
 
 **Technical Notes:**
-- Create GitLab OAuth application at gitlab.com/oauth/applications
-- Set callback URL: `http://localhost:3000/api/auth/callback/gitlab`
-- Configure NextAuth GitLab provider in `src/server/auth.ts`
-- Environment variables: `GITLAB_CLIENT_ID`, `GITLAB_CLIENT_SECRET`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`
+- Create GitLab OAuth application at `{GITLAB_INSTANCE_URL}/-/profile/applications`
+- Set callback URL: `http://localhost:3000/api/auth/callback/gitlab` (or BetterAuth equivalent)
+- Configure BetterAuth GitLab provider in `src/lib/auth.ts`
+- Environment variables: `GITLAB_CLIENT_ID`, `GITLAB_CLIENT_SECRET`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `GITLAB_INSTANCE_URL`
 - Store GitLab access token in Account table (needed for API calls)
+- **Note**: This story was implemented with BetterAuth 1.4.1, not NextAuth. See ADR-012 for rationale.
 
 **Prerequisites:** Story 1.2
 

@@ -6,7 +6,7 @@
 **Value Statement:** Users can see a working filtered GitLab feed with hardcoded query, validating core hypothesis
 
 **Scope:**
-- T3 Stack initialization (Next.js + TypeScript + tRPC + Prisma + NextAuth + Tailwind)
+- T3 Stack initialization (Next.js 16 + TypeScript + tRPC + Prisma 6 + BetterAuth + Tailwind v4)
 - GitLab OAuth authentication
 - Project scoping onboarding (select projects to monitor)
 - Basic API polling (manual refresh only, no background job)

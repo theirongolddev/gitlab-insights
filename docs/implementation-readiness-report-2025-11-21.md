@@ -5,6 +5,8 @@
 **Assessed By:** BMad
 **Assessment Type:** Phase 3 to Phase 4 Transition Validation
 
+> **Historical Note (2025-11-24):** This report reflects the planned architecture prior to implementation. During Stories 1.1-1.4 execution, the tech stack was upgraded to Next.js 16.0.4, React 19.2.0, Prisma 6.6.0, and BetterAuth 1.4.1 (replacing NextAuth due to Next.js 16 compatibility). See ADR-012 in Architecture document and Sprint Change Proposal (2025-11-24) for details. All references to NextAuth below represent the original plan.
+
 ---
 
 ## Executive Summary

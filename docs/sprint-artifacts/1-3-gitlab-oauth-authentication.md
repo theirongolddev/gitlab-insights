@@ -455,6 +455,20 @@ Deprecated:
 
 ### Completion Notes List
 
+**Authentication Library Change:**
+
+**Implemented with BetterAuth 1.4.1 (not NextAuth)**
+
+During implementation, NextAuth 5.0-beta exhibited compatibility issues with Next.js 16.0.4. The NextAuth team officially recommends BetterAuth for Next.js 16+ projects.
+
+**Implementation Details:**
+- Configuration: `src/lib/auth.ts` (BetterAuth convention)
+- Environment variables: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`
+- OAuth flow: Functionally identical to NextAuth, stable production-ready library
+- Session management: Database-backed sessions compatible with Prisma
+
+See ADR-012 in Architecture document for complete rationale.
+
 ### File List
 
 ## Senior Developer Review (AI)

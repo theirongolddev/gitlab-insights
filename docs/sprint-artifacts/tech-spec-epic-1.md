@@ -45,18 +45,20 @@ This epic directly supports the product's core value proposition from the PRD: r
 ## System Architecture Alignment
 
 ### Tech Stack (T3 Stack)
-This epic initializes the complete T3 Stack as specified in the architecture document:
-- **Frontend**: Next.js 15 (App Router), React 19, TypeScript 5.x
-- **API Layer**: tRPC 11.x for type-safe client-server communication
-- **Database**: PostgreSQL with Prisma 5.x ORM
-- **Authentication**: NextAuth.js 4.24.x with GitLab OAuth provider
-- **Styling**: Tailwind CSS v4 with olive accent colors (#9DAA5F dark, #5e6b24 light)
+This epic initializes the complete T3 Stack with upgraded versions implemented during Stories 1.1-1.4:
+- **Frontend**: Next.js 16.0.4 (App Router), React 19.2.0, TypeScript 5.8.2
+- **API Layer**: tRPC 11.0.0 for type-safe client-server communication
+- **Database**: PostgreSQL with Prisma 6.6.0 ORM
+- **Authentication**: BetterAuth 1.4.1 with GitLab OAuth provider
+- **Styling**: Tailwind CSS v4.0.15 with olive accent colors (#9DAA5F dark, #5e6b24 light)
 - **Component Library**: React Aria Components 3.x for accessible primitives
+
+**Note:** The project uses BetterAuth instead of NextAuth due to Next.js 16 compatibility. See ADR-012 in Architecture document for rationale.
 
 ### Architecture Constraints
 - **No Backend Separate Service**: All server logic runs in Next.js API routes and tRPC procedures (collocated monolith pattern)
 - **User-Scoped Data**: All database queries filter by `userId` to prevent data leakage and enable horizontal scaling
-- **Stateless API**: No session state in memory; all session data stored in PostgreSQL via NextAuth
+- **Stateless API**: No session state in memory; all session data stored in PostgreSQL via BetterAuth
 - **OAuth Only**: No local password authentication; GitLab OAuth required (security constraint NFR-S1)
 
 ### Component Interactions (Walking Skeleton)
@@ -86,7 +88,7 @@ This epic initializes the complete T3 Stack as specified in the architecture doc
 
 | Module | Responsibility | Key Inputs | Key Outputs | Owner |
 |--------|---------------|------------|-------------|-------|
-| **Authentication Service** (`src/server/auth.ts`) | Manage GitLab OAuth, session lifecycle | GitLab OAuth credentials, user profile | Authenticated session, user record | NextAuth.js |
+| **Authentication Service** (`src/lib/auth.ts`) | Manage GitLab OAuth, session lifecycle | GitLab OAuth credentials, user profile | Authenticated session, user record | BetterAuth |
 | **GitLab API Client** (`src/lib/gitlab/api-client.ts`) | Fetch events from GitLab REST API v4 | GitLab access token, project IDs, event types | Raw GitLab events (issues/MRs/comments) | Custom module |
 | **Event Sync Service** (`src/server/api/routers/events.ts`) | Poll GitLab, transform, store events | User's monitored projects, last sync timestamp | Stored events count, sync status | tRPC router |
 | **Dashboard Query Service** (`src/server/api/routers/dashboard.ts`) | Fetch filtered events for display | User ID, filter criteria (hardcoded: `label:security`) | Sectioned events (issues/MRs/comments) | tRPC router |
@@ -97,8 +99,10 @@ This epic initializes the complete T3 Stack as specified in the architecture doc
 
 **Database Schema (Prisma):**
 
+**Note:** This schema uses BetterAuth (not NextAuth). The User, Account, and Session models are compatible with BetterAuth's requirements. Actual implementation may have minor field differences - refer to the project's `prisma/schema.prisma` for authoritative schema.
+
 ```prisma
-// NextAuth required models
+// BetterAuth required models (compatible structure)
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -650,9 +654,9 @@ volumes:
 # Database (matches docker-compose.yml)
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/gitlab_insights"
 
-# NextAuth
-NEXTAUTH_SECRET="<random-32-char-string>"
-NEXTAUTH_URL="http://localhost:3000"
+# BetterAuth (not NextAuth)
+BETTER_AUTH_SECRET="<random-32-char-string>"
+BETTER_AUTH_URL="http://localhost:3000"
 
 # GitLab OAuth (Create at: {GITLAB_INSTANCE_URL}/-/profile/applications)
 GITLAB_INSTANCE_URL="https://gitlab.company.com"  # Your self-hosted instance
@@ -666,7 +670,7 @@ NODE_ENV="development"
 **Security Notes:**
 - Never commit `.env` to version control
 - Use `.env.example` with placeholder values for documentation
-- Rotate `NEXTAUTH_SECRET` if compromised
+- Rotate `BETTER_AUTH_SECRET` if compromised
 - `GITLAB_CLIENT_SECRET` is sensitive - treat as password
 
 ### Third-Party Service Accounts
@@ -711,13 +715,13 @@ These criteria define the complete success state for Epic 1: Walking Skeleton. A
 
 ### AC-3: GitLab OAuth Authentication
 - Given I have created an OAuth app at `{GITLAB_INSTANCE_URL}/-/profile/applications`
-- And I have configured `GITLAB_CLIENT_ID`, `GITLAB_CLIENT_SECRET`, `GITLAB_INSTANCE_URL` in `.env`
+- And I have configured `GITLAB_CLIENT_ID`, `GITLAB_CLIENT_SECRET`, `GITLAB_INSTANCE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` in `.env`
 - When I visit the login page and click "Sign in with GitLab"
-- Then I am redirected to GitLab OAuth authorization page
+- Then I am redirected to GitLab OAuth authorization page (via BetterAuth)
 - And after authorizing, I am redirected back to `/onboarding`
 - And my User and Account records are created in the database
 - And my GitLab access token is stored encrypted in `Account.access_token`
-- And my session persists across page refreshes
+- And my session persists across page refreshes (managed by BetterAuth)
 - And I can logout successfully
 
 ### AC-4: Project Selection Onboarding

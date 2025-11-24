@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-gitlab-insights is built using the T3 Stack (Next.js + TypeScript + tRPC + Prisma + NextAuth + Tailwind), optimized for rapid full-stack development with end-to-end type safety. The architecture is polling-based, centered on scheduled GitLab API fetching and periodic data synchronization. PostgreSQL serves as the primary data store with Prisma ORM, NextAuth handles GitLab OAuth authentication, and tRPC provides type-safe client-server APIs.
+gitlab-insights is built using the T3 Stack (Next.js 16 + TypeScript + tRPC + Prisma 6 + BetterAuth + Tailwind v4), optimized for rapid full-stack development with end-to-end type safety. The architecture is polling-based, centered on scheduled GitLab API fetching and periodic data synchronization. PostgreSQL serves as the primary data store with Prisma ORM, BetterAuth handles GitLab OAuth authentication, and tRPC provides type-safe client-server APIs.
 
 **Key Architectural Decisions:**
 - **Starter Template:** T3 Stack for rapid setup with pre-configured auth, database, and type-safe APIs
@@ -15,15 +15,22 @@ gitlab-insights is built using the T3 Stack (Next.js + TypeScript + tRPC + Prism
 **First Implementation Story:** Initialize project with T3 Stack
 
 ```bash
-npm create t3-app@latest gitlab-insights -- --trpc --prisma --nextAuth --tailwind --typescript --dbProvider postgres
+npm create t3-app@latest gitlab-insights -- --trpc --prisma --tailwind --typescript --dbProvider postgres
+```
+
+**Note:** The project was initialized without the `--nextAuth` flag. BetterAuth was installed separately after T3 Stack initialization:
+
+```bash
+npm install better-auth
 ```
 
 **Post-Initialization Configuration:**
-1. Create GitLab OAuth application (obtain client ID/secret)
-2. Configure environment variables (DATABASE_URL, NEXTAUTH_SECRET, GITLAB_CLIENT_ID, GITLAB_CLIENT_SECRET)
-3. Set up NextAuth GitLab provider in `src/server/auth.ts`
-4. Run Prisma migrations: `npx prisma migrate dev`
-5. Verify authentication flow works with GitLab
+1. Install and configure BetterAuth for GitLab OAuth
+2. Create GitLab OAuth application (obtain client ID/secret)
+3. Configure environment variables (DATABASE_URL, BETTER_AUTH_SECRET, BETTER_AUTH_URL, GITLAB_CLIENT_ID, GITLAB_CLIENT_SECRET)
+4. Set up BetterAuth GitLab provider in `src/lib/auth.ts`
+5. Run Prisma migrations: `npx prisma migrate dev`
+6. Verify authentication flow works with GitLab
 
 ## Project Context Understanding
 
@@ -90,13 +97,15 @@ npm create t3-app@latest gitlab-insights -- --trpc --prisma --nextAuth --tailwin
 - **TypeScript** - End-to-end type safety
 - **tRPC** - Type-safe client-server APIs
 - **Prisma** - Type-safe database ORM with PostgreSQL
-- **NextAuth.js** - Authentication with GitLab OAuth provider support
 - **Tailwind CSS** - Utility-first styling
 - **ESLint** - Code quality and linting
 
+**Additional Dependencies Installed:**
+- **BetterAuth** - Authentication with GitLab OAuth provider support (installed separately, not via T3 flag)
+
 **Post-Installation Requirements:**
 - Upgrade to Tailwind v4 (required for project)
-- Configure NextAuth GitLab provider
+- Install and configure BetterAuth
 - Set up PostgreSQL database
 - Configure environment variables
 
@@ -116,6 +125,7 @@ npm create t3-app@latest gitlab-insights -- --trpc --prisma --nextAuth --tailwin
 
 | Category | Decision | Affects FR Categories | Rationale | Provided By |
 | -------- | -------- | -------------------- | --------- | ----------- |
+| **Authentication Library** | BetterAuth 1.4.1 (not NextAuth) | User Management (FR78-82) | NextAuth 5.0-beta has compatibility issues with Next.js 16. Official NextAuth team recommends BetterAuth for Next.js 16+ projects. BetterAuth provides stable, production-ready OAuth with GitLab provider support. Simpler API, better TypeScript support, actively maintained. | Decision |
 | **Component Library** | React Aria Components (Adobe) + Tailwind CSS | All UI (Dashboard, Keyboard Nav, Accessibility) | Best-in-class keyboard navigation essential for vim-style shortcuts (j/k, d, o, m, r, s), unstyled primitives enable custom olive accent color (#5e6b24), WCAG AA+ accessibility out of the box, battle-tested by Adobe. Complete design control while maintaining accessibility. Chosen over shadcn/ui for superior keyboard support. | Decision |
 | **Event Capture** | Scheduled GitLab API Polling (Inngest) | Event Capture & Storage (FR1-9) | Simpler MVP than webhooks, no webhook infrastructure, respects API rate limits with exponential backoff, 5-15min latency acceptable for discovery use case, manual refresh provides user control | Decision |
 | **Background Jobs** | Inngest | Event Capture (FR5) | Serverless (no infrastructure), built-in retry/scheduling/monitoring, TypeScript SDK, Vercel-friendly, minimal operational overhead for solo dev | Decision |
@@ -327,7 +337,7 @@ gitlab-insights/
 │   │   │       ├── queries.ts   # FR20-27 (Query Management), FR62-67 (User Preferences)
 │   │   │       ├── filters.ts   # FR15-19 (Filtering System)
 │   │   │       └── users.ts     # FR79-82 (User Management), FR83-87 (Project Scoping)
-│   │   ├── auth.ts              # NextAuth config - FR79-82 (Authentication)
+│   │   ├── auth.ts              # BetterAuth config - FR79-82 (Authentication)
 │   │   └── db.ts                # Prisma client initialization
 │   ├── app/                     # Next.js App Router
 │   │   ├── layout.tsx           # Root layout with providers
@@ -406,7 +416,7 @@ gitlab-insights/
 | **User Settings (FR62-67)** | `src/app/settings/page.tsx`, `src/server/api/routers/users.ts` | Prisma User model |
 | **Performance (FR68-74)** | Next.js caching, PostgreSQL indexes | All query paths |
 | **Data Integrity (FR75-78)** | Prisma schema constraints, `src/lib/validators/` | Database layer |
-| **User & Access Management (FR79-82)** | `src/server/auth.ts`, NextAuth | Prisma User model |
+| **User & Access Management (FR79-82)** | `src/lib/auth.ts`, BetterAuth | Prisma User model |
 | **GitLab Project Scoping (FR83-87)** | `src/server/api/routers/users.ts`, `src/app/onboarding/` | Prisma schema |
 | **Error Handling (FR88-92)** | tRPC error handling, React Error Boundaries, Sentry | All components |
 | **Onboarding (FR99-100)** | `src/app/onboarding/page.tsx` | `src/server/api/routers/users.ts` |
@@ -442,10 +452,11 @@ gitlab-insights/
 - GitLab API calls via `src/lib/gitlab/api-client.ts`
 - Monitored via Inngest dashboard
 
-**NextAuth → Prisma:**
-- User, Account, Session tables managed by NextAuth
-- GitLab OAuth provider configured in `src/server/auth.ts`
+**BetterAuth → Prisma:**
+- User, Account, Session tables managed by BetterAuth
+- GitLab OAuth provider configured in `src/lib/auth.ts`
 - Session persistence in PostgreSQL
+- BetterAuth schema compatible with Prisma adapter pattern
 
 ---
 
@@ -1019,6 +1030,40 @@ React Aria Components remain the correct choice for BOTH phases:
 
 **Status:** Accepted (2025-11-21)
 **Updated:** Architecture document, PRD (FR52-60, FR92-97 marked Phase 2), Epics document (Phase 1/Phase 2 sections)
+
+### ADR-012: BetterAuth for Next.js 16 Compatibility
+
+**Decision:** Use BetterAuth 1.4.1 instead of NextAuth for authentication
+
+**Context:**
+During Story 1.3 (GitLab OAuth Authentication) implementation, NextAuth 5.0.0-beta exhibited compatibility issues with Next.js 16.0.4. The NextAuth team officially recommends migrating to BetterAuth for Next.js 16+ projects, as NextAuth v5 remains in beta with no stable release timeline.
+
+**Rationale:**
+- **Stability**: BetterAuth is production-ready (v1.4.1 stable), NextAuth v5 is beta
+- **Next.js 16 Support**: BetterAuth designed specifically for Next.js 15+ with full App Router support
+- **Official Recommendation**: NextAuth maintainers explicitly recommend BetterAuth for new projects
+- **Better DX**: Simpler API surface, improved TypeScript inference, clearer documentation
+- **Active Maintenance**: Regular releases, responsive maintainers, growing ecosystem
+- **Feature Parity**: Supports GitLab OAuth provider with same capabilities as NextAuth
+
+**Consequences:**
+- **Pro**: Eliminates beta dependency, improves stability
+- **Pro**: Future-proof decision aligned with ecosystem direction
+- **Pro**: Better TypeScript support reduces type errors
+- **Pro**: Simpler mental model (fewer abstractions than NextAuth)
+- **Con**: Smaller community compared to NextAuth (mitigated by official recommendation)
+- **Con**: Documentation references NextAuth in T3 Stack guides (easily adapted)
+- **Migration Path**: If reverting needed, BetterAuth → NextAuth migration straightforward (both use similar OAuth patterns)
+
+**Implementation Details:**
+- Configuration: `src/lib/auth.ts` (BetterAuth convention, not `src/server/auth.ts`)
+- Environment Variables: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (not `NEXTAUTH_*`)
+- Database Schema: BetterAuth uses similar User/Account/Session tables with minor differences
+- Session Management: BetterAuth provides equivalent session handling with simpler API
+
+**Status:** Accepted (2025-11-24)
+
+**Related Decisions:** ADR-001 (T3 Stack), ADR-011 (Phased MVP)
 
 ---
 
