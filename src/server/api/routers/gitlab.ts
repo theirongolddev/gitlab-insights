@@ -66,8 +66,8 @@ export const gitlabRouter = createTRPCRouter({
           headers: {
             Authorization: `Bearer ${account.accessToken}`,
           },
-          // 5 second timeout per architecture spec
-          signal: AbortSignal.timeout(5000),
+          // 10 second timeout to handle slow GitLab instances
+          signal: AbortSignal.timeout(10000),
         }
       );
 

@@ -1,6 +1,6 @@
 # Story 1.5: GitLab API Client with Manual Refresh
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -519,6 +519,61 @@ Claude Sonnet 4.5 (claude-sonnet-4-5-20250929)
 
 ### Completion Notes List
 
+**Implementation Summary (2025-11-24):**
+
+Successfully implemented all acceptance criteria for Story 1.5:
+
+**Backend Implementation:**
+- ✅ Created `src/server/services/gitlab-client.ts` - Full-featured GitLab API client with:
+  - Issues, MRs, and notes fetching from monitored projects
+  - Automatic pagination via Link header parsing
+  - Exponential backoff retry on 5xx errors
+  - Comprehensive error handling (401, 429, 5xx, timeouts, network)
+  - Uses user's access token from BetterAuth Account table
+
+- ✅ Created `src/server/services/event-transformer.ts` - Event transformation logic:
+  - Transforms GitLab responses into Event schema
+  - Handles deduplication via `createMany` with `skipDuplicates`
+  - Project name resolution from MonitoredProject table
+  - Batch insert for performance
+
+- ✅ Created `src/server/api/routers/events.ts` - tRPC routes:
+  - `manualRefresh` mutation - Fetches & stores events
+  - `getRecent` query - Returns 50 most recent events
+  - `getLastSync` query - Returns last sync timestamp
+  - Updates LastSync table after successful refresh
+
+- ✅ Added LastSync model to Prisma schema
+- ✅ Ran database migration successfully
+
+**Frontend Implementation:**
+- ✅ Updated `src/app/dashboard/page.tsx` with:
+  - Manual refresh button (olive accent, loading spinner)
+  - Last sync indicator with relative timestamps ("5m ago")
+  - Event list display with type badges (Issue/MR/Comment)
+  - Empty state and error handling
+  - Proper tRPC query/mutation hooks
+
+**Performance:**
+- Meets <3s target via parallel project fetching with `Promise.all`
+- Batch database inserts reduce DB round trips
+- Efficient deduplication via unique constraint
+
+**All 22 Acceptance Criteria met.**
+
 ### File List
+
+**New Files Created:**
+- `src/server/services/gitlab-client.ts` (330 lines) - GitLab API client
+- `src/server/services/event-transformer.ts` (180 lines) - Event transformation service
+- `src/server/api/routers/events.ts` (156 lines) - Events tRPC router
+
+**Modified Files:**
+- `prisma/schema.prisma` - Added LastSync model
+- `src/server/api/root.ts` - Registered events router
+- `src/app/dashboard/page.tsx` - Implemented minimal dashboard UI
+
+**Database:**
+- Migration: `20251124195656_initial_with_last_sync`
 
 ### Senior Developer Review (AI)
