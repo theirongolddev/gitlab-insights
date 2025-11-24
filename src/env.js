@@ -11,9 +11,18 @@ export const env = createEnv({
       process.env.NODE_ENV === "production"
         ? z.string()
         : z.string().optional(),
-    GITLAB_CLIENT_ID: z.string().optional(),
-    GITLAB_CLIENT_SECRET: z.string().optional(),
-    GITLAB_INSTANCE_URL: z.string().url().optional(),
+    GITLAB_CLIENT_ID:
+      process.env.NODE_ENV === "production"
+        ? z.string()
+        : z.string().min(1),
+    GITLAB_CLIENT_SECRET:
+      process.env.NODE_ENV === "production"
+        ? z.string()
+        : z.string().min(1),
+    GITLAB_INSTANCE_URL:
+      process.env.NODE_ENV === "production"
+        ? z.string().url()
+        : z.string().url().min(1),
     DATABASE_URL: z.string().url(),
     NODE_ENV: z
       .enum(["development", "test", "production"])

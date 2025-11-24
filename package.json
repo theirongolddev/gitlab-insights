@@ -1,5 +1,5 @@
 {
-  "name": "gitlab-insights-temp",
+  "name": "gitlab-insights",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,6 +10,7 @@
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "dev": "next dev --turbo",
+    "lint": "eslint .",
     "postinstall": "prisma generate",
     "preview": "next build && next start",
     "start": "next start",
@@ -36,6 +37,8 @@
     "@types/node": "^20.14.10",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "eslint": "^9.39.1",
+    "eslint-config-next": "^16.0.3",
     "postcss": "^8.5.3",
     "prisma": "^6.6.0",
     "tailwindcss": "^4.0.15",
