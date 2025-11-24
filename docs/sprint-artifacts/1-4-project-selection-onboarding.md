@@ -1,6 +1,6 @@
 # Story 1.4: Project Selection Onboarding
 
-Status: ready-for-review
+Status: done
 
 ## Story
 
@@ -259,6 +259,8 @@ Per ADR-006 (Minimal Testing for Fast Iteration), this story requires only manua
 - Story 1.6 (2-Line Table View) - Will display events from monitored projects
 
 ## Change Log
+
+**2025-11-24** - Story marked as DONE. All documentation updates completed per review action items. Architecture.md, tech-spec-epic-1.md, and sprint-change-proposal-2025-11-24.md updated to reflect BetterAuth migration. All 10 acceptance criteria verified implemented, all tasks complete.
 
 **2025-11-24** - Senior Developer Review (AI) completed. Status: Blocked. Implementation functionally complete (all 10 ACs met, all tasks verified), but CRITICAL documentation debt identified: Entire auth system migrated from NextAuth to BetterAuth without updating architecture docs, tech specs, or creating ADR. Review identified 7 critical action items requiring documentation updates before story can be approved. Code quality excellent, no security issues, comprehensive error handling implemented.
 
