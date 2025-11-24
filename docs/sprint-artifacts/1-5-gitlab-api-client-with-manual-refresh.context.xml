@@ -1,0 +1,309 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>5</storyId>
+    <title>GitLab API Client with Manual Refresh</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-24</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/1-5-gitlab-api-client-with-manual-refresh.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user with monitored projects</asA>
+    <iWant>to manually trigger a refresh to fetch latest GitLab events</iWant>
+    <soThat>I can see recent issues, MRs, and comments without waiting for automatic sync</soThat>
+    <tasks>
+      - Create GitLab API Client Module (fetchIssues, fetchMergeRequests, fetchIssueComments, fetchMergeRequestComments with 5s timeout)
+      - Implement Event Transformation &amp; Storage (GitLab → Event schema mapping, upsert logic with skipDuplicates)
+      - Create Manual Refresh tRPC Mutation (events.manualRefresh with parallel fetching via Promise.allSettled, LastSync update)
+      - Implement Error Handling &amp; Rate Limiting (429 detection with exponential backoff, 401/403/5xx/timeout/network errors)
+      - Build Minimal Dashboard UI (RefreshButton, SyncIndicator, SimpleEventList components with loading/error/empty states)
+      - Create tRPC Queries for Dashboard (events.list, events.getLastSync)
+      - Test Manual Refresh Flow (manual testing per ADR-006: rate limiting, timeout, duplicate prevention, partial failure)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    **Backend (GitLab API Integration)**
+    1. GitLab API client fetches issues from monitored projects via `/api/v4/issues?scope=all` endpoint
+    2. GitLab API client fetches merge requests from monitored projects via `/api/v4/merge_requests?scope=all` endpoint
+    3. GitLab API client fetches issue comments and MR comments from monitored projects
+    4. Each API call uses user's GitLab access token from Account table (via BetterAuth session)
+    5. API calls filter by monitored projects from MonitoredProject table (user-scoped)
+    6. Fetched events are transformed to Event table schema and stored in database
+    7. Duplicate prevention: Events with same `gitlabEventId` are skipped (upsert logic)
+    8. Manual refresh tRPC mutation completes within 3 seconds (P95 target from PRD)
+
+    **Error Handling &amp; Rate Limiting**
+    9. Rate limit detection: 429 responses trigger exponential backoff with clear user message
+    10. Timeout handling: API calls timeout after 5 seconds with retry option
+    11. Authentication errors (401) prompt user to re-authenticate via BetterAuth
+    12. Network errors display clear message with manual retry button
+    13. Partial success handling: If some projects fail, successful events still saved
+
+    **UI Specifications (Minimal Dashboard for Walking Skeleton)**
+    14. Dashboard page (`/app/dashboard/page.tsx`) displays manual refresh button in header
+    15. Sync indicator shows last successful sync timestamp or "Never synced" on first load
+    16. Loading state displays olive-colored spinner during refresh operation
+    17. Empty state shows "No events yet. Click refresh to fetch." before first refresh
+    18. After successful refresh, simple event list displays: event title, type badge (Issue/MR/Comment), timestamp
+    19. Error state displays clear message with retry button if refresh fails
+
+    **Data Persistence**
+    20. LastSync record updated in database with timestamp after successful refresh
+    21. Event table stores: gitlabEventId, eventType, title, body, projectId, authorName, createdAt, updatedAt
+    22. Events linked to User via userId foreign key for multi-user isolation
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/prd.md" title="Product Requirements Document" section="6.2 Performance Requirements" snippet="Manual refresh must complete within 3 seconds (P95) to meet user expectations for responsiveness. Background polling architecture uses 5-15 minute intervals." />
+      <doc path="docs/prd.md" title="Product Requirements Document" section="6.3 Error Handling" snippet="Clear error messages for rate limits, timeouts, and authentication failures. Exponential backoff for 429 responses with user-visible retry timers." />
+      <doc path="docs/sprint-artifacts/tech-spec-epic-1.md" title="Epic 1 Technical Specification" section="Event Fetching Architecture" snippet="Manual refresh fetches from GitLab API: issues, MRs, and comments from monitored projects. Event deduplication via unique gitlabEventId constraint. Parallel fetching with Promise.allSettled for partial failure tolerance." />
+      <doc path="docs/architecture.md" title="System Architecture" section="Data Pipeline - GitLab Integration" snippet="GitLab API client in services layer. BetterAuth session provides access token. All API calls server-side via tRPC protected procedures. Event transformation layer converts GitLab schema to Event table schema." />
+      <doc path="docs/ux-design-specification.md" title="UX Design Specification" section="5.1 Periodic Check-In Flow" snippet="Manual refresh button in dashboard header. Sync indicator shows 'Last synced: Xm ago'. Loading state with olive spinner. Simple event list for MVP (Story 1.5), full 2-line table in Story 1.6." />
+      <doc path="docs/ux-design-specification.md" title="UX Design Specification" section="7.1 Button Hierarchy" snippet="Primary actions use olive accent (#9DAA5F). Refresh button is primary action. Loading state disables button with spinner. Error state shows retry button." />
+      <doc path="docs/ux-design-specification.md" title="UX Design Specification" section="3.1 Color System" snippet="Olive accent: #9DAA5F (dark mode), #5e6b24 (light mode). Type badges: purple (Issue), blue (MR), gray (Comment). Error states use semantic red for visibility." />
+      <doc path="docs/sprint-artifacts/1-4-project-selection-onboarding.md" title="Story 1.4 - Project Selection Onboarding" section="Dev Agent Record - BetterAuth Patterns" snippet="Session retrieval: auth.api.getSession({ headers: req.headers }). Access token: Account.accessToken with providerId: 'gitlab'. Auth file: src/lib/auth.ts. GitLab API timeout: 5s via AbortSignal.timeout(5000)." />
+    </docs>
+
+    <code>
+      <artifact path="src/server/api/routers/gitlab.ts" kind="router" symbol="listUserProjects" lines="31-136" reason="Established GitLab API client patterns: error handling (401/403/429/5xx/timeout), 5s timeout via AbortSignal, Bearer token auth, GITLAB_INSTANCE_URL env var usage" />
+      <artifact path="src/server/api/routers/projects.ts" kind="router" symbol="saveMonitored" lines="24-72" reason="Prisma transaction patterns for atomic operations: delete + createMany with skipDuplicates for deduplication" />
+      <artifact path="src/app/onboarding/page.tsx" kind="page" symbol="OnboardingPage" lines="1-263" reason="UI patterns: loading spinner (olive accent), empty state messaging, error state with retry, authentication guard redirect pattern" />
+      <artifact path="src/lib/auth.ts" kind="service" symbol="auth" lines="1-50" reason="BetterAuth configuration: GitLab provider setup, Prisma adapter, session structure. Use auth.api.getSession for session retrieval." />
+      <artifact path="src/server/api/trpc.ts" kind="middleware" symbol="protectedProcedure" lines="150-162" reason="Authentication middleware pattern: session validation, user context injection. All event operations must use protectedProcedure." />
+      <artifact path="prisma/schema.prisma" kind="schema" symbol="Event" lines="50-62" reason="Event table schema: gitlabEventId (unique), eventType, title, body, projectId, authorName, createdAt, updatedAt, userId (foreign key). Use for transformation mapping." />
+      <artifact path="prisma/schema.prisma" kind="schema" symbol="MonitoredProject" lines="63-70" reason="MonitoredProject table: gitlabProjectId, projectName, projectPath, userId. Fetch list for filtering API calls to monitored projects only." />
+      <artifact path="prisma/schema.prisma" kind="schema" symbol="LastSync" lines="71-76" reason="LastSync table: userId (unique), lastSyncAt. Update after successful refresh for sync indicator display." />
+      <artifact path="prisma/schema.prisma" kind="schema" symbol="Account" lines="18-28" reason="Account table with BetterAuth schema: accessToken, providerId fields. Query with providerId: 'gitlab' to get user's GitLab access token." />
+    </code>
+
+    <dependencies>
+      <node>
+        <package name="@trpc/server" version="^11.0.0" purpose="Type-safe API layer for mutations and queries" />
+        <package name="@trpc/react-query" version="^11.0.0" purpose="React hooks for tRPC queries (useQuery, useMutation)" />
+        <package name="@prisma/client" version="^6.6.0" purpose="Database ORM for Event/MonitoredProject/LastSync operations" />
+        <package name="better-auth" version="^1.4.1" purpose="Authentication - session management, GitLab access token retrieval" />
+        <package name="zod" version="^3.24.0" purpose="Input validation schemas for tRPC procedures" />
+        <package name="next" version="^15.5.6" purpose="App Router patterns, server components, API routes" />
+        <package name="react" version="^19.0.0" purpose="UI components (RefreshButton, SyncIndicator, SimpleEventList)" />
+        <package name="typescript" version="^5.8.2" purpose="Type safety across GitLab API responses, Event schema, tRPC endpoints" />
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    **BetterAuth Integration Requirements**
+    - Session retrieval: MUST use `auth.api.getSession({ headers: req.headers })` in tRPC context (NOT NextAuth getServerSession)
+    - Access token lookup: Query Account table with `providerId: "gitlab"` (NOT `provider: "gitlab"`)
+    - Auth file location: `src/lib/auth.ts` (NOT `src/server/auth/config.ts` - NextAuth migration complete)
+    - Authentication errors: Return clear TRPCError prompting BetterAuth re-authentication flow
+
+    **T3 Stack Patterns**
+    - All backend logic via tRPC routers (NO direct API routes)
+    - Use protectedProcedure middleware for all authenticated endpoints
+    - User-scoped queries: ALWAYS filter by session.user.id to prevent data leakage
+    - Input validation: Zod schemas required for all mutation inputs
+    - Server Components: Use getServerSession for initial page loads, tRPC for interactions
+
+    **Database Patterns (Prisma)**
+    - Atomic operations: Use db.$transaction for multi-step database changes
+    - Batch operations: createMany for performance (NOT multiple create calls)
+    - Deduplication: skipDuplicates: true on createMany with unique constraint on gitlabEventId
+    - Foreign keys: userId on all user-scoped tables (Event, MonitoredProject, LastSync)
+    - Indexes: Ensure unique index on Event.gitlabEventId exists (from Story 1.2 schema)
+
+    **GitLab API Requirements**
+    - Environment variable: GITLAB_INSTANCE_URL for self-hosted GitLab support
+    - Authentication: Bearer token in Authorization header from Account.accessToken
+    - Timeout: 5 seconds via AbortSignal.timeout(5000) on all fetch calls
+    - Error handling: Comprehensive coverage (401, 403, 404, 429, 5xx, timeout, network)
+    - Endpoints: /api/v4/projects/:id/issues, /merge_requests, /issues/:iid/notes, /merge_requests/:iid/notes
+    - Pagination: Start with per_page=100, defer pagination handling to future story
+
+    **Performance Requirements**
+    - Manual refresh target: &lt;3 seconds (P95) for up to 5 monitored projects
+    - Parallel fetching: Use Promise.allSettled for concurrent project API calls
+    - Batch insert: Single Prisma transaction for all events (reduce DB round trips)
+    - Timeout: Fail fast at 5s per API call (don't hang UI)
+
+    **Error Handling Strategy**
+    - 429 Rate Limit: Exponential backoff (1s, 2s, 4s delays), max 3 retries
+    - Partial failures: Continue processing successful projects even if some fail
+    - User messages: Clear, actionable, non-technical (reference Story 1.5 Dev Notes for mapping)
+    - Retry mechanisms: Manual retry button for all error states in UI
+
+    **UI Component Guidelines (Minimal MVP)**
+    - Olive accent: #9DAA5F for buttons, loading states, active elements
+    - Dark mode: All components styled for dark background
+    - Loading states: Spinner with olive color during async operations
+    - Empty states: Helpful guidance messages (not just "No data")
+    - Error states: Clear message + Retry button (red accent per UX semantic colors)
+    - Type badges: purple (Issue), blue (MR), gray (Comment) per UX spec Section 3.1
+    - Temporary components: SimpleEventList replaced in Story 1.6 with 2-line table
+    - Reusable components: RefreshButton, SyncIndicator survive to Story 1.6 and beyond
+
+    **Testing Requirements (ADR-006)**
+    - Manual testing only for MVP (no automated tests required)
+    - Test scenarios: first refresh, loading, success, empty, error, duplicate prevention, rate limiting, timeout, 401, partial failure, multi-project
+    - Validation: Prisma Studio for database verification, browser DevTools for network simulation
+    - Automated tests deferred to Epic 6 per ADR-006
+  </constraints>
+
+  <interfaces>
+    **tRPC Procedures to Create**
+    <procedure>
+      <name>events.manualRefresh</name>
+      <kind>mutation</kind>
+      <signature>
+        manualRefresh: protectedProcedure
+          .mutation(async ({ ctx }) => {
+            // 1. Get monitored projects for ctx.session.user.id
+            // 2. For each project: fetch issues, MRs, comments from GitLab API (parallel)
+            // 3. Transform GitLab responses to Event schema
+            // 4. Batch insert with skipDuplicates: true
+            // 5. Update LastSync table
+            // 6. Return { successCount, failureCount, totalProjects, errors[] }
+          })
+      </signature>
+      <path>src/server/api/routers/events.ts</path>
+      <notes>Use Promise.allSettled for parallel fetching. Handle partial failures gracefully.</notes>
+    </procedure>
+
+    <procedure>
+      <name>events.list</name>
+      <kind>query</kind>
+      <signature>
+        list: protectedProcedure
+          .input(z.object({ limit: z.number().default(50), offset: z.number().default(0) }))
+          .query(async ({ ctx, input }) => {
+            // Fetch events for ctx.session.user.id
+            // Order by createdAt DESC
+            // Return: Event[] with pagination
+          })
+      </signature>
+      <path>src/server/api/routers/events.ts</path>
+      <notes>Simple pagination for MVP. Advanced filtering added in Story 1.6+.</notes>
+    </procedure>
+
+    <procedure>
+      <name>events.getLastSync</name>
+      <kind>query</kind>
+      <signature>
+        getLastSync: protectedProcedure
+          .query(async ({ ctx }) => {
+            // Fetch LastSync for ctx.session.user.id
+            // Return: { lastSyncAt: Date | null }
+          })
+      </signature>
+      <path>src/server/api/routers/events.ts</path>
+      <notes>Return null if never synced. Used by SyncIndicator component.</notes>
+    </procedure>
+
+    **GitLab API Client Service**
+    <service>
+      <name>GitLabClient</name>
+      <kind>service</kind>
+      <methods>
+        fetchIssues(projectId: string, accessToken: string): Promise&lt;GitLabIssue[]&gt;
+        fetchMergeRequests(projectId: string, accessToken: string): Promise&lt;GitLabMR[]&gt;
+        fetchIssueComments(projectId: string, issueIid: number, accessToken: string): Promise&lt;GitLabComment[]&gt;
+        fetchMergeRequestComments(projectId: string, mrIid: number, accessToken: string): Promise&lt;GitLabComment[]&gt;
+      </methods>
+      <path>src/server/services/gitlab-client.ts</path>
+      <notes>All methods use 5s timeout, comprehensive error handling, GITLAB_INSTANCE_URL env var</notes>
+    </service>
+
+    **Event Transformer Service**
+    <service>
+      <name>EventTransformer</name>
+      <kind>service</kind>
+      <methods>
+        transformIssue(issue: GitLabIssue, userId: string): EventCreateInput
+        transformMR(mr: GitLabMR, userId: string): EventCreateInput
+        transformComment(comment: GitLabComment, projectId: string, userId: string): EventCreateInput
+      </methods>
+      <path>src/server/services/event-transformer.ts</path>
+      <notes>Maps GitLab API responses to Prisma Event schema. Adds gitlabEventId prefix (issue-, mr-, comment-) for uniqueness.</notes>
+    </service>
+
+    **React Components to Create**
+    <component>
+      <name>RefreshButton</name>
+      <kind>client component</kind>
+      <props>
+        onRefresh: () => Promise&lt;void&gt;
+        isLoading: boolean
+      </props>
+      <path>src/components/dashboard/RefreshButton.tsx</path>
+      <notes>Reusable component. Olive accent button, disabled during loading, shows spinner when isLoading. Survives to Story 1.6.</notes>
+    </component>
+
+    <component>
+      <name>SyncIndicator</name>
+      <kind>client component</kind>
+      <props>None - fetches lastSync internally via tRPC</props>
+      <path>src/components/dashboard/SyncIndicator.tsx</path>
+      <notes>Displays "Last synced: Xm ago" or "Never synced". Auto-refreshes every 60s. Reusable, survives to Story 1.6.</notes>
+    </component>
+
+    <component>
+      <name>SimpleEventList</name>
+      <kind>client component</kind>
+      <props>None - fetches events internally via tRPC</props>
+      <path>src/components/dashboard/SimpleEventList.tsx</path>
+      <notes>Temporary component for MVP. Shows: type badge, title, timestamp. Replaced in Story 1.6 with full 2-line table.</notes>
+    </component>
+
+    **Database Schema (Reference Only - Already Created in Story 1.2)**
+    <table name="Event" schema="prisma/schema.prisma">
+      Fields: id, gitlabEventId (unique), eventType, title, body, projectId, authorName, createdAt, updatedAt, userId
+    </table>
+    <table name="LastSync" schema="prisma/schema.prisma">
+      Fields: id, userId (unique), lastSyncAt, createdAt, updatedAt
+    </table>
+    <table name="MonitoredProject" schema="prisma/schema.prisma">
+      Fields: id, userId, gitlabProjectId, projectName, projectPath, createdAt
+    </table>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Per ADR-006 (Minimal Testing for Fast Iteration), Story 1.5 requires only manual validation. No automated tests (unit, integration, E2E) required for MVP. Automated test suite deferred to Epic 6. Manual testing validates: functionality, error handling, performance, duplicate prevention, partial failure scenarios.
+    </standards>
+
+    <locations>
+      - Manual testing only (no test files to create)
+      - Validation via: browser (localhost:3000/dashboard), Prisma Studio (database inspection), browser DevTools (network throttling, error simulation)
+    </locations>
+
+    <ideas>
+      **AC1-8 (Backend GitLab API Integration)**
+      - Test: Load dashboard, click refresh, verify GitLab API calls in Network tab (issues, MRs, comments endpoints)
+      - Test: Check Prisma Studio Event table for fetched records with correct gitlabEventId, eventType, title, body, authorName
+      - Test: Measure manual refresh time (should be &lt;3s for 5 projects)
+
+      **AC9-13 (Error Handling &amp; Rate Limiting)**
+      - Test: Rapid refresh (10+ times) to trigger 429, verify exponential backoff message, verify eventual success
+      - Test: Network throttling in DevTools (slow 3G), verify 5s timeout triggers with clear message
+      - Test: Manually set Account.accessToken to invalid value, verify 401 error with re-auth prompt
+      - Test: Disconnect network, verify network error message with retry button
+      - Test: Add invalid project ID to MonitoredProject table, verify partial success (other projects still sync)
+
+      **AC14-19 (UI Specifications)**
+      - Test: First load shows "Never synced" in SyncIndicator
+      - Test: Click RefreshButton shows olive spinner, button disabled during loading
+      - Test: Empty state before first refresh: "No events yet. Click refresh to fetch."
+      - Test: After successful refresh: SimpleEventList displays events with type badges (purple/blue/gray), titles, timestamps
+      - Test: SyncIndicator updates to "Last synced: Xm ago" after successful refresh
+      - Test: Error state shows clear message + Retry button (simulate via network disconnect)
+
+      **AC20-22 (Data Persistence)**
+      - Test: After refresh, verify LastSync table updated with current timestamp for user
+      - Test: Click refresh twice, verify no duplicate events in Event table (gitlabEventId unique constraint working)
+      - Test: Multi-user: Two users login separately, verify each sees only their own events (userId isolation working)
+    </ideas>
+  </tests>
+</story-context>
