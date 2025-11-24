@@ -317,6 +317,10 @@ Per ADR-006 (Minimal Testing for Fast Iteration), this story requires only manua
 - Story 1.4 (Project Selection Onboarding) - Will use authenticated session
 - Story 1.5 (GitLab API Client) - Will use access_token from Account table
 
+## Change Log
+
+**2025-11-24** - Senior Developer Review completed. Status: Changes Requested. Review identified 3 partial/missing ACs (AC8-10), 2 incomplete tasks (Task 7-8), and task tracking inconsistencies. Core OAuth functionality works well but scope validation and error handling need clarification/implementation.
+
 ## Dev Agent Record
 
 ### Context Reference
@@ -438,3 +442,177 @@ Deprecated:
 ### Completion Notes List
 
 ### File List
+
+## Senior Developer Review (AI)
+
+**Reviewer:** BMad
+**Date:** 2025-11-24
+**Outcome:** **Changes Requested**
+
+### Summary
+
+Story 1.3 successfully implements the core GitLab OAuth authentication flow with Next.js 16 App Router migration. The implementation demonstrates solid technical execution with working authentication, session persistence, and proper database integration. However, there are important gaps between stated acceptance criteria and actual implementation, particularly around error handling (AC9-10) and token validation (AC8). The completion notes acknowledge these as "acceptable for MVP," which may be a valid product decision, but requires explicit alignment on scope.
+
+### Key Findings
+
+**MEDIUM Severity Issues:**
+
+1. **AC8 Not Implemented - Token Validation Missing**: Acceptance criterion explicitly requires "OAuth token is validated on first login (verify scopes are sufficient)" but no validation endpoint or scope checking implemented. Completion notes acknowledge this as deferred. [file: Story AC8]
+
+2. **AC9 Partial - Expired Token Handling**: AC requires "Expired/revoked token (401) prompts re-authentication with clear error message" but implementation relies on NextAuth default behavior without custom error messaging. No evidence of explicit 401 handling or clear user-facing messages. [file: src/server/auth/config.ts - no error callback]
+
+3. **AC10 Partial - 403 Permission Errors**: AC requires "Insufficient permissions (403) shows helpful error about required scopes" but no custom 403 handling or scope-specific error messages found. Default NextAuth error page exists but doesn't provide scope guidance. [file: src/server/auth/config.ts - no error callback]
+
+4. **Task Tracking Incorrect**: ALL task checkboxes remain unchecked (`- [ ]`) in story file despite Dev Agent Record claiming "Status: ✅ **COMPLETED - Ready for Review**". This creates confusion about actual completion state. [file: Story Tasks section lines 26-97]
+
+5. **Task 7 Incomplete - OAuth Error Handling**: Task requires "Handle OAuth errors in NextAuth error callback" and "Display clear error messages" but no error callback implemented in authConfig. Subtasks for error parameters and testing with wrong credentials not evidenced. [file: src/server/auth/config.ts:34-67 - no error handling callbacks]
+
+6. **Task 8 Completely Unimplemented - Token Validation**: All 5 subtasks for token validation (create endpoint, call GitLab API, check scopes, display errors, guide user) are not implemented. This directly causes AC8 failure. [file: No validation endpoint found]
+
+**LOW Severity Issues:**
+
+1. **Type Safety - Any Type in Callback**: Auth config session callback uses `any` type for parameters instead of proper NextAuth types. Should use typed callback parameters for type safety. [file: src/server/auth/config.ts:55]
+
+2. **Missing Profile Validation**: GitLab provider uses default profile mapping without custom validation. No verification of required fields (id, email, name, avatar_url) from GitLab API response. [file: src/server/auth/config.ts:36-47]
+
+3. **No Image Error Handling**: Header component displays GitLab avatar without onError handler. Known issue with 401 responses on restricted instances but no graceful fallback implemented. [file: src/components/layout/Header.tsx:24-30]
+
+### Acceptance Criteria Coverage
+
+| AC# | Description | Status | Evidence |
+|-----|-------------|--------|----------|
+| AC1 | Landing page displays "Sign in with GitLab" button | ✅ IMPLEMENTED | src/app/page.tsx:53 - Button with correct text and onClick handler |
+| AC2 | Button redirects to GitLab OAuth with correct scopes (read_api, read_user) | ✅ IMPLEMENTED | src/server/auth/config.ts:39-43 - Authorization URL and scopes configured |
+| AC3 | After authorization, redirect to /onboarding | ✅ IMPLEMENTED | src/server/auth/config.ts:65 + src/app/page.tsx:28-31 - Auto-redirect logic |
+| AC4 | User/Account records created with encrypted access token | ✅ IMPLEMENTED | src/server/auth/config.ts:49 - PrismaAdapter handles DB operations |
+| AC5 | Session persisted in Session table with 24-hour expiration | ✅ IMPLEMENTED | src/server/auth/config.ts:50-52 - Database session strategy, 24hr maxAge |
+| AC6 | User's GitLab username and avatar displayed after auth | ✅ IMPLEMENTED | src/components/layout/Header.tsx:23-39 - Displays image, name, email |
+| AC7 | Logout clears session from database | ✅ IMPLEMENTED | src/components/layout/Header.tsx:41 - signOut with callback URL |
+| AC8 | OAuth token validated on first login (verify scopes) | ❌ NOT IMPLEMENTED | No validation endpoint found. Acknowledged as deferred in completion notes. |
+| AC9 | Expired/revoked token (401) prompts re-auth with clear error | ⚠️ PARTIAL | Relies on NextAuth default behavior. No custom 401 handling or error messaging. |
+| AC10 | Insufficient permissions (403) shows helpful error about scopes | ⚠️ PARTIAL | No custom 403 handling or scope-specific errors. Default error page exists. |
+
+**Summary:** 7 of 10 acceptance criteria fully implemented, 3 partial or not implemented (AC8, AC9, AC10)
+
+### Task Completion Validation
+
+**Critical Issue:** ALL tasks show `- [ ]` (unchecked) in story file, contradicting "Completed - Ready for Review" status in Dev Agent Record.
+
+| Task Group | Marked As | Verified As | Evidence |
+|------------|-----------|-------------|----------|
+| Task 1: Upgrade Next.js & Migrate App Router | UNCHECKED | ✅ COMPLETE | All 8 subtasks verified: Next.js 16.0.3 (package.json:28), App Router files created, Pages Router deprecated, TypeScript passes |
+| Task 2: Configure GitLab OAuth Application | UNCHECKED | ✅ COMPLETE | OAuth configuration verified in code, scopes correct (src/server/auth/config.ts:42) |
+| Task 3: Configure NextAuth GitLab Provider | UNCHECKED | ⚠️ MOSTLY COMPLETE | 6/7 subtasks done. Missing: JWT callback (only session callback exists). Profile mapping uses defaults (no custom profile()). |
+| Task 4: Create Landing Page with Login | UNCHECKED | ✅ COMPLETE | All 6 subtasks verified: page created, button styled with olive colors, dark mode implemented |
+| Task 5: Implement Session Persistence | UNCHECKED | ✅ COMPLETE | All 5 subtasks verified via code and completion notes (PrismaAdapter, session persistence tested) |
+| Task 6: Create Header Component | UNCHECKED | ⚠️ MOSTLY COMPLETE | 4/5 subtasks done. Missing: "Style with React Aria Button" - uses standard button (Acceptable per ADR-011 Phase 1) |
+| Task 7: Implement OAuth Error Handling | UNCHECKED | ❌ NOT DONE | 0/4 subtasks implemented. No error callback in authConfig, no error parameter handling, relies on NextAuth defaults |
+| Task 8: Token Validation on First Login | UNCHECKED | ❌ NOT DONE | 0/5 subtasks implemented. No validation endpoint, no scope checking, no error display |
+| Task 9: Test Authentication Flow | UNCHECKED | ⚠️ MOSTLY COMPLETE | 5/6 subtasks tested per completion notes. Missing: "Test insufficient permissions (403)" not mentioned |
+
+**Summary:** 4 tasks fully complete, 3 tasks mostly complete with minor gaps, 2 tasks not implemented (Task 7, Task 8)
+
+**HIGH SEVERITY:** Tasks 7 and 8 marked unchecked AND actually not implemented - this is correct but conflicts with "Completed" status claim
+
+### Test Coverage and Gaps
+
+**Testing Performed (Manual):**
+- ✅ OAuth flow end-to-end (login, authorize, redirect)
+- ✅ Session persistence across page refreshes
+- ✅ User data display (name, email, avatar)
+- ✅ Logout functionality
+- ✅ Database record creation (Prisma Studio verification)
+- ✅ TypeScript compilation passes
+- ✅ Dev server starts without errors
+
+**Testing Gaps:**
+- ❌ Token validation with insufficient scopes (AC8)
+- ❌ 401 expired token handling with error messages (AC9)
+- ❌ 403 insufficient permissions error handling (AC10)
+- ❌ Avatar image loading failures (401 responses)
+- ⚠️ "Simulate with invalid token" mentioned but not detailed
+
+**Per ADR-006:** Manual testing only for MVP - no automated tests required. This approach is followed correctly.
+
+### Architectural Alignment
+
+**Tech Spec Compliance:**
+- ✅ NextAuth.js with GitLab provider implemented
+- ✅ PrismaAdapter for User/Account/Session CRUD
+- ✅ Database session strategy (24-hour expiration)
+- ✅ Self-hosted GitLab support via GITLAB_INSTANCE_URL
+- ✅ Required OAuth scopes (read_api, read_user) configured
+- ⚠️ Scope validation on login deferred (acknowledged limitation)
+- ⚠️ Permission validation (403 handling) minimal
+- ⚠️ Expired token handling (401) minimal
+
+**Architecture Constraints:**
+- ✅ Next.js 16.0.3 upgrade successful
+- ✅ NextAuth 5.0.0-beta.30 (Auth.js) for App Router compatibility
+- ✅ App Router migration complete (Pages Router deprecated)
+- ✅ Olive accent colors (#5e6b24, #9DAA5F) implemented
+- ⚠️ React Aria Components not used yet (Acceptable per ADR-011 Phase 1 mouse-first strategy)
+- ✅ TypeScript strict mode, no compilation errors
+- ✅ No console.log statements in production code
+
+**Known Limitations (Per Completion Notes):**
+- Avatar images may 401 on restricted GitLab instances (gracefully handled with Image component fallback)
+- No token refresh logic (deferred to Epic 3)
+- No scope validation on first login (AC8 acknowledged as missing)
+- Single GitLab instance only (multi-instance deferred)
+
+### Security Notes
+
+**Implemented Security Measures:**
+- ✅ OAuth-only authentication (no local passwords)
+- ✅ Client credentials from environment variables (not hardcoded)
+- ✅ Database session strategy with secure cookies (NextAuth handles HttpOnly, SameSite)
+- ✅ Access tokens stored via PrismaAdapter (encrypted at rest per Prisma schema from Story 1.2)
+- ✅ 24-hour session expiration with automatic renewal
+- ✅ CSRF protection via NextAuth built-in tokens
+
+**Security Gaps:**
+- ⚠️ No token scope validation (AC8) - users could authenticate with insufficient permissions and discover later
+- ⚠️ Type safety issue: `any` type in auth callback reduces type checking [file: src/server/auth/config.ts:55]
+- ⚠️ No profile field validation from GitLab API response
+- ⚠️ Error messages may expose internal details (NextAuth default error page not reviewed)
+
+**Risk Assessment:** Medium - Core OAuth security is sound, but lack of scope validation and error handling could lead to poor user experience when permissions are insufficient.
+
+### Best-Practices and References
+
+**Next.js 16 & NextAuth 5:**
+- NextAuth 5 (Auth.js) is required for Next.js 16 App Router compatibility - correct choice
+- App Router migration follows Next.js best practices (layout.tsx, page.tsx, providers pattern)
+- Client components properly marked with "use client"
+- Server/client boundary respected (SessionProvider in client component)
+
+**OAuth 2.0 Best Practices:**
+- Explicit OAuth endpoint URLs for self-hosted GitLab (authorization, token, userinfo) - correct pattern
+- Callback URL configuration via NextAuth pages option
+- State parameter and PKCE handled automatically by NextAuth
+
+**References:**
+- [NextAuth.js 5 Documentation](https://next-auth.js.org/)
+- [Next.js 16 App Router](https://nextjs.org/docs/app)
+- [GitLab OAuth 2.0 API](https://docs.gitlab.com/ee/api/oauth2.html)
+- [Self-Hosted GitLab OAuth Apps](https://docs.gitlab.com/ee/integration/oauth_provider.html)
+
+### Action Items
+
+**Code Changes Required:**
+
+- [ ] [Med] Update story file: Check completed task boxes OR update status to reflect actual completion state [file: Story Tasks section]
+- [ ] [Med] Decide on AC8, AC9, AC10 scope: Either implement missing functionality OR update ACs to mark as "Deferred to Epic X" [file: Story Acceptance Criteria]
+- [ ] [Low] Fix type safety: Replace `any` with proper NextAuth callback types in session callback [file: src/server/auth/config.ts:55]
+- [ ] [Low] Add TODO comments for deferred work (token validation, error handling) with reference to future epic [file: src/server/auth/config.ts]
+- [ ] [Low] Add onError handler to Image component in Header for graceful avatar loading failures [file: src/components/layout/Header.tsx:24-30]
+
+**Advisory Notes:**
+
+- Note: Consider implementing AC8 (token validation) before Story 1.5 (GitLab API Client) to catch scope issues early
+- Note: NextAuth 5 is still in beta (5.0.0-beta.30) - monitor for breaking changes in future releases
+- Note: React Aria Components deferred to Story 1.7 per ADR-011 is acceptable for Phase 1
+- Note: Document OAuth app setup instructions in README for team members (reference Story 1.3 Dev Notes)
+
+**Recommendation:** Update story to accurately reflect completion state (mark completed tasks as checked, clarify which ACs are MVP vs deferred), then re-submit for review OR accept as-is if product owner agrees to defer AC8-10.
