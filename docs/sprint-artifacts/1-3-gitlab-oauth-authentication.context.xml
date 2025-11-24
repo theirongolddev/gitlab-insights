@@ -1,0 +1,213 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>1.3</storyId>
+    <title>GitLab OAuth Authentication</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-24</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/1-3-gitlab-oauth-authentication.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to log in with my GitLab account</iWant>
+    <soThat>I can access the application securely and authorize API access to my projects</soThat>
+    <tasks>
+      - Configure GitLab OAuth Application (AC: 1, 2)
+      - Configure NextAuth GitLab Provider (AC: 2, 3, 4, 8)
+      - Create Landing Page with Login (AC: 1)
+      - Implement Session Persistence (AC: 4, 5)
+      - Create Header Component with User Display (AC: 6, 7)
+      - Implement OAuth Error Handling (AC: 9, 10)
+      - Token Validation on First Login (AC: 8)
+      - Test Authentication Flow (AC: All)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. Landing page (`/`) displays "Sign in with GitLab" button that initiates OAuth flow
+    2. Clicking button redirects to GitLab OAuth authorization page with correct scopes (read_api, read_user)
+    3. After authorizing on GitLab, user is redirected back to `/onboarding` route
+    4. User and Account records are created in database with encrypted access token
+    5. Session is persisted in Session table with 24-hour expiration
+    6. User's GitLab username and avatar are displayed in app after authentication
+    7. Logout functionality works correctly and clears session from database
+    8. OAuth token is validated on first login (verify scopes are sufficient)
+    9. Expired/revoked token (401) prompts re-authentication with clear error message
+    10. Insufficient permissions (403) shows helpful error about required scopes
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-1.md</path>
+        <title>Epic 1 Technical Specification</title>
+        <section>Authentication Service</section>
+        <snippet>Authentication Service manages GitLab OAuth, session lifecycle using NextAuth.js. Input: GitLab OAuth credentials, user profile. Output: Authenticated session, user record. PrismaAdapter handles User, Account, Session CRUD operations with database session strategy.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-1.md</path>
+        <title>Epic 1 Technical Specification</title>
+        <section>Security - Authentication & Authorization</section>
+        <snippet>OAuth Only: No local password storage; GitLab OAuth required for all users. Single instance configured via GITLAB_INSTANCE_URL. Required scopes: read_api (project access), read_user (user profile). Session tokens encrypted at rest in PostgreSQL, 24-hour expiration with automatic renewal.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-1.md</path>
+        <title>Epic 1 Technical Specification</title>
+        <section>User Authentication Flow</section>
+        <snippet>User visits "/" → Clicks "Sign in with GitLab" → NextAuth redirects to GitLab OAuth → User authorizes → GitLab redirects to /api/auth/callback/gitlab → NextAuth exchanges code for access token → Creates User + Account + Session records → User redirected to "/onboarding"</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>Cross-Cutting Concerns - Error Handling Strategy</section>
+        <snippet>API/Backend (tRPC): Throw TRPCError with typed codes (BAD_REQUEST, UNAUTHORIZED, INTERNAL_SERVER_ERROR). Frontend: React Error Boundaries catch component errors, toast notifications for user-facing errors. Principle: Fail fast, log full context, provide user-friendly messages.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>ADR-011: Phased MVP - Mouse-First with Keyboard Layer</section>
+        <snippet>Phase 1 MVP with mouse-driven UI (buttons, nav links, clickable elements). React Aria Components foundation supports both mouse AND keyboard interactions. Phase 2 adds keyboard shortcuts that call same underlying functions (no refactoring needed).</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics/epic-1-walking-skeleton-story-breakdown.md</path>
+        <title>Epic 1 Story Breakdown</title>
+        <section>Story 1.3: GitLab OAuth Authentication</section>
+        <snippet>Create GitLab OAuth application at gitlab.com/oauth/applications with callback URL http://localhost:3000/api/auth/callback/gitlab. Configure NextAuth GitLab provider in src/server/auth.ts. Environment variables: GITLAB_CLIENT_ID, GITLAB_CLIENT_SECRET, NEXTAUTH_SECRET, NEXTAUTH_URL. Store GitLab access token in Account table for API calls.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>src/server/auth/config.ts</path>
+        <kind>config</kind>
+        <symbol>authConfig</symbol>
+        <lines>34-64</lines>
+        <reason>NextAuth configuration with GitLab provider partially configured. Already has issuer set to GITLAB_INSTANCE_URL, authorization scopes (read_api read_user), PrismaAdapter, and session callback. Needs completion for full OAuth flow support.</reason>
+      </artifact>
+      <artifact>
+        <path>src/server/auth/index.ts</path>
+        <kind>service</kind>
+        <symbol>auth, signIn, signOut</symbol>
+        <lines>1-11</lines>
+        <reason>NextAuth instance with exported auth, signIn, signOut functions. Auth is cached using React cache(). These exports will be used in landing page and header components for authentication actions.</reason>
+      </artifact>
+      <artifact>
+        <path>src/pages/index.tsx</path>
+        <kind>component</kind>
+        <symbol>Home, AuthShowcase</symbol>
+        <lines>4-44</lines>
+        <reason>LEGACY Pages Router landing page - should be migrated to App Router. Has basic AuthShowcase component with olive accent colors. This file exists but project should use App Router (src/app/page.tsx) instead per Next.js 15 best practices.</reason>
+      </artifact>
+      <artifact>
+        <path>src/env.js</path>
+        <kind>config</kind>
+        <symbol>env</symbol>
+        <lines>14-25</lines>
+        <reason>Environment variable validation schema. Already configured with GITLAB_CLIENT_ID, GITLAB_CLIENT_SECRET, GITLAB_INSTANCE_URL validation using zod. AUTH_SECRET configured for NextAuth session encryption.</reason>
+      </artifact>
+      <artifact>
+        <path>src/app/api/auth/[...nextauth]/route.ts</path>
+        <kind>api</kind>
+        <symbol>NextAuth handlers</symbol>
+        <lines>N/A</lines>
+        <reason>NextAuth API route handler for OAuth callbacks. Location for /api/auth/callback/gitlab endpoint that GitLab OAuth redirects to after authorization.</reason>
+      </artifact>
+      <artifact>
+        <path>prisma/schema.prisma</path>
+        <kind>schema</kind>
+        <symbol>User, Account, Session</symbol>
+        <lines>N/A</lines>
+        <reason>Database models for authentication. User stores profile (name, email, image). Account stores OAuth tokens (access_token as @db.Text). Session stores active sessions with expiration. Migration 20251124133946_init already applied.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="next-auth" version="5.0.0-beta.25" />
+        <package name="@auth/prisma-adapter" version="^2.7.2" />
+        <package name="@prisma/client" version="^6.6.0" />
+        <package name="next" version="^15.2.3" />
+        <package name="react" version="^19.0.0" />
+        <package name="zod" version="^3.24.2" />
+        <package name="@t3-oss/env-nextjs" version="^0.12.0" />
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - **CRITICAL: Upgrade Next.js from 15.2.3 to 16.0.3** - Latest stable version with full App Router support
+    - **CRITICAL: Migrate from Pages Router to App Router** - Remove i18n config, create app/layout.tsx, migrate pages/index.tsx to app/page.tsx
+    - Use NextAuth 5.0 (Auth.js) with database session strategy (not JWT) for MVP
+    - Store sessions in PostgreSQL Session table with 24-hour expiration
+    - GitLab provider must support self-hosted instances via GITLAB_INSTANCE_URL
+    - OAuth scopes required: read_api (project access) and read_user (user profile)
+    - PrismaAdapter already configured; User, Account, Session models migrated
+    - Store GitLab access_token in Account table for future API calls (Story 1.5)
+    - Landing page must be src/app/page.tsx (App Router) - migrate content from src/pages/index.tsx
+    - Create src/app/layout.tsx root layout for App Router
+    - API routes already in App Router format: src/app/api/auth/[...nextauth]/route.ts
+    - Landing page must redirect to /onboarding after successful authentication
+    - Apply olive accent colors: #5e6b24 (light mode), #9DAA5F (dark mode)
+    - All interactive elements must be accessible via Tab navigation and Enter to activate (Phase 1 mouse-first per ADR-011)
+    - Error handling: Use clear user-friendly messages for OAuth errors (insufficient scopes, connection errors, cancelled auth)
+    - Environment variables validated via @t3-oss/env-nextjs with zod schemas
+    - Never commit .env to version control; use .env.example for documentation
+    - No automated tests required per ADR-006 (manual validation only for MVP)
+    - After migration, deprecate/remove src/pages/_app.tsx and src/pages/index.tsx
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>NextAuth signIn</name>
+      <kind>function</kind>
+      <signature>signIn(provider?: string, options?: SignInOptions): Promise&lt;SignInResponse&gt;</signature>
+      <path>src/server/auth/index.ts</path>
+    </interface>
+    <interface>
+      <name>NextAuth signOut</name>
+      <kind>function</kind>
+      <signature>signOut(options?: SignOutOptions): Promise&lt;void&gt;</signature>
+      <path>src/server/auth/index.ts</path>
+    </interface>
+    <interface>
+      <name>useSession</name>
+      <kind>hook</kind>
+      <signature>useSession(): { data: Session | null, status: "loading" | "authenticated" | "unauthenticated" }</signature>
+      <path>next-auth/react</path>
+    </interface>
+    <interface>
+      <name>GitLab OAuth Authorization</name>
+      <kind>REST endpoint</kind>
+      <signature>GET {GITLAB_INSTANCE_URL}/oauth/authorize?client_id={}&redirect_uri={}&response_type=code&scope=read_api read_user</signature>
+      <path>External GitLab API</path>
+    </interface>
+    <interface>
+      <name>GitLab OAuth Token</name>
+      <kind>REST endpoint</kind>
+      <signature>POST {GITLAB_INSTANCE_URL}/oauth/token with code, client_id, client_secret, redirect_uri</signature>
+      <path>External GitLab API</path>
+    </interface>
+    <interface>
+      <name>GitLab User API</name>
+      <kind>REST endpoint</kind>
+      <signature>GET {GITLAB_INSTANCE_URL}/api/v4/user (requires access_token header)</signature>
+      <path>External GitLab API</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Per ADR-006 (Minimal Testing for Fast Iteration), this story requires manual validation only. No automated tests (unit, integration, or E2E) required for MVP. Focus on rapid iteration and functionality verification through manual testing in development environment.</standards>
+    <locations>
+      - tests/ (manual testing documentation only, no test files for MVP)
+      - Manual validation steps documented in story Dev Notes
+    </locations>
+    <ideas>
+      <test ac="1,2,3" type="manual">Happy path OAuth flow: Click "Sign in with GitLab" → Authorize on GitLab → Redirected to /onboarding → Session created</test>
+      <test ac="4,5" type="manual">Database verification: Check User, Account, Session records created in Prisma Studio with encrypted access_token</test>
+      <test ac="6,7" type="manual">User display and logout: Verify username/avatar shown after login, logout clears session from database</test>
+      <test ac="8" type="manual">Token validation: Verify OAuth scopes (read_api, read_user) granted by checking GitLab API /user response</test>
+      <test ac="9,10" type="manual">Error handling: Test with expired token (simulate 401), insufficient scopes (test with wrong scopes), cancelled authorization</test>
+      <test ac="All" type="manual">Session persistence: Refresh browser, navigate between pages, verify still authenticated without re-login</test>
+    </ideas>
+  </tests>
+</story-context>

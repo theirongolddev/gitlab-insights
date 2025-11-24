@@ -1,5 +1,5 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import { type DefaultSession, type NextAuthConfig } from "next-auth";
+import { type DefaultSession } from "next-auth";
 import GitLabProvider from "next-auth/providers/gitlab";
 
 import { db } from "~/server/db";
@@ -34,26 +34,25 @@ declare module "next-auth" {
 export const authConfig = {
   providers: [
     GitLabProvider({
-      clientId: env.GITLAB_CLIENT_ID!,
-      clientSecret: env.GITLAB_CLIENT_SECRET!,
-      issuer: env.GITLAB_INSTANCE_URL,
+      clientId: env.GITLAB_CLIENT_ID,
+      clientSecret: env.GITLAB_CLIENT_SECRET,
       authorization: {
+        url: `${env.GITLAB_INSTANCE_URL}/oauth/authorize`,
         params: {
           scope: "read_api read_user",
         },
       },
+      token: `${env.GITLAB_INSTANCE_URL}/oauth/token`,
+      userinfo: `${env.GITLAB_INSTANCE_URL}/api/v4/user`,
     }),
-    /**
-     * GitLab OAuth provider configured for self-hosted GitLab instance.
-     * Requires GITLAB_CLIENT_ID, GITLAB_CLIENT_SECRET, and GITLAB_INSTANCE_URL environment variables.
-     * OAuth scopes: read_api (project access), read_user (user profile)
-     *
-     * @see https://authjs.dev/reference/core/providers/gitlab
-     */
   ],
   adapter: PrismaAdapter(db),
+  session: {
+    strategy: "database" as const,
+    maxAge: 24 * 60 * 60, // 24 hours
+  },
   callbacks: {
-    session: ({ session, user }) => ({
+    session: ({ session, user }: any) => ({
       ...session,
       user: {
         ...session.user,
@@ -61,4 +60,8 @@ export const authConfig = {
       },
     }),
   },
-} satisfies NextAuthConfig;
+  pages: {
+    signIn: "/",
+    newUser: "/onboarding",
+  },
+};
