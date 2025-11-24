@@ -84,7 +84,7 @@ export class GitLabAPIError extends Error {
 export class GitLabClient {
   private readonly baseUrl: string;
   private readonly accessToken: string;
-  private readonly timeout: number = 30000; // 30 second timeout for heavy queries
+  private readonly timeout: number = 5000; // 5 second timeout per AC10
 
   constructor(accessToken: string) {
     this.baseUrl = `${env.GITLAB_INSTANCE_URL}/api/v4`;
