@@ -15,8 +15,8 @@ export const auth = betterAuth({
       scope: ["read_api"],
     },
   },
-  baseURL: process.env.NEXTAUTH_URL || "http://localhost:3000",
-  trustedOrigins: [process.env.NEXTAUTH_URL || "http://localhost:3000"],
+  baseURL: env.BETTER_AUTH_URL || "http://localhost:3000",
+  trustedOrigins: [env.BETTER_AUTH_URL || "http://localhost:3000"],
 });
 
 export type Session = typeof auth.$Infer.Session;
