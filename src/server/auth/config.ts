@@ -44,6 +44,8 @@ export const authConfig = {
       },
       token: `${env.GITLAB_INSTANCE_URL}/oauth/token`,
       userinfo: `${env.GITLAB_INSTANCE_URL}/api/v4/user`,
+      // TODO (Epic 3): Add profile() callback to validate required fields (id, email, name, avatar_url)
+      // TODO (Epic 3): Add scope validation on first login to verify read_api and read_user permissions
     }),
   ],
   adapter: PrismaAdapter(db),
@@ -52,13 +54,22 @@ export const authConfig = {
     maxAge: 24 * 60 * 60, // 24 hours
   },
   callbacks: {
-    session: ({ session, user }: any) => ({
-      ...session,
-      user: {
-        ...session.user,
-        id: user.id,
-      },
-    }),
+    session: ({ session, user }: { session: any; user: any }) => {
+      // Add user ID to session for database queries
+      // TODO (Epic 6): Replace 'any' types with proper NextAuth v5 callback types when available
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          id: user.id,
+        },
+      };
+    },
+    // TODO (Epic 3): Add jwt() callback for token refresh logic
+    // TODO (Epic 6): Add signIn() callback for custom error handling:
+    //   - 401: Expired/revoked token → prompt re-authentication with clear message
+    //   - 403: Insufficient permissions → show scope requirements error
+    //   - Network errors → show connection error with retry
   },
   pages: {
     signIn: "/",

@@ -27,6 +27,10 @@ export function Header() {
               width={32}
               height={32}
               className="rounded-full"
+              onError={(e) => {
+                // Hide image on error (e.g., 401 from restricted GitLab instances)
+                e.currentTarget.style.display = "none";
+              }}
             />
           )}
           <div className="flex flex-col">
