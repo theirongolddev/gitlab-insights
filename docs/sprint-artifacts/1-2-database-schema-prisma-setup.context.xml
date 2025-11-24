@@ -1,0 +1,197 @@
+<story-context id="bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>1.2</storyId>
+    <title>Database Schema & Prisma Setup</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-24</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/1-2-database-schema-prisma-setup.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>to define the database schema with Prisma</iWant>
+    <soThat>I can store users, events, queries, and monitored projects with proper relationships and indexes</soThat>
+    <tasks>
+      - Configure PostgreSQL Database (AC: 10, 12)
+        - Verify DATABASE_URL is set in .env (from Story 1.1)
+        - Create docker-compose.yml for local PostgreSQL container
+        - Start PostgreSQL container: `docker compose up -d`
+        - Verify database connection
+
+      - Define NextAuth Models (AC: 1, 2, 3, 4, 9)
+        - Replace example Post model with User model (id, name, email, emailVerified, image, relations, timestamps)
+        - Add Account model with OAuth fields (provider="gitlab", providerAccountId, access_token as @db.Text, refresh_token as @db.Text, expires_at, token_type, scope, id_token as @db.Text)
+        - Add Session model (id, sessionToken unique, userId, expires)
+        - Configure proper foreign key relations with onDelete: Cascade
+        - Add @@unique([provider, providerAccountId]) to Account
+        - Add @@index([userId]) to Account and Session
+
+      - Define Application Models (AC: 1, 5, 6, 7, 9)
+        - Add Event model with all fields (id, userId, type, title, body as @db.Text, author, authorAvatar, project, projectId, labels as String[], gitlabEventId unique, gitlabUrl, timestamps)
+        - Add UserQuery model (id, userId, name, filters as Json, lastViewedAt nullable, timestamps)
+        - Add MonitoredProject model (id, userId, gitlabProjectId, projectName, projectPath, timestamp)
+        - Configure foreign key relations to User with onDelete: Cascade
+        - Add @@unique([userId, gitlabProjectId]) to MonitoredProject
+
+      - Configure Indexes for Performance (AC: 8)
+        - Add @@index([userId, createdAt(sort: Desc)]) to Event for dashboard queries
+        - Add @@index([gitlabEventId]) to Event for fast duplicate checking
+        - Add @@index([userId]) to UserQuery
+        - Add @@index([userId]) to MonitoredProject
+
+      - Run Migration and Generate Types (AC: 10, 11)
+        - Run `npx prisma migrate dev --name init`
+        - Verify migration creates all tables successfully
+        - Verify Prisma Client types are generated
+        - Run `npx prisma generate` to regenerate if needed
+
+      - Validate Schema (AC: 11, 12)
+        - Run TypeScript compilation (`npm run typecheck`) - should pass with zero errors
+        - Open Prisma Studio (`npx prisma studio`) and verify all tables are visible
+        - Verify table structure matches schema definitions
+        - Test basic CRUD operations in Prisma Studio (optional - can defer to Story 1.3)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. Prisma schema file (`prisma/schema.prisma`) includes all required models: User, Account, Session (NextAuth required), Event, UserQuery, MonitoredProject
+    2. User model includes fields: id (cuid), name, email (unique), emailVerified, image, relations to accounts/sessions/events/queries/projects, timestamps
+    3. Account model includes fields for NextAuth OAuth (provider, providerAccountId, access_token, refresh_token, expires_at, etc.) with proper Text type for tokens
+    4. Session model includes fields: id (cuid), sessionToken (unique), userId, expires with relation to User
+    5. Event model includes fields: id, userId, type, title, body (Text), author, authorAvatar, project, projectId, labels (String[]), gitlabEventId (unique), gitlabUrl, timestamps
+    6. UserQuery model includes fields: id, userId, name, filters (Json), lastViewedAt, timestamps
+    7. MonitoredProject model includes fields: id, userId, gitlabProjectId, projectName, projectPath, timestamp with unique constraint on [userId, gitlabProjectId]
+    8. Proper indexes configured: Event(userId, createdAt desc), Event(gitlabEventId), Account(userId), Session(userId), UserQuery(userId), MonitoredProject(userId)
+    9. Foreign key relations with onDelete: Cascade for user-owned data
+    10. Migration runs successfully with `npx prisma migrate dev --name init` and creates all tables
+    11. Prisma Client generates TypeScript types without errors
+    12. Database visible and queryable in Prisma Studio (`npx prisma studio`)
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-1.md</path>
+        <title>Epic 1 Technical Specification</title>
+        <section>Data Models and Contracts</section>
+        <snippet>Complete Prisma schema definitions for all 6 models: User, Account, Session (NextAuth required), Event, UserQuery, MonitoredProject. Includes field types, relations, indexes, and unique constraints. Uses cuid() for IDs, @db.Text for OAuth tokens, String[] for labels array, Json for filters.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-1.md</path>
+        <title>Epic 1 Technical Specification</title>
+        <section>PostgreSQL Database</section>
+        <snippet>PostgreSQL connection via Prisma ORM. DATABASE_URL environment variable. Connection pooling max 10 connections. Schema managed by Prisma Migrations. Development: `prisma migrate dev`, Production: `prisma migrate deploy`.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics/epic-1-walking-skeleton-story-breakdown.md</path>
+        <title>Epic 1 Story Breakdown</title>
+        <section>Story 1.2: Database Schema & Prisma Setup</section>
+        <snippet>Technical notes: Install PostgreSQL locally or use Docker. Set DATABASE_URL in .env. Use cuid() for IDs. Add indexes on Event(userId, createdAt), Event(title, body) with gin type for full-text search. Prerequisites: Story 1.1.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/1-1-initialize-t3-stack-project.md</path>
+        <title>Story 1.1 Completion Notes</title>
+        <section>Learnings from Previous Story</section>
+        <snippet>Prisma 6.x installed (newer than spec's 5.x). Prisma schema scaffolded at prisma/schema.prisma with example Post model. DATABASE_URL set to postgresql://postgres:password@localhost:5432/gitlab_insights. NextAuth 5.0 beta configured with PrismaAdapter. Recommendation: Define User, Account, Session models for NextAuth.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>prisma/schema.prisma</path>
+        <kind>schema</kind>
+        <symbol>Post, Account, Session, User, VerificationToken</symbol>
+        <lines>1-76</lines>
+        <reason>Current schema with scaffolded models. Post model needs replacement with Event, UserQuery, MonitoredProject models. Account and Session models already defined but need Text annotations uncommented for PostgreSQL.</reason>
+      </artifact>
+      <artifact>
+        <path>src/server/db.ts</path>
+        <kind>service</kind>
+        <symbol>db (PrismaClient singleton)</symbol>
+        <lines>all</lines>
+        <reason>Prisma Client instance already configured. No changes needed. Will auto-generate types after schema changes.</reason>
+      </artifact>
+      <artifact>
+        <path>src/server/auth/config.ts</path>
+        <kind>config</kind>
+        <symbol>authConfig</symbol>
+        <lines>all</lines>
+        <reason>NextAuth configured with PrismaAdapter. Requires User, Account, Session models in database. GitLab OAuth provider expects access_token to be stored in Account table.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <npm>
+        <package name="@prisma/client" version="^6.6.0"/>
+        <package name="prisma" version="^6.6.0" dev="true"/>
+        <package name="@auth/prisma-adapter" version="^2.7.2"/>
+        <package name="next-auth" version="5.0.0-beta.25"/>
+        <package name="zod" version="^3.24.2"/>
+        <package name="@t3-oss/env-nextjs" version="^0.12.0"/>
+        <package name="typescript" version="^5.8.2" dev="true"/>
+      </npm>
+      <system>
+        <package name="PostgreSQL" version="18-alpine" source="Docker"/>
+        <package name="Node.js" version=">=20.x"/>
+      </system>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - All application models (Event, UserQuery, MonitoredProject) MUST include userId foreign key with onDelete: Cascade
+    - Use cuid() for all primary keys for user-friendly IDs
+    - OAuth tokens (access_token, refresh_token, id_token) MUST use @db.Text type for PostgreSQL
+    - Event.gitlabEventId MUST be unique to prevent duplicate event storage
+    - MonitoredProject MUST have unique constraint on [userId, gitlabProjectId] to prevent duplicate monitoring
+    - Account MUST have unique constraint on [provider, providerAccountId] per NextAuth requirements
+    - All user-scoped queries MUST filter by userId for data isolation
+    - Use String[] array type for Event.labels (PostgreSQL native array support)
+    - Use Json type for UserQuery.filters (flexible filter storage)
+    - Index Event table on [userId, createdAt(sort: Desc)] for optimized dashboard queries
+    - Index Event.gitlabEventId for fast duplicate checking during API sync
+    - All foreign keys automatically indexed by Prisma
+    - Database name: gitlab_insights (underscores, not hyphens)
+    - Per ADR-006: Minimal testing for fast iteration - manual validation only, no automated tests required
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Prisma Client</name>
+      <kind>ORM Client</kind>
+      <signature>db.user, db.account, db.session, db.event, db.userQuery, db.monitoredProject</signature>
+      <path>src/server/db.ts</path>
+      <description>Type-safe database client auto-generated from Prisma schema. Provides CRUD operations for all models. Used by tRPC routers and NextAuth adapter.</description>
+    </interface>
+    <interface>
+      <name>PrismaAdapter</name>
+      <kind>NextAuth Adapter</kind>
+      <signature>adapter: PrismaAdapter(db)</signature>
+      <path>src/server/auth/config.ts</path>
+      <description>Connects NextAuth to Prisma database. Requires User, Account, Session models. Automatically manages user sessions and OAuth account linking.</description>
+    </interface>
+    <interface>
+      <name>DATABASE_URL</name>
+      <kind>Environment Variable</kind>
+      <signature>postgresql://[user]:[password]@[host]:[port]/[database]</signature>
+      <path>.env</path>
+      <description>PostgreSQL connection string. Required by Prisma. Validated by @t3-oss/env-nextjs. Format: postgresql://postgres:postgres@localhost:5432/gitlab_insights</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+Per ADR-006 (Minimal Testing for Fast Iteration), this story requires only manual validation. No automated tests needed for database schema setup. Story focuses on infrastructure configuration rather than business logic.
+    </standards>
+    <locations>
+N/A - No automated tests required for this story. Future stories implementing business logic will add tests in src/__tests__ or tests/ directory.
+    </locations>
+    <ideas>
+      <idea ac="AC-1,AC-10">Manual: Run `npx prisma migrate dev --name init` and verify migration creates all 6 tables without errors</idea>
+      <idea ac="AC-11">Manual: Run `npm run typecheck` to verify Prisma Client generates valid TypeScript types</idea>
+      <idea ac="AC-12">Manual: Open `npx prisma studio` and verify all tables (User, Account, Session, Event, UserQuery, MonitoredProject) are visible with correct structure</idea>
+      <idea ac="AC-8">Manual: Inspect generated migration SQL file to verify indexes are created: Event(userId,createdAt), Event(gitlabEventId), Account(userId), Session(userId), UserQuery(userId), MonitoredProject(userId)</idea>
+      <idea ac="AC-2,AC-3,AC-4,AC-5,AC-6,AC-7">Manual: In Prisma Studio, verify each model's fields match specifications (types, nullability, defaults)</idea>
+      <idea ac="AC-9">Manual: Verify foreign key constraints are created with onDelete:Cascade by inspecting migration SQL or database schema</idea>
+    </ideas>
+  </tests>
+</story-context>
