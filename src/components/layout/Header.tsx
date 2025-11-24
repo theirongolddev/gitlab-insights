@@ -1,14 +1,21 @@
 "use client";
 
-import { signOut, useSession } from "next-auth/react";
+import { signOut, useSession } from "~/lib/auth-client";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export function Header() {
   const { data: session } = useSession();
+  const router = useRouter();
 
   if (!session?.user) {
     return null; // Don't show header on login page
   }
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push("/");
+  };
 
   return (
     <header className="border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-[#2d2e2e]">
@@ -42,7 +49,7 @@ export function Header() {
             </span>
           </div>
           <button
-            onClick={() => void signOut({ callbackUrl: "/" })}
+            onClick={() => void handleSignOut()}
             className="rounded-lg bg-gray-200 px-3 py-1.5 text-sm font-medium text-[#2d2e2e] transition hover:bg-gray-300 dark:bg-gray-800 dark:text-[#FDFFFC] dark:hover:bg-gray-700"
           >
             Sign out

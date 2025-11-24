@@ -1,0 +1,219 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>1.4</storyId>
+    <title>Project Selection Onboarding</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-24</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/1-4-project-selection-onboarding.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>first-time user</asA>
+    <iWant>to select which GitLab projects to monitor</iWant>
+    <soThat>my feed shows only relevant events from projects I care about</soThat>
+    <tasks>
+      <task id="1" status="pending">Create Onboarding Page Component (AC: 1, 2, 3, 4, 5, 6, 9)</task>
+      <task id="2" status="pending">Implement GitLab API Client Method (AC: 2, 10)</task>
+      <task id="3" status="pending">Implement Project Selection Backend (AC: 7, 8)</task>
+      <task id="4" status="pending">Add Client-Side State Management (AC: 3, 4)</task>
+      <task id="5" status="pending">Test Onboarding Flow (AC: 1-10)</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">User who just logged in for the first time is automatically redirected to `/onboarding` page</criterion>
+    <criterion id="2">Onboarding page fetches and displays a checklist of user's GitLab projects from GitLab API</criterion>
+    <criterion id="3">All projects are checked by default (opt-out model for maximum initial visibility)</criterion>
+    <criterion id="4">User can check/uncheck projects individually to customize monitoring scope</criterion>
+    <criterion id="5">"Select All" and "Deselect All" buttons provide bulk selection controls</criterion>
+    <criterion id="6">Loading state displays while fetching projects from GitLab API</criterion>
+    <criterion id="7">"Continue" button saves selected projects to MonitoredProject table</criterion>
+    <criterion id="8">After saving, user is redirected to `/dashboard` route</criterion>
+    <criterion id="9">Empty state displays helpful message if user has no projects in GitLab</criterion>
+    <criterion id="10">Error handling displays clear message if GitLab API call fails</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR82-83: User & Access Management - GitLab Project Scoping</section>
+        <snippet>FR82: Select projects on first login with opt-out model (all checked by default). FR83: Add/remove projects post-onboarding for scope management.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture Document</title>
+        <section>T3 Stack - tRPC Type-Safe APIs</section>
+        <snippet>Use tRPC routers for type-safe client-server communication. Procedures have access to session context and Prisma db client. Protected procedures require authentication.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture Document</title>
+        <section>NextAuth GitLab OAuth</section>
+        <snippet>GitLab access token stored in Account.access_token field via PrismaAdapter. Use GITLAB_INSTANCE_URL env var for self-hosted support. Session context available in tRPC procedures.</snippet>
+      </doc>
+      <doc>
+        <path>docs/ux-design-specification.md</path>
+        <title>UX Design Specification</title>
+        <section>Onboarding & First-Run Experience</section>
+        <snippet>Onboarding page uses opt-out model (all projects checked by default) to maximize initial visibility. Clear CTAs guide user through flow. Empty state provides helpful guidance.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-1.md</path>
+        <title>Epic 1 Technical Specification</title>
+        <section>Project Management Module</section>
+        <snippet>GitLab API endpoint: GET /api/v4/projects?membership=true&per_page=100. Returns projects user has access to. Store in MonitoredProject table with userId foreign key.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-1.md</path>
+        <title>Epic 1 Technical Specification</title>
+        <section>Database Schema - MonitoredProject Model</section>
+        <snippet>MonitoredProject: id, userId, gitlabProjectId, projectName, projectPath, createdAt. Unique constraint on [userId, gitlabProjectId] prevents duplicates. Index on userId for fast queries.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics/epic-1-walking-skeleton-story-breakdown.md</path>
+        <title>Epic 1 Story Breakdown</title>
+        <section>Story 1.4: Project Selection Onboarding</section>
+        <snippet>Fetch user's GitLab projects via tRPC. Display checklist with all checked by default. Save selections to MonitoredProject table. Redirect to /dashboard after save.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>src/app/onboarding/page.tsx</path>
+        <kind>component</kind>
+        <symbol>OnboardingPage</symbol>
+        <lines>1-43</lines>
+        <reason>Placeholder onboarding page needs implementation - contains basic session check and Header component integration pattern</reason>
+      </artifact>
+      <artifact>
+        <path>src/server/api/trpc.ts</path>
+        <kind>service</kind>
+        <symbol>protectedProcedure</symbol>
+        <lines>148-160</lines>
+        <reason>Use protectedProcedure for authenticated tRPC endpoints - guarantees ctx.session.user is non-null</reason>
+      </artifact>
+      <artifact>
+        <path>src/server/api/trpc.ts</path>
+        <kind>service</kind>
+        <symbol>createTRPCContext</symbol>
+        <lines>54-63</lines>
+        <reason>tRPC context includes session and db - access pattern for retrieving user's GitLab token from Account table</reason>
+      </artifact>
+      <artifact>
+        <path>src/server/api/root.ts</path>
+        <kind>service</kind>
+        <symbol>appRouter</symbol>
+        <lines>1-23</lines>
+        <reason>Register new routers here - add gitlab and projects routers to appRouter</reason>
+      </artifact>
+      <artifact>
+        <path>src/components/layout/Header.tsx</path>
+        <kind>component</kind>
+        <symbol>Header</symbol>
+        <lines>1-47</lines>
+        <reason>Existing Header component pattern shows session usage, image error handling, and olive accent styling</reason>
+      </artifact>
+      <artifact>
+        <path>src/server/auth/config.ts</path>
+        <kind>service</kind>
+        <symbol>authConfig</symbol>
+        <lines>34-67</lines>
+        <reason>GitLab provider configuration and session callback - pattern for accessing user data in tRPC procedures</reason>
+      </artifact>
+      <artifact>
+        <path>prisma/schema.prisma</path>
+        <kind>schema</kind>
+        <symbol>MonitoredProject</symbol>
+        <lines>94-105</lines>
+        <reason>Database model for storing user's selected projects - unique constraint prevents duplicates, foreign key ensures data integrity</reason>
+      </artifact>
+      <artifact>
+        <path>prisma/schema.prisma</path>
+        <kind>schema</kind>
+        <symbol>Account</symbol>
+        <lines>30-47</lines>
+        <reason>Contains access_token field with GitLab API token - retrieve via ctx.db.account.findFirst where userId and provider='gitlab'</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="@trpc/server" version="^11.0.0">Type-safe API framework - create routers with protectedProcedure</package>
+        <package name="@trpc/react-query" version="^11.0.0">React hooks for tRPC - useQuery and useMutation</package>
+        <package name="next-auth" version="^5.0.0-beta.30">Authentication with GitLab OAuth - session management</package>
+        <package name="@prisma/client" version="^6.6.0">Database ORM - query and mutation operations</package>
+        <package name="next" version="^16.0.3">App Router framework - page.tsx pattern</package>
+        <package name="react" version="^19.0.0">UI library</package>
+        <package name="zod" version="^3.24.2">Schema validation for tRPC inputs</package>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="1">Use protectedProcedure for all tRPC endpoints - ensures user authentication</constraint>
+    <constraint id="2">Retrieve GitLab access token from Account table using ctx.session.user.id - stored via PrismaAdapter</constraint>
+    <constraint id="3">All database queries must filter by userId to prevent data leakage</constraint>
+    <constraint id="4">Use Prisma transactions for atomic delete + insert operations on MonitoredProject</constraint>
+    <constraint id="5">GitLab API calls must use Authorization: Bearer header with access token</constraint>
+    <constraint id="6">Handle GitLab API errors: 401 (expired token), 403 (insufficient permissions), 429 (rate limit)</constraint>
+    <constraint id="7">Convert absolute paths to project-relative format in all file operations</constraint>
+    <constraint id="8">Follow T3 Stack patterns: tRPC routers in src/server/api/routers/, register in root.ts</constraint>
+    <constraint id="9">React Aria Components for accessibility - use Checkbox/CheckboxGroup for Phase 1 mouse-first interactions</constraint>
+    <constraint id="10">Olive accent color (#9DAA5F dark mode, #5e6b24 light mode) for interactive elements</constraint>
+    <constraint id="11">Client components require "use client" directive - server components by default in App Router</constraint>
+    <constraint id="12">Use Next.js useRouter from 'next/navigation' for App Router (not 'next/router')</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>gitlab.listUserProjects</name>
+      <kind>tRPC Query</kind>
+      <signature>gitlab.listUserProjects.useQuery() → { id: string, name: string, path_with_namespace: string }[]</signature>
+      <path>src/server/api/routers/gitlab.ts (to be created)</path>
+    </interface>
+    <interface>
+      <name>projects.saveMonitored</name>
+      <kind>tRPC Mutation</kind>
+      <signature>projects.saveMonitored.useMutation({ projectIds: string[] }) → { success: boolean, count: number }</signature>
+      <path>src/server/api/routers/projects.ts (to be created)</path>
+    </interface>
+    <interface>
+      <name>GitLab API - List Projects</name>
+      <kind>REST Endpoint</kind>
+      <signature>GET ${GITLAB_INSTANCE_URL}/api/v4/projects?membership=true&per_page=100 → GitLabProject[]</signature>
+      <path>External GitLab API</path>
+    </interface>
+    <interface>
+      <name>protectedProcedure</name>
+      <kind>tRPC Procedure Builder</kind>
+      <signature>protectedProcedure.input(zodSchema).query/mutation(async ({ ctx, input }) => {...}) with ctx: { session: Session, db: PrismaClient }</signature>
+      <path>src/server/api/trpc.ts:148-160</path>
+    </interface>
+    <interface>
+      <name>MonitoredProject Prisma Model</name>
+      <kind>Database Model</kind>
+      <signature>prisma.monitoredProject.create({ data: { userId, gitlabProjectId, projectName, projectPath } })</signature>
+      <path>prisma/schema.prisma:94-105</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Per ADR-006 (Minimal Testing for Fast Iteration), this story requires only manual validation. No automated tests required for onboarding flow in MVP. Manual testing covers happy path, edge cases, and error scenarios.</standards>
+    <locations>
+      <location>Manual testing only - no test files required for MVP</location>
+    </locations>
+    <ideas>
+      <idea ac="1">Verify first-time user redirects to /onboarding automatically after OAuth login</idea>
+      <idea ac="2">Test GitLab API integration - verify projects list fetches correctly with valid token</idea>
+      <idea ac="3,4">Test checklist UI - all checked by default, individual check/uncheck works</idea>
+      <idea ac="5">Test bulk controls - "Select All" checks all, "Deselect All" unchecks all</idea>
+      <idea ac="6">Verify loading spinner displays during API fetch</idea>
+      <idea ac="7">Test database persistence - selected projects saved to MonitoredProject table (verify in Prisma Studio)</idea>
+      <idea ac="8">Test redirect - clicking "Continue" redirects to /dashboard</idea>
+      <idea ac="9">Test empty state - GitLab account with zero projects shows helpful message</idea>
+      <idea ac="10">Test error handling - expired token (401), insufficient permissions (403), network error</idea>
+    </ideas>
+  </tests>
+</story-context>

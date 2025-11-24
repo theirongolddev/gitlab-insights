@@ -1,6 +1,6 @@
 "use client";
 
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signIn, signOut, useSession } from "~/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -21,16 +21,16 @@ export default function Home() {
 }
 
 function AuthShowcase() {
-  const { data: sessionData, status } = useSession();
+  const { data: sessionData, isPending } = useSession();
   const router = useRouter();
 
   useEffect(() => {
-    if (status === "authenticated") {
+    if (sessionData) {
       router.push("/onboarding");
     }
-  }, [status, router]);
+  }, [sessionData, router]);
 
-  if (status === "loading") {
+  if (isPending) {
     return (
       <div className="flex flex-col items-center justify-center gap-4">
         <p className="text-center text-2xl text-[#2d2e2e] dark:text-[#FDFFFC]">
@@ -40,6 +40,17 @@ function AuthShowcase() {
     );
   }
 
+  const handleSignIn = async () => {
+    await signIn.social({
+      provider: "gitlab",
+      callbackURL: "/onboarding",
+    });
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
   return (
     <div className="flex flex-col items-center justify-center gap-4">
       <p className="text-center text-2xl text-[#2d2e2e] dark:text-[#FDFFFC]">
@@ -48,7 +59,7 @@ function AuthShowcase() {
       </p>
       <button
         className="rounded-full bg-[#5e6b24] px-10 py-3 font-semibold text-[#FDFFFC] no-underline transition hover:bg-[#4F5A1F] dark:bg-[#9DAA5F] dark:text-[#2d2e2e] dark:hover:bg-[#A8B86C]"
-        onClick={sessionData ? () => void signOut() : () => void signIn("gitlab")}
+        onClick={sessionData ? () => void handleSignOut() : () => void handleSignIn()}
       >
         {sessionData ? "Sign out" : "Sign in with GitLab"}
       </button>

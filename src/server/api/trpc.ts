@@ -9,11 +9,11 @@
 
 import { initTRPC, TRPCError } from "@trpc/server";
 import { type CreateNextContextOptions } from "@trpc/server/adapters/next";
-import { type Session } from "next-auth";
+import { type Session } from "~/lib/auth";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
-import { auth } from "~/server/auth";
+import { auth } from "~/lib/auth";
 import { db } from "~/server/db";
 
 /**
@@ -52,10 +52,12 @@ const createInnerTRPCContext = (opts: CreateContextOptions) => {
  * @see https://trpc.io/docs/context
  */
 export const createTRPCContext = async (opts: CreateNextContextOptions) => {
-  const { req, res } = opts;
+  const { req } = opts;
 
-  // Get the session from the server using the getServerSession wrapper function
-  const session = await auth(req, res);
+  // Get the session from BetterAuth using request headers
+  const session = await auth.api.getSession({
+    headers: req.headers,
+  });
 
   return createInnerTRPCContext({
     session,

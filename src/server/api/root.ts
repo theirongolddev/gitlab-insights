@@ -1,4 +1,6 @@
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
+import { gitlabRouter } from "~/server/api/routers/gitlab";
+import { projectsRouter } from "~/server/api/routers/projects";
 
 /**
  * This is the primary router for your server.
@@ -6,7 +8,8 @@ import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
  * All routers added in /api/routers should be manually added here.
  */
 export const appRouter = createTRPCRouter({
-  // Routers will be added here as they are implemented
+  gitlab: gitlabRouter,
+  projects: projectsRouter,
 });
 
 // export type definition of API
