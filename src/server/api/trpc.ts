@@ -55,8 +55,19 @@ export const createTRPCContext = async (opts: CreateNextContextOptions) => {
   const { req } = opts;
 
   // Get the session from BetterAuth using request headers
+  // Convert Node.js IncomingHttpHeaders to Headers object
+  const headers = new Headers();
+  Object.entries(req.headers).forEach(([key, value]) => {
+    if (value) {
+      const headerValue = Array.isArray(value) ? value[0] : value;
+      if (headerValue) {
+        headers.set(key, headerValue);
+      }
+    }
+  });
+
   const session = await auth.api.getSession({
-    headers: req.headers,
+    headers,
   });
 
   return createInnerTRPCContext({
