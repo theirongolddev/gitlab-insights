@@ -1,0 +1,252 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>4</storyId>
+    <title>Search Bar UI</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-25</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-4-search-bar-ui.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to search for events by typing keywords</iWant>
+    <soThat>I can quickly find relevant discussions</soThat>
+    <tasks>
+      <task id="1" ac="2.4.1,2.4.5,2.4.6">
+        <name>Create SearchBar Component</name>
+        <subtasks>
+          <subtask>1.1 Create `src/components/search/SearchBar.tsx` using React Aria components</subtask>
+          <subtask>1.2 Add search input with placeholder text "Search events..."</subtask>
+          <subtask>1.3 Implement focus management with `useRef` for keyboard shortcut integration</subtask>
+          <subtask>1.4 Add Clear button (X icon) that appears when `value.length > 0`</subtask>
+          <subtask>1.5 Handle `Esc` key to clear search text and remove focus</subtask>
+          <subtask>1.6 Style with olive accent colors per UX spec</subtask>
+        </subtasks>
+      </task>
+      <task id="2" ac="2.4.2,2.4.4">
+        <name>Implement Debounced Search</name>
+        <subtasks>
+          <subtask>2.1 Create or use `useDebounce` hook with 300ms delay</subtask>
+          <subtask>2.2 Connect debounced value to `trpc.events.search.useQuery()`</subtask>
+          <subtask>2.3 Only enable query when `debouncedQuery.length > 0`</subtask>
+          <subtask>2.4 Pass search results to EventTable component</subtask>
+        </subtasks>
+      </task>
+      <task id="3" ac="2.4.3">
+        <name>Add Loading Indicator</name>
+        <subtasks>
+          <subtask>3.1 Display spinner/loading state during `isLoading` from tRPC query</subtask>
+          <subtask>3.2 Show loading indicator within or near search input</subtask>
+          <subtask>3.3 Ensure loading state doesn't shift layout (use skeleton or inline spinner)</subtask>
+        </subtasks>
+      </task>
+      <task id="4" ac="2.4.1">
+        <name>Integrate with Keyboard Shortcut System</name>
+        <subtasks>
+          <subtask>4.1 Register search input ref with ShortcutContext for `/` focus</subtask>
+          <subtask>4.2 Update `ShortcutHandler.tsx` to call `focusSearch()` on `/` keypress</subtask>
+          <subtask>4.3 Verify `/` focuses search from anywhere in the app (dashboard, query pages)</subtask>
+        </subtasks>
+      </task>
+      <task id="5" ac="2.4.4">
+        <name>Connect to Dashboard</name>
+        <subtasks>
+          <subtask>5.1 Add SearchBar to dashboard page layout</subtask>
+          <subtask>5.2 Pass search results to EventTable when search active</subtask>
+          <subtask>5.3 Show all events when search is empty/cleared</subtask>
+          <subtask>5.4 Verify results appear in &lt;1s using browser DevTools</subtask>
+        </subtasks>
+      </task>
+      <task id="6" ac="All">
+        <name>Testing and Validation</name>
+        <subtasks>
+          <subtask>6.1 Verify `/` focuses search input</subtask>
+          <subtask>6.2 Verify 300ms debounce (type fast, observe single request)</subtask>
+          <subtask>6.3 Verify loading indicator appears</subtask>
+          <subtask>6.4 Verify results in &lt;1s with 10k events</subtask>
+          <subtask>6.5 Verify clear button clears and removes focus</subtask>
+          <subtask>6.6 Verify `Esc` clears search</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="2.4.1">Search input receives focus on `/` keypress</criterion>
+    <criterion id="2.4.2">Search triggers after 300ms debounce</criterion>
+    <criterion id="2.4.3">Loading indicator appears during search</criterion>
+    <criterion id="2.4.4">Results appear in &lt;1s after typing stops</criterion>
+    <criterion id="2.4.5">Clear button (X icon) visible when search has text</criterion>
+    <criterion id="2.4.6">`Esc` clears search and removes focus</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>Story 2.4: Search Bar UI</section>
+        <snippet>Search input using React Aria Combobox with 300ms debounce. Call trpc.events.search.useQuery() on debounced value. Loading spinner during query. Clear button (X icon) when value.length > 0.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics/epic-2-user-controlled-queries-with-keyboard-foundation-story-breakdown.md</path>
+        <title>Epic 2 Story Breakdown</title>
+        <section>Story 2.4: Search Bar UI</section>
+        <snippet>Search input receives focus on `/` shortcut via Story 2.1's ShortcutHandler. Results update in table below in &lt;1 second. `Esc` clears search and removes focus.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>Keyboard Shortcut System</section>
+        <snippet>ShortcutHandler at app root handles global keyboard events. `/` key calls focusSearch(). Context-aware routing checks if user is typing (INPUT/TEXTAREA). Escape always fires.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>UI Component Patterns (React Aria Components)</section>
+        <snippet>Use React Aria Components for all interactive UI. SearchField component provides accessible search with built-in clear button and focus management. Olive accent (#9DAA5F) for focus states.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/2-3-postgresql-full-text-search-backend.md</path>
+        <title>Previous Story - PostgreSQL FTS</title>
+        <section>Dev Agent Record</section>
+        <snippet>FTS backend ready. events.search endpoint at src/server/api/routers/events.ts:289-338. Performance validated: &lt;100ms on 23,938 events. Returns SearchResult with highlightedTitle, highlightedSnippet.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>src/components/keyboard/ShortcutContext.tsx</path>
+        <kind>context</kind>
+        <symbol>ShortcutProvider, useShortcuts, setFocusSearch</symbol>
+        <lines>1-177</lines>
+        <reason>Provides keyboard shortcut registration system. SearchBar must call setFocusSearch() to register its focus handler for `/` key.</reason>
+      </file>
+      <file>
+        <path>src/components/keyboard/ShortcutHandler.tsx</path>
+        <kind>component</kind>
+        <symbol>ShortcutHandler, focusSearch</symbol>
+        <lines>62-66</lines>
+        <reason>Global keyboard handler that routes `/` key to focusSearch(). Already calls focusSearch() on `/` keypress - SearchBar just needs to register handler.</reason>
+      </file>
+      <file>
+        <path>src/app/dashboard/page.tsx</path>
+        <kind>page</kind>
+        <symbol>DashboardPage</symbol>
+        <lines>1-121</lines>
+        <reason>Dashboard page where SearchBar will be integrated. Currently shows EventTable with hardcoded filter - needs search integration.</reason>
+      </file>
+      <file>
+        <path>src/components/dashboard/EventTable.tsx</path>
+        <kind>component</kind>
+        <symbol>EventTable, EventTableProps</symbol>
+        <lines>16-19</lines>
+        <reason>Table component that displays events. Accepts `events: DashboardEvent[]` prop. SearchBar results will be passed here when search is active.</reason>
+      </file>
+      <file>
+        <path>src/server/api/routers/events.ts</path>
+        <kind>router</kind>
+        <symbol>events.search</symbol>
+        <lines>289-338</lines>
+        <reason>tRPC search endpoint. Input: { keyword: string, limit?: number }. Returns: { events: SearchResultEvent[], total: number }. Already implemented in Story 2.3.</reason>
+      </file>
+      <file>
+        <path>src/lib/search/postgres-fts.ts</path>
+        <kind>service</kind>
+        <symbol>searchEvents, SearchResult, SearchResultEvent</symbol>
+        <lines>21-44</lines>
+        <reason>FTS query builder. SearchResultEvent includes: id, type, title, body, author, project, rank, highlightedTitle, highlightedSnippet. Use for type definitions.</reason>
+      </file>
+      <file>
+        <path>src/components/dashboard/ItemRow.tsx</path>
+        <kind>component</kind>
+        <symbol>ItemRow, DashboardEvent</symbol>
+        <lines>N/A</lines>
+        <reason>Row component used by EventTable. DashboardEvent type needed for search results transformation.</reason>
+      </file>
+    </code>
+    <dependencies>
+      <node>
+        <package>react-aria-components</package>
+        <version>^1.13.0</version>
+        <use>SearchField, Input, Button, Label for accessible search component</use>
+      </node>
+      <node>
+        <package>@tanstack/react-query</package>
+        <version>^5.69.0</version>
+        <use>Underlying query client for tRPC, provides isLoading state</use>
+      </node>
+      <node>
+        <package>@trpc/react-query</package>
+        <version>^11.0.0</version>
+        <use>trpc.events.search.useQuery() for search requests</use>
+      </node>
+      <node>
+        <package>react</package>
+        <version>^19.2.0</version>
+        <use>useState, useRef, useEffect, useCallback for component state and refs</use>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="pattern">Use React Aria SearchField component for accessibility (focus management, aria labels, clear button)</constraint>
+    <constraint type="pattern">Register focus handler via ShortcutContext.setFocusSearch() - do not create separate keyboard listener</constraint>
+    <constraint type="pattern">Handle Esc via ShortcutContext.setClearFocusAndModals() for clearing search - coordinate with global handler</constraint>
+    <constraint type="performance">Debounce search input by 300ms to prevent excessive API calls during typing</constraint>
+    <constraint type="performance">Search must return results in &lt;1s (backend delivers &lt;100ms, keep UI overhead minimal)</constraint>
+    <constraint type="styling">Dark mode only (ADR-009). Olive accent #9DAA5F for focus ring. Background #2d2e2e.</constraint>
+    <constraint type="architecture">Component path: src/components/search/SearchBar.tsx per project structure</constraint>
+    <constraint type="architecture">Hook path: src/hooks/useDebounce.ts if creating new hook</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>events.search</name>
+      <kind>tRPC query</kind>
+      <signature>trpc.events.search.useQuery({ keyword: string, limit?: number })</signature>
+      <path>src/server/api/routers/events.ts:301-307</path>
+    </interface>
+    <interface>
+      <name>SearchResultEvent</name>
+      <kind>TypeScript interface</kind>
+      <signature>{ id, userId, type, title, body, author, project, rank, highlightedTitle, highlightedSnippet, ... }</signature>
+      <path>src/lib/search/postgres-fts.ts:21-39</path>
+    </interface>
+    <interface>
+      <name>setFocusSearch</name>
+      <kind>React context setter</kind>
+      <signature>(handler: () => void) => void</signature>
+      <path>src/components/keyboard/ShortcutContext.tsx:61-63</path>
+    </interface>
+    <interface>
+      <name>setClearFocusAndModals</name>
+      <kind>React context setter</kind>
+      <signature>(handler: () => void) => void</signature>
+      <path>src/components/keyboard/ShortcutContext.tsx:81-83</path>
+    </interface>
+    <interface>
+      <name>DashboardEvent</name>
+      <kind>TypeScript interface</kind>
+      <signature>{ id, type, title, body, author, project, gitlabUrl, createdAt, ... }</signature>
+      <path>src/components/dashboard/ItemRow.tsx</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Per ADR-006, this project uses minimal testing for fast iteration during MVP phase. Focus on unit tests for critical business logic only. Use Vitest as the testing framework. Manual validation of UI behavior is acceptable. Performance testing via browser DevTools.</standards>
+    <locations>
+      <location>tests/lib/ (for utility tests if created)</location>
+      <location>Manual testing via browser DevTools for performance validation</location>
+    </locations>
+    <ideas>
+      <idea ac="2.4.1">Manual: Press `/` key from dashboard, verify search input receives focus</idea>
+      <idea ac="2.4.2">Manual: Type rapidly, observe Network tab shows single request after 300ms pause</idea>
+      <idea ac="2.4.3">Manual: Type search term, verify loading indicator appears while request pending</idea>
+      <idea ac="2.4.4">Manual: Run `npm run db:seed-events` to populate 10k events, time search response</idea>
+      <idea ac="2.4.5">Manual: Type text in search, verify X button appears, click to clear</idea>
+      <idea ac="2.4.6">Manual: Type text in search, press Esc, verify text clears and focus removed</idea>
+    </ideas>
+  </tests>
+</story-context>

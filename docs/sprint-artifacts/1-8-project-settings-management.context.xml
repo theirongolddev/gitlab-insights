@@ -1,0 +1,241 @@
+<story-context id="1-8-project-settings-management" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>8</storyId>
+    <title>Project Settings Management</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-25</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/1-8-project-settings-management.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>returning user</asA>
+    <iWant>to modify which GitLab projects I'm monitoring from a settings page</iWant>
+    <soThat>I can adjust my feed without going through full onboarding again</soThat>
+    <tasks>
+      <task id="1" title="Create Settings Page Route">
+        <subtask>Create src/app/settings/page.tsx with authentication guard</subtask>
+        <subtask>Add page title "Settings" with section heading "Monitored Projects"</subtask>
+        <subtask>Fetch current MonitoredProject records for user via projects.getMonitored</subtask>
+        <subtask>Fetch available GitLab projects via gitlab.listUserProjects</subtask>
+        <subtask>Initialize selection state with currently monitored projects (pre-checked)</subtask>
+      </task>
+      <task id="2" title="Implement Project Selection UI">
+        <subtask>Reuse project checklist pattern from onboarding page</subtask>
+        <subtask>Display projects grouped by namespace</subtask>
+        <subtask>Add search/filter input for projects</subtask>
+        <subtask>Add "Select All" and "Deselect All" bulk action buttons</subtask>
+        <subtask>Apply sticky footer with selection count and Save button</subtask>
+      </task>
+      <task id="3" title="Implement Save Functionality">
+        <subtask>Reuse existing projects.saveMonitored tRPC mutation</subtask>
+        <subtask>Show loading state during save ("Saving...")</subtask>
+        <subtask>Display success toast/message after save completes</subtask>
+        <subtask>Handle error state with clear error message</subtask>
+        <subtask>Stay on settings page after save (don't redirect)</subtask>
+      </task>
+      <task id="4" title="Add Header Navigation">
+        <subtask>Modify Header.tsx to add dropdown menu</subtask>
+        <subtask>Add "Settings" link in dropdown that navigates to /settings</subtask>
+        <subtask>Style dropdown with dark mode theming and olive accent</subtask>
+        <subtask>Ensure dropdown is keyboard accessible (React Aria Menu)</subtask>
+      </task>
+      <task id="5" title="Manual Testing">
+        <subtask>Navigate to settings via header dropdown</subtask>
+        <subtask>Verify current monitored projects are pre-selected</subtask>
+        <subtask>Test adding/removing projects from selection</subtask>
+        <subtask>Save changes and verify database updated</subtask>
+        <subtask>Test error handling and keyboard navigation</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">Settings page accessible from Header dropdown menu (gear icon or "Settings" link)</criterion>
+    <criterion id="2">Settings page displays "Monitored Projects" section showing current project selections</criterion>
+    <criterion id="3">User can modify project selections (check/uncheck) using same UI pattern as onboarding</criterion>
+    <criterion id="4">"Save Changes" button persists updated selections to MonitoredProject table</criterion>
+    <criterion id="5">Success feedback shown after saving ("Projects updated successfully")</criterion>
+    <criterion id="6">Settings link always accessible from authenticated app layout</criterion>
+    <criterion id="7">Sticky footer pattern applied (selection count + Save button always visible)</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-change-proposal-2025-11-25.md</path>
+        <title>Sprint Change Proposal</title>
+        <section>Change 2: Project Settings Management</section>
+        <snippet>Defines FR83 implementation requirements, acceptance criteria, and technical approach for settings page with project management.</snippet>
+      </doc>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR83</section>
+        <snippet>Users can add/remove monitored projects from settings after onboarding.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-1.md</path>
+        <title>Epic 1 Tech Spec</title>
+        <section>AC-4 Project Selection Onboarding</section>
+        <snippet>Defines project selection flow, MonitoredProject table schema, and tRPC mutations for project management.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture Document</title>
+        <section>ADR-008 React Aria Components</section>
+        <snippet>All interactive UI must use React Aria Components for accessibility. Keyboard navigation required.</snippet>
+      </doc>
+      <doc>
+        <path>docs/ux-design-specification.md</path>
+        <title>UX Design Specification</title>
+        <section>Section 3.1 Color System</section>
+        <snippet>Dark mode: bg #2d2e2e, text #FDFFFC. Olive accent: #9DAA5F (dark), #5e6b24 (light). Focus ring: 2px.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/1-7-basic-app-layout-with-react-aria.md</path>
+        <title>Story 1.7 - Basic App Layout</title>
+        <section>Dev Agent Record</section>
+        <snippet>Header component at src/components/layout/Header.tsx. Button wrapper at src/components/ui/Button.tsx. Pino logger at src/lib/logger.ts.</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <file>
+        <path>src/app/onboarding/page.tsx</path>
+        <kind>page</kind>
+        <symbol>OnboardingPage</symbol>
+        <lines>1-266</lines>
+        <reason>REUSE: Project selection UI pattern, groupByNamespace logic, sticky footer, search filter, bulk actions. Copy and adapt for settings page.</reason>
+      </file>
+      <file>
+        <path>src/components/layout/Header.tsx</path>
+        <kind>component</kind>
+        <symbol>Header</symbol>
+        <lines>1-91</lines>
+        <reason>MODIFY: Add dropdown menu with Settings link. Currently has logo, search, user info, and logout button.</reason>
+      </file>
+      <file>
+        <path>src/components/ui/Button.tsx</path>
+        <kind>component</kind>
+        <symbol>Button</symbol>
+        <lines>1-56</lines>
+        <reason>REUSE: Button wrapper with React Aria for Save button. Supports primary/secondary/ghost variants.</reason>
+      </file>
+      <file>
+        <path>src/server/api/routers/projects.ts</path>
+        <kind>router</kind>
+        <symbol>projectsRouter</symbol>
+        <lines>1-98</lines>
+        <reason>REUSE: saveMonitored mutation (lines 24-72) and getMonitored query (lines 79-97) already exist.</reason>
+      </file>
+      <file>
+        <path>src/server/api/routers/gitlab.ts</path>
+        <kind>router</kind>
+        <symbol>gitlabRouter</symbol>
+        <lines>32-135</lines>
+        <reason>REUSE: listUserProjects query fetches all available GitLab projects for selection list.</reason>
+      </file>
+      <file>
+        <path>src/lib/auth-client.ts</path>
+        <kind>utility</kind>
+        <symbol>useSession, signOut</symbol>
+        <reason>REUSE: Authentication hooks for session check and user info display.</reason>
+      </file>
+      <file>
+        <path>src/trpc/react.ts</path>
+        <kind>utility</kind>
+        <symbol>api</symbol>
+        <reason>REUSE: tRPC React hooks for queries and mutations (api.gitlab.listUserProjects, api.projects.*).</reason>
+      </file>
+      <file>
+        <path>src/lib/logger.ts</path>
+        <kind>utility</kind>
+        <symbol>logger</symbol>
+        <reason>REUSE: Pino structured logger for any server-side logging needs.</reason>
+      </file>
+    </code>
+
+    <dependencies>
+      <node>
+        <package name="react-aria-components" version="^1.13.0">Accessible UI primitives including Menu, MenuTrigger, MenuItem for dropdown</package>
+        <package name="@trpc/react-query" version="^11.0.0">tRPC React hooks for data fetching</package>
+        <package name="better-auth" version="^1.4.1">Authentication with useSession hook</package>
+        <package name="next" version="^16.0.4">Next.js framework with App Router</package>
+        <package name="tailwindcss" version="^4.0.15">Styling with dark mode support</package>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <interfaces>
+    <interface>
+      <name>projects.saveMonitored</name>
+      <kind>tRPC mutation</kind>
+      <signature>
+        input: { projects: Array&lt;{ gitlabProjectId: string, projectName: string, projectPath: string }&gt; }
+        output: { count: number }
+      </signature>
+      <path>src/server/api/routers/projects.ts:24-72</path>
+    </interface>
+    <interface>
+      <name>projects.getMonitored</name>
+      <kind>tRPC query</kind>
+      <signature>
+        input: none (uses session userId)
+        output: Array&lt;{ id, gitlabProjectId, projectName, projectPath, createdAt }&gt;
+      </signature>
+      <path>src/server/api/routers/projects.ts:79-97</path>
+    </interface>
+    <interface>
+      <name>gitlab.listUserProjects</name>
+      <kind>tRPC query</kind>
+      <signature>
+        input: none (uses session accessToken)
+        output: Array&lt;{ id, name, path_with_namespace, description, avatar_url, archived, last_activity_at }&gt;
+      </signature>
+      <path>src/server/api/routers/gitlab.ts:32-135</path>
+    </interface>
+    <interface>
+      <name>React Aria Menu</name>
+      <kind>component</kind>
+      <signature>
+        MenuTrigger + Menu + MenuItem for keyboard-accessible dropdown
+        Supports: onAction, onClose, keyboard navigation
+      </signature>
+      <path>react-aria-components (npm package)</path>
+    </interface>
+  </interfaces>
+
+  <constraints>
+    <constraint type="architecture">All interactive UI must use React Aria Components for accessibility (ADR-008)</constraint>
+    <constraint type="architecture">No console.log in production - use pino logger from src/lib/logger.ts</constraint>
+    <constraint type="architecture">All database queries must be user-scoped (filter by userId)</constraint>
+    <constraint type="styling">Dark mode with olive accent (#9DAA5F). Focus ring: 2px solid olive.</constraint>
+    <constraint type="styling">Background: #2d2e2e, text: #FDFFFC for dark mode</constraint>
+    <constraint type="ux">Keyboard navigation required: Tab through elements, Enter/Space to activate</constraint>
+    <constraint type="ux">Sticky footer pattern for action buttons (selection count + primary action visible)</constraint>
+    <constraint type="testing">Manual testing only for Epic 1 (automated tests deferred to Epic 6)</constraint>
+    <constraint type="pattern">Use existing tRPC mutations/queries - do not recreate</constraint>
+    <constraint type="pattern">Follow onboarding page patterns for project selection UI</constraint>
+  </constraints>
+
+  <tests>
+    <standards>Manual functional testing per Epic 1 ADR-006. No automated tests required. Verify all acceptance criteria manually. Test keyboard navigation through all interactive elements. Verify database state changes via Prisma Studio.</standards>
+    <locations>
+      <location>Manual browser testing</location>
+      <location>Prisma Studio for database verification</location>
+    </locations>
+    <ideas>
+      <idea ac="1">Navigate to settings via header dropdown menu - verify link appears and navigates correctly</idea>
+      <idea ac="2">Verify settings page shows all currently monitored projects as checked</idea>
+      <idea ac="3">Toggle project checkboxes, verify state changes correctly (add/remove)</idea>
+      <idea ac="4">Click Save, verify MonitoredProject table updates via Prisma Studio</idea>
+      <idea ac="5">Verify success message appears after save completes</idea>
+      <idea ac="6">Verify Settings link visible from dashboard and all authenticated pages</idea>
+      <idea ac="7">Scroll project list, verify sticky footer remains visible at all scroll positions</idea>
+      <idea ac="keyboard">Tab through settings page, verify all elements focusable with visible focus ring</idea>
+      <idea ac="error">Simulate API error, verify error message displays correctly</idea>
+    </ideas>
+  </tests>
+</story-context>
