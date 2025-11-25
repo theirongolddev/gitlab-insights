@@ -11,6 +11,7 @@ import type {
   GitLabMergeRequest,
   GitLabNote,
 } from "./gitlab-client";
+import { logger } from "~/lib/logger";
 
 export interface TransformedEvent {
   type: "issue" | "merge_request" | "comment";
@@ -168,7 +169,7 @@ export async function storeEvents(
       errors: 0,
     };
   } catch (error) {
-    console.error("[event-transformer] Failed to store events:", error);
+    logger.error({ error, eventCount: events.length }, "event-transformer: Failed to store events");
 
     // Return error count
     return {

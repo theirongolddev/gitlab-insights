@@ -14,7 +14,7 @@ export interface ButtonProps extends Omit<AriaButtonProps, "className"> {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    "bg-[#5e6b24] text-white hover:bg-[#4F5A1F] dark:bg-[#5e6b24] dark:text-white dark:hover:bg-[#4F5A1F]",
+    "bg-[#5e6b24] text-white hover:bg-[#4F5A1F] dark:bg-[#5e6b24] dark:text-white dark:hover:bg-[#A8B86C]",
   secondary:
     "bg-gray-200 text-[#2d2e2e] hover:bg-gray-300 dark:bg-gray-800 dark:text-[#FDFFFC] dark:hover:bg-gray-700",
   ghost:

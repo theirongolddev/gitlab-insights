@@ -43,7 +43,7 @@ development_status:
   1-4-project-selection-onboarding: done
   1-5-gitlab-api-client-with-manual-refresh: done
   1-6-2-line-table-view-with-hardcoded-query: done
-  1-7-basic-app-layout-with-react-aria: review
+  1-7-basic-app-layout-with-react-aria: done
   epic-1-retrospective: optional
 
   # Epic 2: User-Controlled Queries with Keyboard Foundation

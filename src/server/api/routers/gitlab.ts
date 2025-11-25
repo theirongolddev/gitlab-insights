@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { env } from "~/env";
+import { logger } from "~/lib/logger";
 
 /**
  * GitLab API Router
@@ -49,13 +50,12 @@ export const gitlabRouter = createTRPCRouter({
         });
       }
 
-      console.log("[gitlab.listUserProjects] Debug info:", {
+      logger.debug({
         userId: ctx.session.user.id,
         hasToken: !!account.accessToken,
         tokenLength: account.accessToken?.length,
-        tokenPrefix: account.accessToken?.substring(0, 10) + "...",
         scope: account.scope,
-      });
+      }, "gitlab.listUserProjects: Fetching projects");
 
       // Fetch projects from GitLab API
       // archived=false excludes archived projects
@@ -125,7 +125,7 @@ export const gitlabRouter = createTRPCRouter({
         });
       }
 
-      console.error("[gitlab.listUserProjects] Error:", error);
+      logger.error({ error }, "gitlab.listUserProjects: Error fetching projects");
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to fetch projects from GitLab. Please check your connection.",

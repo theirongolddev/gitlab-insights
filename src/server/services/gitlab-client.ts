@@ -6,6 +6,7 @@
  */
 
 import { env } from "~/env";
+import { logger } from "~/lib/logger";
 
 // GitLab API response types
 export interface GitLabIssue {
@@ -131,7 +132,7 @@ export class GitLabClient {
       notes.push(...result.notes);
     }
 
-    console.log(`[GitLabClient] Fetched ${issues.length} issues, ${mergeRequests.length} MRs, ${notes.length} comments`);
+    logger.info({ issueCount: issues.length, mrCount: mergeRequests.length, noteCount: notes.length }, "GitLabClient: Fetched events");
 
     return { issues, mergeRequests, notes };
   }
@@ -289,7 +290,7 @@ export class GitLabClient {
 
       // Stop if we've hit the max pages limit
       if (maxPages && pageCount >= maxPages) {
-        console.log(`[GitLabClient] Reached max pages limit (${maxPages}) for ${url}`);
+        logger.debug({ maxPages, url }, "GitLabClient: Reached max pages limit");
         break;
       }
     }

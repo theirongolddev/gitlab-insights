@@ -120,14 +120,12 @@ export default function DashboardPage() {
 
   // Manual refresh mutation
   const manualRefresh = api.events.manualRefresh.useMutation({
-    onSuccess: async (result) => {
-      console.log("[Dashboard] Manual refresh successful", result);
+    onSuccess: async () => {
       await utils.events.getForDashboard.invalidate();
       await utils.events.getLastSync.invalidate();
       setIsRefreshing(false);
     },
     onError: (error) => {
-      console.error("[Dashboard] Manual refresh failed", error);
       alert(`Refresh failed: ${error.message}`);
       setIsRefreshing(false);
     },

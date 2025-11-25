@@ -8,6 +8,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { GitLabClient, GitLabAPIError } from "~/server/services/gitlab-client";
+import { logger } from "~/lib/logger";
 import {
   transformIssues,
   transformMergeRequests,
@@ -83,22 +84,22 @@ export const eventsRouter = createTRPCRouter({
 
       const updatedAfter = lastSync?.lastSyncAt.toISOString();
 
-      console.log("[events.manualRefresh] Fetching events", {
+      logger.info({
         userId: ctx.session.user.id,
         projectCount: projectIds.length,
         updatedAfter: updatedAfter ?? "all time",
-      });
+      }, "events.manualRefresh: Fetching events");
 
       const { issues, mergeRequests, notes } = await gitlabClient.fetchEvents(
         projectIds,
         updatedAfter
       );
 
-      console.log("[events.manualRefresh] Fetched from GitLab", {
-        issues: issues.length,
-        mergeRequests: mergeRequests.length,
-        notes: notes.length,
-      });
+      logger.info({
+        issueCount: issues.length,
+        mrCount: mergeRequests.length,
+        noteCount: notes.length,
+      }, "events.manualRefresh: Fetched from GitLab");
 
       // 4. Transform and store events
       const projectMap = await getProjectMap(ctx.db, ctx.session.user.id, projectIds);
@@ -133,12 +134,12 @@ export const eventsRouter = createTRPCRouter({
 
       const duration = Date.now() - startTime;
 
-      console.log("[events.manualRefresh] Completed", {
-        duration: `${duration}ms`,
+      logger.info({
+        durationMs: duration,
         stored: storeResult.stored,
         skipped: storeResult.skipped,
         errors: storeResult.errors,
-      });
+      }, "events.manualRefresh: Completed");
 
       // 6. Return summary
       return {
@@ -150,7 +151,7 @@ export const eventsRouter = createTRPCRouter({
         lastSyncAt: new Date(),
       };
     } catch (error) {
-      console.error("[events.manualRefresh] Error:", error);
+      logger.error({ error }, "events.manualRefresh: Error");
 
       // Handle GitLab API errors
       if (error instanceof GitLabAPIError) {
@@ -186,7 +187,7 @@ export const eventsRouter = createTRPCRouter({
         throw error;
       }
 
-      console.error("[events.manualRefresh] Unexpected error:", error);
+      logger.error({ error }, "events.manualRefresh: Unexpected error");
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to refresh events. Please try again.",
