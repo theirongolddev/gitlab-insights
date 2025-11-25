@@ -1,6 +1,7 @@
 "use client";
 
 import { Badge, type EventType } from "./Badge";
+import { HighlightedText } from "~/components/ui/HighlightedText";
 
 export interface DashboardEvent {
   id: string;
@@ -15,6 +16,10 @@ export interface DashboardEvent {
   createdAt: Date;
   /** FTS relevance rank (only present for search results) */
   rank?: number;
+  /** Highlighted title HTML from ts_headline() (search results only) */
+  highlightedTitle?: string;
+  /** Highlighted snippet HTML from ts_headline() (search results only) */
+  highlightedSnippet?: string;
 }
 
 interface ItemRowProps {
@@ -80,9 +85,16 @@ export function ItemRow({ item, isSelected, isNew }: ItemRowProps) {
       <div className="flex items-center justify-between h-7 pt-1.5">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <Badge type={item.type} isNew={isNew} />
-          <span className="text-sm font-medium text-[#FDFFFC] truncate">
-            {truncateTitle(item.title)}
-          </span>
+          {item.highlightedTitle ? (
+            <HighlightedText
+              html={item.highlightedTitle}
+              className="text-sm font-medium text-[#FDFFFC] truncate"
+            />
+          ) : (
+            <span className="text-sm font-medium text-[#FDFFFC] truncate">
+              {truncateTitle(item.title)}
+            </span>
+          )}
         </div>
         {/* Right-aligned metadata column */}
         <div className="flex items-center gap-2 text-xs text-gray-400 ml-4 shrink-0">
@@ -105,9 +117,16 @@ export function ItemRow({ item, isSelected, isNew }: ItemRowProps) {
 
       {/* Line 2: Snippet */}
       <div className="h-5 pl-0">
-        <p className="text-sm text-gray-400 truncate">
-          {getSnippet(item.body)}
-        </p>
+        {item.highlightedSnippet ? (
+          <HighlightedText
+            html={item.highlightedSnippet}
+            className="text-sm text-gray-400 truncate block"
+          />
+        ) : (
+          <p className="text-sm text-gray-400 truncate">
+            {getSnippet(item.body)}
+          </p>
+        )}
       </div>
     </div>
   );

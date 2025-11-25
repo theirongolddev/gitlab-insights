@@ -40,3 +40,15 @@
   --animate-slide-in: slide-in 200ms ease-out;
   --animate-slide-out: slide-out 200ms ease-out;
 }
+
+/**
+ * Search result keyword highlight styling
+ * AC 2.5.1: Olive background with stronger opacity for better visibility
+ * AC 2.5.4: Inherits text color for contrast on dark background
+ */
+mark {
+  background-color: rgba(157, 170, 95, 0.5);
+  color: inherit;
+  padding: 1px 4px;
+  border-radius: 4px; /* rounded-sm equivalent */
+}

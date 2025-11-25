@@ -1,0 +1,235 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>5</storyId>
+    <title>Keyword Highlighting in Search Results</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-25</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-5-keyword-highlighting-in-search-results.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user viewing search results</asA>
+    <iWant>to see which keywords matched</iWant>
+    <soThat>I understand why each item was returned</soThat>
+    <tasks>
+      <task id="1" ac="2.5.5">
+        <title>Install XSS Sanitization Library</title>
+        <subtasks>
+          <subtask>1.1 Install `dompurify` package: `npm install dompurify @types/dompurify`</subtask>
+          <subtask>1.2 Verify package installed correctly in package.json</subtask>
+          <subtask>1.3 Test import works: `import DOMPurify from 'dompurify'`</subtask>
+        </subtasks>
+      </task>
+      <task id="2" ac="2.5.1, 2.5.3, 2.5.5">
+        <title>Create Highlight Rendering Utility</title>
+        <subtasks>
+          <subtask>2.1 Create `src/lib/search/highlight.ts` with `renderHighlightedText()` function</subtask>
+          <subtask>2.2 Accept raw HTML string from `ts_headline()` (contains &lt;mark&gt; tags)</subtask>
+          <subtask>2.3 Sanitize HTML with DOMPurify before rendering (allowlist only &lt;mark&gt; tag)</subtask>
+          <subtask>2.4 Return sanitized HTML string safe for `dangerouslySetInnerHTML`</subtask>
+          <subtask>2.5 Export type: `{ __html: string }` for React's dangerouslySetInnerHTML</subtask>
+        </subtasks>
+      </task>
+      <task id="3" ac="2.5.1, 2.5.4">
+        <title>Create Highlighted Text Component</title>
+        <subtasks>
+          <subtask>3.1 Create `src/components/ui/HighlightedText.tsx` component (in /ui/ for Epic 4 reuse)</subtask>
+          <subtask>3.2 Props interface: `{ html: string, className?: string }`</subtask>
+          <subtask>3.3 Use `renderHighlightedText()` to sanitize input</subtask>
+          <subtask>3.4 Render with `dangerouslySetInnerHTML={{ __html: sanitizedHtml }}`</subtask>
+          <subtask>3.5 Apply Tailwind styling for `mark` tag: olive background, gray-200 text color</subtask>
+        </subtasks>
+      </task>
+      <task id="4" ac="2.5.1, 2.5.4">
+        <title>Add Global Mark Tag Styling</title>
+        <subtasks>
+          <subtask>4.1 Add CSS in `src/styles/globals.css` for `mark` tag styling</subtask>
+          <subtask>4.2 Style: `background-color: rgba(157, 170, 95, 0.3)` (olive 30% opacity)</subtask>
+          <subtask>4.3 Style: `color: inherit` (maintain text color)</subtask>
+          <subtask>4.4 Style: `padding: 0 2px; border-radius: 2px;` for visual polish</subtask>
+          <subtask>4.5 Verify contrast ratio meets WCAG 4.5:1 requirement</subtask>
+        </subtasks>
+      </task>
+      <task id="5" ac="2.5.2">
+        <title>Integrate Highlighting in ItemRow</title>
+        <subtasks>
+          <subtask>5.1 Modify `src/components/dashboard/ItemRow.tsx` to accept highlighted fields</subtask>
+          <subtask>5.2 Add optional props: `highlightedTitle?: string`, `highlightedSnippet?: string`</subtask>
+          <subtask>5.3 When highlighted props present, use `HighlightedText` component</subtask>
+          <subtask>5.4 When not present, render plain text (backwards compatible)</subtask>
+          <subtask>5.5 Apply same styling to both title (Line 1) and snippet (Line 2)</subtask>
+        </subtasks>
+      </task>
+      <task id="6" ac="2.5.2">
+        <title>Update Dashboard to Pass Highlighted Content</title>
+        <subtasks>
+          <subtask>6.1 Modify `src/app/dashboard/page.tsx` search result transformation</subtask>
+          <subtask>6.2 Map `highlightedTitle` from search results to ItemRow</subtask>
+          <subtask>6.3 Map `highlightedSnippet` from search results to ItemRow</subtask>
+          <subtask>6.4 Verify search results display with highlighting</subtask>
+          <subtask>6.5 Verify non-search results (all events view) display without highlighting</subtask>
+        </subtasks>
+      </task>
+      <task id="7" ac="All">
+        <title>Testing and Validation</title>
+        <subtasks>
+          <subtask>7.1 Verify highlights appear in title for search results</subtask>
+          <subtask>7.2 Verify highlights appear in snippet for search results</subtask>
+          <subtask>7.3 Test case-insensitive highlighting (search "Auth" matches "auth", "AUTH", "Authentication")</subtask>
+          <subtask>7.4 Test XSS prevention: search for `&lt;script&gt;alert(1)&lt;/script&gt;` - should not execute</subtask>
+          <subtask>7.5 Verify contrast ratio visually meets accessibility requirements</subtask>
+          <subtask>7.6 Run build, lint, typecheck to ensure no errors</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="2.5.1">Keywords highlighted with olive background (rgba(157, 170, 95, 0.3))</criterion>
+    <criterion id="2.5.2">Highlights appear in both title and snippet</criterion>
+    <criterion id="2.5.3">Highlighting is case-insensitive</criterion>
+    <criterion id="2.5.4">Highlighted text maintains minimum 4.5:1 contrast ratio (use gray-200)</criterion>
+    <criterion id="2.5.5">No XSS vulnerabilities in highlight rendering</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>Story 2.5: Keyword Highlighting in Search Results</section>
+        <snippet>Keywords highlighted with olive background. XSS in highlights mitigated with DOMPurify sanitization on ts_headline output.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture Document</title>
+        <section>ADR-009: Dark Mode Only for MVP</section>
+        <snippet>Background #2d2e2e, Primary text #FDFFFC, Accent #9DAA5F. Olive accent color system for focus states and highlights.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics/epic-2-user-controlled-queries-with-keyboard-foundation-story-breakdown.md</path>
+        <title>Epic 2 Story Breakdown</title>
+        <section>Story 2.5: Keyword Highlighting in Search Results</section>
+        <snippet>Use ts_headline() for snippet generation, highlight with mark tag, sanitize with DOMPurify to prevent XSS.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/2-4-search-bar-ui.md</path>
+        <title>Previous Story - Search Bar UI</title>
+        <section>Dev Agent Record</section>
+        <snippet>Search backend returns highlightedTitle and highlightedSnippet via ts_headline(). SearchContext provides global search state.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>src/lib/search/postgres-fts.ts</path>
+        <kind>utility</kind>
+        <symbol>searchEvents, SearchResultEvent</symbol>
+        <lines>1-154</lines>
+        <reason>Contains ts_headline() call that generates highlightedTitle and highlightedSnippet with &lt;mark&gt; tags. Search results already include these fields - this story renders them.</reason>
+      </file>
+      <file>
+        <path>src/components/dashboard/ItemRow.tsx</path>
+        <kind>component</kind>
+        <symbol>ItemRow, DashboardEvent</symbol>
+        <lines>1-115</lines>
+        <reason>Must be modified to accept optional highlightedTitle and highlightedSnippet props. Currently renders plain text - needs to conditionally use HighlightedText component.</reason>
+      </file>
+      <file>
+        <path>src/components/search/SearchContext.tsx</path>
+        <kind>context</kind>
+        <symbol>SearchProvider, useSearch, SearchContextValue</symbol>
+        <lines>1-109</lines>
+        <reason>Provides search results including highlightedTitle/highlightedSnippet from SearchResultEvent type. Dashboard consumes this context.</reason>
+      </file>
+      <file>
+        <path>src/app/dashboard/page.tsx</path>
+        <kind>page</kind>
+        <symbol>DashboardPage</symbol>
+        <lines>96-111</lines>
+        <reason>Search result transformation maps SearchResultEvent to DashboardEvent. Must add highlightedTitle and highlightedSnippet to mapping for ItemRow consumption.</reason>
+      </file>
+      <file>
+        <path>src/styles/globals.css</path>
+        <kind>stylesheet</kind>
+        <symbol>@theme</symbol>
+        <lines>1-43</lines>
+        <reason>Must add global mark tag styling with olive background. Current file defines olive color variables that should be reused.</reason>
+      </file>
+      <file>
+        <path>src/server/api/routers/events.ts</path>
+        <kind>router</kind>
+        <symbol>events.search</symbol>
+        <lines>289-338</lines>
+        <reason>tRPC endpoint that calls searchEvents(). Already returns highlightedTitle and highlightedSnippet - no changes needed.</reason>
+      </file>
+    </code>
+    <dependencies>
+      <ecosystem name="node">
+        <package name="react" version="^19.2.0" />
+        <package name="react-dom" version="^19.2.0" />
+        <package name="next" version="^16.0.4" />
+        <package name="tailwindcss" version="^4.0.15" />
+        <package name="react-aria-components" version="^1.13.0" />
+        <package name="@react-aria/table" version="^3.17.8" />
+        <package name="@tanstack/react-query" version="^5.69.0" />
+        <package name="zod" version="^3.24.2" />
+        <newDependency name="dompurify" version="^3.x" reason="XSS sanitization for ts_headline HTML output" />
+        <newDependency name="@types/dompurify" version="^3.x" reason="TypeScript types for dompurify" />
+      </ecosystem>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="security">Must sanitize ts_headline() HTML output with DOMPurify before rendering via dangerouslySetInnerHTML to prevent XSS attacks</constraint>
+    <constraint type="accessibility">Highlighted text must maintain minimum 4.5:1 contrast ratio per WCAG 2.1 AA</constraint>
+    <constraint type="pattern">Use olive accent color rgba(157, 170, 95, 0.3) for highlight background to match design system</constraint>
+    <constraint type="backwards-compatibility">ItemRow must work with or without highlighted props to support both search results and all events view</constraint>
+    <constraint type="styling">Dark mode only (ADR-009) - test highlights on #2d2e2e background with #FDFFFC text</constraint>
+    <constraint type="testing">ADR-006 minimal testing - manual validation per acceptance criteria, no E2E tests required</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>SearchResultEvent</name>
+      <kind>TypeScript interface</kind>
+      <signature>interface SearchResultEvent { id: string; title: string; body: string | null; highlightedTitle: string; highlightedSnippet: string; rank: number; ... }</signature>
+      <path>src/lib/search/postgres-fts.ts:21-39</path>
+    </interface>
+    <interface>
+      <name>DashboardEvent</name>
+      <kind>TypeScript interface</kind>
+      <signature>interface DashboardEvent { id: string; type: EventType; title: string; body: string | null; rank?: number; ... } -- EXTEND with optional highlightedTitle?: string, highlightedSnippet?: string</signature>
+      <path>src/components/dashboard/ItemRow.tsx:5-18</path>
+    </interface>
+    <interface>
+      <name>renderHighlightedText</name>
+      <kind>function signature</kind>
+      <signature>function renderHighlightedText(rawHtml: string): { __html: string }</signature>
+      <path>src/lib/search/highlight.ts (to be created)</path>
+    </interface>
+    <interface>
+      <name>HighlightedText</name>
+      <kind>React component</kind>
+      <signature>function HighlightedText({ html, className }: { html: string; className?: string }): JSX.Element</signature>
+      <path>src/components/ui/HighlightedText.tsx (to be created, in /ui/ for Epic 4 reuse)</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>ADR-006 mandates minimal testing for fast iteration during MVP. Unit tests ONLY for critical business logic. Manual validation for UI acceptance criteria. No E2E or integration tests. Vitest is the test framework if needed.</standards>
+    <locations>
+      <location>tests/lib/ - Unit tests for utility functions</location>
+      <location>Manual testing - Browser-based AC validation</location>
+    </locations>
+    <ideas>
+      <idea ac="2.5.1">Visually verify olive background appears on highlighted keywords in search results</idea>
+      <idea ac="2.5.2">Search for a term, verify highlights in both title (Line 1) and snippet (Line 2) of ItemRow</idea>
+      <idea ac="2.5.3">Search "auth" - verify matches "Auth", "AUTH", "authentication" are all highlighted</idea>
+      <idea ac="2.5.4">Visual inspection: ensure highlighted text readable on dark background, use browser dev tools to check contrast</idea>
+      <idea ac="2.5.5">Search for "&lt;script&gt;alert(1)&lt;/script&gt;" - verify no script execution, text displayed safely</idea>
+      <idea ac="2.5.5">Unit test renderHighlightedText() strips dangerous tags, only allows &lt;mark&gt;</idea>
+    </ideas>
+  </tests>
+</story-context>

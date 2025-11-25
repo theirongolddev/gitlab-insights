@@ -93,9 +93,9 @@ export default function DashboardPage() {
     (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
   );
 
-  // Story 2.4: Transform SearchResultEvent[] to DashboardEvent[] format
+  // Story 2.4/2.5: Transform SearchResultEvent[] to DashboardEvent[] format
   // Search results come from SearchContext (global Header search)
-  // Include rank for relevance display in search results
+  // Include rank for relevance display and highlighted fields for keyword highlighting
   const searchEventsAsDashboard: DashboardEvent[] = searchResults.map((e) => ({
     id: e.id,
     type: e.type as DashboardEvent["type"],
@@ -108,6 +108,8 @@ export default function DashboardPage() {
     gitlabUrl: e.gitlabUrl,
     createdAt: new Date(e.createdAt),
     rank: e.rank,
+    highlightedTitle: e.highlightedTitle,
+    highlightedSnippet: e.highlightedSnippet,
   }));
 
   // Final events to display - search results when searching, all events otherwise
