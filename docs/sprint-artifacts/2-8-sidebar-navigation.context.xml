@@ -1,0 +1,245 @@
+<story-context id="2-8-sidebar-navigation" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>8</storyId>
+    <title>Sidebar Navigation</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-25</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-8-sidebar-navigation.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user with saved queries</asA>
+    <iWant>to see my saved queries in a persistent sidebar</iWant>
+    <soThat>I can quickly navigate to them from anywhere in the application</soThat>
+    <tasks>
+      <task id="1" ac="2.8.1,2.8.2,2.8.5">Create QuerySidebar Component
+        <subtask id="1.1">Create src/components/queries/QuerySidebar.tsx component</subtask>
+        <subtask id="1.2">Use trpc.queries.list.useQuery() to fetch user's queries</subtask>
+        <subtask id="1.3">Display query name and count for each query (e.g., "Auth Discussions (12)")</subtask>
+        <subtask id="1.4">Implement empty state with message: "Create your first query with / search"</subtask>
+        <subtask id="1.5">Style sidebar: 240px width, dark gray background (#1a1a1a), olive accent on active/hover</subtask>
+      </task>
+      <task id="2" ac="2.8.2">Add Query Count to queries.list
+        <subtask id="2.1">Modify src/server/api/routers/queries.ts to return count with each query</subtask>
+        <subtask id="2.2">Use PostgreSQL FTS count query for each saved query's keywords</subtask>
+        <subtask id="2.3">Return type: { ...query, count: number }[]</subtask>
+      </task>
+      <task id="3" ac="2.8.1">Integrate Sidebar into App Layout
+        <subtask id="3.1">Add QuerySidebar to src/app/layout.tsx or create wrapper layout</subtask>
+        <subtask id="3.2">Sidebar should be persistent on left side for all authenticated routes</subtask>
+        <subtask id="3.3">Main content area should adjust to accommodate sidebar width</subtask>
+      </task>
+      <task id="4" ac="2.8.3">Implement Query Navigation
+        <subtask id="4.1">Wrap each query item in Next.js Link href="/queries/[id]"</subtask>
+        <subtask id="4.2">Create /queries/[id]/page.tsx route</subtask>
+        <subtask id="4.3">Query page loads query by ID and displays results using EventTable component</subtask>
+        <subtask id="4.4">Add active state styling (olive accent) for currently viewed query</subtask>
+        <subtask id="4.5">Create queries.getById tRPC procedure for fetching single query with authorization</subtask>
+      </task>
+      <task id="5" ac="2.8.4">Add Number Key Shortcuts
+        <subtask id="5.1">Extend ShortcutContext.tsx with setNavigateToQuery setter and navigateToQuery(index) invoker</subtask>
+        <subtask id="5.2">Add 1-9 key handlers to ShortcutHandler.tsx that call navigateToQuery(n-1)</subtask>
+        <subtask id="5.3">Handler should navigate to query at position N-1 (key 1 = first query)</subtask>
+        <subtask id="5.4">Ensure shortcuts only fire when not typing (check isTypingTarget)</subtask>
+        <subtask id="5.5">If query at position doesn't exist, do nothing (no error)</subtask>
+      </task>
+      <task id="6" ac="all">Testing and Validation
+        <subtask id="6.1">Run npm run build to verify no compilation errors</subtask>
+        <subtask id="6.2">Run npm run lint to verify no linting errors</subtask>
+        <subtask id="6.3">Run npm run typecheck to verify no type errors</subtask>
+        <subtask id="6.4">Manual test: Create query via Save button, verify it appears in sidebar</subtask>
+        <subtask id="6.5">Manual test: Click query in sidebar, verify navigation to /queries/[id]</subtask>
+        <subtask id="6.6">Manual test: Press 1-9 keys, verify navigation to correct query</subtask>
+        <subtask id="6.7">Manual test: Delete all queries, verify empty state appears</subtask>
+        <subtask id="6.8">Manual test: Verify sidebar visible on dashboard, settings, and query pages</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="2.8.1">Sidebar visible on all authenticated pages (dashboard, queries, settings)</criterion>
+    <criterion id="2.8.2">Lists user's saved queries with counts (e.g., "Auth Discussions (12)")</criterion>
+    <criterion id="2.8.3">Clicking query navigates to /queries/[id]</criterion>
+    <criterion id="2.8.4">Number keys 1-9 jump to queries by position (when not typing)</criterion>
+    <criterion id="2.8.5">Empty state shown when no queries: "Create your first query with / search"</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>Story 2.8: Sidebar Navigation</section>
+        <snippet>QuerySidebar component at src/components/queries/QuerySidebar.tsx. Sidebar 240px fixed width, dark gray #1a1a1a background. Uses trpc.queries.list.useQuery() with counts. Number keys 1-9 for query position navigation.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics/epic-2-user-controlled-queries-with-keyboard-foundation-story-breakdown.md</path>
+        <title>Epic 2 Story Breakdown</title>
+        <section>Story 2.8: Sidebar Navigation</section>
+        <snippet>User story for sidebar displaying saved queries. Persistent left sidebar, click navigates to /queries/[id], number keys 1-9 jump to position, empty state guidance.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture Document</title>
+        <section>UI Component Patterns (React Aria Components)</section>
+        <snippet>QuerySidebar: Persistent navigation with keyboard shortcuts (1-9). Width 240px, dark gray background, olive accent (#9DAA5F) on active/hover states.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/2-7b-update-delete-query-backend.md</path>
+        <title>Previous Story - Query CRUD Backend</title>
+        <section>Dev Agent Record</section>
+        <snippet>queries.ts router has create, list, update, delete mutations. Uses keywords: string[] pattern. TRPCError imported for FORBIDDEN/NOT_FOUND. All use protectedProcedure.</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <file>
+        <path>src/server/api/routers/queries.ts</path>
+        <kind>tRPC router</kind>
+        <symbol>queriesRouter</symbol>
+        <lines>1-179</lines>
+        <reason>Contains queries.list query that needs modification to return counts. Already has create/update/delete mutations. Uses protectedProcedure for user isolation.</reason>
+      </file>
+      <file>
+        <path>src/lib/filters/types.ts</path>
+        <kind>type definitions</kind>
+        <symbol>QueryFiltersSchema, QueryFilters</symbol>
+        <lines>1-29</lines>
+        <reason>Defines filter schema with keywords: string[] array. Needed for count query to match keywords against events.</reason>
+      </file>
+      <file>
+        <path>src/components/keyboard/ShortcutContext.tsx</path>
+        <kind>React context</kind>
+        <symbol>ShortcutProvider, useShortcuts</symbol>
+        <lines>1-176</lines>
+        <reason>Keyboard shortcut system context. Need to add setNavigateToQuery handler for 1-9 keys or extend existing pattern.</reason>
+      </file>
+      <file>
+        <path>src/components/keyboard/ShortcutHandler.tsx</path>
+        <kind>React component</kind>
+        <symbol>ShortcutHandler, isTypingTarget</symbol>
+        <lines>1-101</lines>
+        <reason>Global keyboard event listener. Need to add 1-9 key cases that call navigateToQuery(n). Uses isTypingTarget() helper to suppress shortcuts when typing.</reason>
+      </file>
+      <file>
+        <path>src/app/layout.tsx</path>
+        <kind>Next.js layout</kind>
+        <symbol>RootLayout</symbol>
+        <lines>1-34</lines>
+        <reason>Root layout where sidebar needs to be integrated. Currently has Header + main content structure. Sidebar goes between Header and main.</reason>
+      </file>
+      <file>
+        <path>src/components/layout/Header.tsx</path>
+        <kind>React component</kind>
+        <symbol>Header</symbol>
+        <lines>1-217</lines>
+        <reason>Uses useShortcuts() hook pattern. Shows SearchBar with save query functionality. Reference for component patterns.</reason>
+      </file>
+      <file>
+        <path>src/app/dashboard/page.tsx</path>
+        <kind>Next.js page</kind>
+        <symbol>DashboardPage</symbol>
+        <lines>1-138</lines>
+        <reason>Reference for authenticated page pattern. Uses EventTable for display. Query page will follow similar pattern.</reason>
+      </file>
+      <file>
+        <path>src/components/dashboard/EventTable.tsx</path>
+        <kind>React component</kind>
+        <symbol>EventTable</symbol>
+        <lines>1-214</lines>
+        <reason>Reusable table component for displaying events. Query page will use this same component to show query results.</reason>
+      </file>
+    </code>
+
+    <dependencies>
+      <node>
+        <package>next</package><version>^16.0.4</version>
+        <package>react</package><version>^19.2.0</version>
+        <package>react-aria-components</package><version>^1.13.0</version>
+        <package>@trpc/react-query</package><version>^11.0.0</version>
+        <package>@tanstack/react-query</package><version>^5.69.0</version>
+        <package>@prisma/client</package><version>^6.6.0</version>
+        <package>zod</package><version>^3.24.2</version>
+        <package>tailwindcss</package><version>^4.0.15</version>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <interfaces>
+    <interface>
+      <name>queries.list</name>
+      <kind>tRPC query</kind>
+      <signature>protectedProcedure.query(): Promise&lt;UserQuery[]&gt;</signature>
+      <path>src/server/api/routers/queries.ts:60-71</path>
+      <note>Modify to return { ...query, count: number }[] with FTS match counts</note>
+    </interface>
+    <interface>
+      <name>queries.getById</name>
+      <kind>tRPC query</kind>
+      <signature>protectedProcedure.input({ id: string }).query(): Promise&lt;UserQueryWithCount | null&gt;</signature>
+      <path>src/server/api/routers/queries.ts</path>
+      <note>NEW: Fetch single query by ID with authorization check (same pattern as update/delete)</note>
+    </interface>
+    <interface>
+      <name>QueryFilters</name>
+      <kind>TypeScript type</kind>
+      <signature>{ keywords: string[] }</signature>
+      <path>src/lib/filters/types.ts</path>
+      <note>Zod-validated filter schema stored in UserQuery.filters JSON column</note>
+    </interface>
+    <interface>
+      <name>useShortcuts</name>
+      <kind>React hook</kind>
+      <signature>(): ShortcutContextValue</signature>
+      <path>src/components/keyboard/ShortcutContext.tsx:170-176</path>
+      <note>Extend with setNavigateToQuery handler for 1-9 keys</note>
+    </interface>
+    <interface>
+      <name>EventTable</name>
+      <kind>React component</kind>
+      <signature>({ events: DashboardEvent[], onRowClick?: (event) => void }): JSX.Element</signature>
+      <path>src/components/dashboard/EventTable.tsx</path>
+      <note>Reuse in /queries/[id] page to display query results</note>
+    </interface>
+    <interface>
+      <name>UserQuery Prisma model</name>
+      <kind>Database model</kind>
+      <signature>{ id, userId, name, filters (JSON), lastViewedAt?, createdAt, updatedAt }</signature>
+      <path>prisma/schema.prisma</path>
+      <note>filters column stores QueryFilters JSON with keywords array</note>
+    </interface>
+  </interfaces>
+
+  <constraints>
+    <constraint type="architecture">Sidebar must use React Aria Components for accessibility. Use Link from next/link for navigation.</constraint>
+    <constraint type="architecture">Follow existing ShortcutContext pattern - add setter/invocation pair for new shortcuts.</constraint>
+    <constraint type="styling">Dark mode only. Background #1a1a1a for sidebar, olive accent #9DAA5F for active/hover states.</constraint>
+    <constraint type="styling">Sidebar width fixed at 240px per UX spec.</constraint>
+    <constraint type="performance">Sidebar count queries should complete in under 500ms. Consider caching if performance degrades.</constraint>
+    <constraint type="security">All queries scoped to ctx.session.user.id via protectedProcedure. No cross-user data access.</constraint>
+    <constraint type="pattern">Use trpc.queries.list.useQuery() for data fetching. React Query handles caching.</constraint>
+    <constraint type="pattern">Number key shortcuts 1-9 only fire when isTypingTarget() returns false.</constraint>
+    <constraint type="ux">Loading state: Show skeleton placeholder while queries.list is fetching.</constraint>
+    <constraint type="ux">Count display: Always show count in parentheses, including "(0)" when no matches.</constraint>
+    <constraint type="ux">Keyboard limitation: Keys 1-9 support first 9 queries only. Queries beyond position 9 require click navigation (intentional MVP limitation).</constraint>
+    <constraint type="tech-debt">N+1 count queries acceptable for MVP. Flag for batch optimization if >10 queries becomes common.</constraint>
+  </constraints>
+
+  <tests>
+    <standards>Per ADR-006, minimal testing for MVP. Unit tests only for critical business logic. No integration or E2E tests. Use Vitest as testing framework. Manual testing for UI flows.</standards>
+    <locations>
+      <location>tests/lib/</location>
+      <location>src/**/*.test.ts</location>
+    </locations>
+    <ideas>
+      <idea ac="2.8.2">Test count query returns correct number for known keyword matches</idea>
+      <idea ac="2.8.4">Test 1-9 key handlers navigate to correct query index (unit test on handler logic)</idea>
+      <idea ac="2.8.4">Test isTypingTarget returns true for INPUT/TEXTAREA elements</idea>
+      <idea ac="2.8.5">Manual: Verify empty state message when user has no saved queries</idea>
+      <idea ac="2.8.1">Manual: Verify sidebar renders on /dashboard, /settings, /queries/[id] pages</idea>
+      <idea ac="2.8.3">Manual: Click query item navigates to correct /queries/[id] URL</idea>
+    </ideas>
+  </tests>
+</story-context>

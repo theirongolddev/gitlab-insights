@@ -57,7 +57,7 @@ development_status:
   2-6-filter-ui-logic: done
   2-7a-create-query-backend: done
   2-7b-update-delete-query-backend: done
-  2-8-sidebar-navigation: backlog
+  2-8-sidebar-navigation: ready-for-dev
   2-8-5-save-as-query-entry-points: backlog
   2-9-create-query-modal: backlog
   2-10-edit-delete-query-actions: backlog
