@@ -2,16 +2,15 @@
 
 import { useSession } from "~/lib/auth-client";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { api } from "~/trpc/react";
+import { ProjectSelector } from "~/components/projects/ProjectSelector";
 
 export default function OnboardingPage() {
   const { data: session, isPending } = useSession();
   const router = useRouter();
-  // Track deselected projects (opt-out model: all selected by default)
-  const [deselectedProjects, setDeselectedProjects] = useState<Set<string>>(new Set());
+  const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string> | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch user's GitLab projects
   const { data: projects, isLoading: isLoadingProjects, error: projectsError } =
@@ -19,15 +18,17 @@ export default function OnboardingPage() {
       enabled: !!session,
     });
 
-  // Derive selected projects: all projects minus deselected ones
-  const selectedProjects = projects
-    ? new Set(projects.filter(p => !deselectedProjects.has(p.id)).map(p => p.id))
-    : new Set<string>();
+  // For onboarding, all projects are selected by default (opt-out model)
+  const initialSelectedIds = useMemo(() => {
+    return new Set(projects?.map(p => p.id) ?? []);
+  }, [projects]);
+
+  // Current selection (starts as all selected, then tracks user changes)
+  const currentSelection = selectedProjectIds ?? initialSelectedIds;
 
   // Save monitored projects mutation
   const saveMonitoredMutation = api.projects.saveMonitored.useMutation({
     onSuccess: () => {
-      // Redirect to dashboard after successful save
       router.push("/dashboard");
     },
     onError: (error) => {
@@ -36,62 +37,14 @@ export default function OnboardingPage() {
     },
   });
 
-  // Handle individual checkbox toggle (toggles deselection)
-  const handleToggleProject = (projectId: string) => {
-    setDeselectedProjects(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(projectId)) {
-        // Was deselected, now select it
-        newSet.delete(projectId);
-      } else {
-        // Was selected, now deselect it
-        newSet.add(projectId);
-      }
-      return newSet;
-    });
-  };
-
-  // Handle "Select All" button - clear all deselections
-  const handleSelectAll = () => {
-    setDeselectedProjects(new Set());
-  };
-
-  // Handle "Deselect All" button - deselect all projects
-  const handleDeselectAll = () => {
-    if (projects) {
-      setDeselectedProjects(new Set(projects.map(p => p.id)));
-    }
-  };
-
-  // Filter projects based on search query
-  const filteredProjects = projects?.filter(project => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      project.name.toLowerCase().includes(query) ||
-      project.path_with_namespace.toLowerCase().includes(query) ||
-      project.description?.toLowerCase().includes(query)
-    );
-  });
-
-  // Group projects by namespace for better visual hierarchy
-  const groupedProjects = filteredProjects?.reduce((acc, project) => {
-    const namespace = project.path_with_namespace.split('/').slice(0, -1).join('/') || 'Personal';
-    if (!acc[namespace]) {
-      acc[namespace] = [];
-    }
-    acc[namespace].push(project);
-    return acc;
-  }, {} as Record<string, typeof filteredProjects>);
-
   // Handle form submission
-  const handleContinue = async () => {
+  const handleContinue = () => {
     if (!projects) return;
 
     setIsSubmitting(true);
 
     const selectedProjectsData = projects
-      .filter(p => selectedProjects.has(p.id))
+      .filter(p => currentSelection.has(p.id))
       .map(p => ({
         gitlabProjectId: p.id,
         projectName: p.name,
@@ -119,8 +72,10 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-[#FDFFFC] dark:bg-[#2d2e2e] px-4 py-16">
-        <div className="container max-w-3xl">
+    <div className="flex min-h-screen flex-col bg-[#FDFFFC] dark:bg-[#2d2e2e]">
+      {/* Scrollable content area */}
+      <div className="flex-1 overflow-auto px-4 py-16 pb-32">
+        <div className="mx-auto max-w-3xl">
           {/* Header */}
           <div className="mb-12 text-center">
             <h1 className="mb-4 text-4xl font-bold tracking-tight text-[#2d2e2e] dark:text-[#FDFFFC]">
@@ -161,99 +116,39 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* Project list */}
+          {/* Project selector */}
           {projects && projects.length > 0 && (
-            <>
-              {/* Search input */}
-              <div className="mb-4">
-                <input
-                  type="text"
-                  placeholder="Search projects..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-4 py-2 text-[#2d2e2e] placeholder-gray-400 focus:border-[#9DAA5F] focus:outline-none focus:ring-2 focus:ring-[#9DAA5F] dark:border-gray-600 dark:bg-gray-700 dark:text-[#FDFFFC] dark:placeholder-gray-500"
-                />
-              </div>
-
-              {/* Bulk action buttons */}
-              <div className="mb-6 flex gap-4">
-                <button
-                  onClick={handleSelectAll}
-                  className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-                >
-                  Select All
-                </button>
-                <button
-                  onClick={handleDeselectAll}
-                  className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-                >
-                  Deselect All
-                </button>
-                <div className="ml-auto text-sm text-gray-600 dark:text-gray-400">
-                  {selectedProjects.size} of {projects.length} selected
-                </div>
-              </div>
-
-              {/* Project checklist grouped by namespace */}
-              <div className="mb-8 space-y-6">
-                {groupedProjects && Object.entries(groupedProjects).sort(([a], [b]) => a.localeCompare(b)).map(([namespace, namespaceProjects]) => (
-                  <div key={namespace} className="rounded-lg border border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-800">
-                    {/* Namespace header */}
-                    <div className="border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900">
-                      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                        {namespace}
-                      </h3>
-                    </div>
-
-                    {/* Projects in namespace */}
-                    <div className="p-4 space-y-1">
-                      {namespaceProjects.map((project) => (
-                        <label
-                          key={project.id}
-                          className="flex cursor-pointer items-start gap-3 rounded-md p-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedProjects.has(project.id)}
-                            onChange={() => handleToggleProject(project.id)}
-                            className="mt-0.5 h-4 w-4 cursor-pointer rounded border-gray-300 text-[#9DAA5F] focus:ring-2 focus:ring-[#9DAA5F] focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:focus:ring-offset-gray-800"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-[#2d2e2e] dark:text-[#FDFFFC]">
-                              {project.name}
-                            </div>
-                            {project.description && (
-                              <div className="mt-0.5 text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
-                                {project.description}
-                              </div>
-                            )}
-                          </div>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Continue button */}
-              <div className="flex justify-center">
-                <button
-                  onClick={handleContinue}
-                  disabled={selectedProjects.size === 0 || isSubmitting}
-                  className="rounded-md bg-[#9DAA5F] px-8 py-3 font-semibold text-white transition-colors hover:bg-[#A8B86C] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-[#9DAA5F] dark:hover:bg-[#A8B86C]"
-                >
-                  {isSubmitting ? "Saving..." : "Continue"}
-                </button>
-              </div>
-
-              {selectedProjects.size === 0 && (
-                <p className="mt-4 text-center text-sm text-red-600 dark:text-red-400">
-                  Please select at least one project to continue
-                </p>
-              )}
-            </>
+            <ProjectSelector
+              projects={projects}
+              initialSelectedIds={initialSelectedIds}
+              onSelectionChange={setSelectedProjectIds}
+            />
           )}
         </div>
+      </div>
+
+      {/* Sticky footer - always visible */}
+      {projects && projects.length > 0 && (
+        <div className="sticky bottom-0 border-t border-gray-200 bg-white/95 px-4 py-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] backdrop-blur-sm dark:border-gray-700 dark:bg-gray-800/95">
+          <div className="mx-auto flex max-w-3xl items-center justify-between gap-4">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              <span className="font-medium text-[#2d2e2e] dark:text-[#FDFFFC]">{currentSelection.size}</span> of {projects.length} projects selected
+              {currentSelection.size === 0 && (
+                <span className="ml-2 text-red-600 dark:text-red-400">
+                  — Select at least one to continue
+                </span>
+              )}
+            </div>
+            <button
+              onClick={handleContinue}
+              disabled={currentSelection.size === 0 || isSubmitting}
+              className="rounded-md bg-[#9DAA5F] px-6 py-2.5 font-semibold text-white transition-colors hover:bg-[#8a9654] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isSubmitting ? "Saving..." : "Continue →"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

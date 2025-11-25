@@ -16,6 +16,7 @@ import {
   storeEvents,
   getProjectMap,
 } from "~/server/services/event-transformer";
+import { searchEvents } from "~/lib/search/postgres-fts";
 
 export const eventsRouter = createTRPCRouter({
   /**
@@ -284,4 +285,55 @@ export const eventsRouter = createTRPCRouter({
       lastSyncAt: lastSync?.lastSyncAt ?? null,
     };
   }),
+
+  /**
+   * Search events using PostgreSQL Full-Text Search
+   *
+   * GET /api/trpc/events.search
+   *
+   * Features:
+   * - GIN index for <1s performance on 10k+ events (AC: 2.3.2)
+   * - Results ranked by relevance using ts_rank (AC: 2.3.3)
+   * - Returns events across all types: issues, MRs, comments (AC: 2.3.4)
+   * - Highlighted title and snippet using ts_headline
+   * - User isolation via userId filter
+   */
+  search: protectedProcedure
+    .input(
+      z.object({
+        keyword: z.string().min(1, "Search keyword is required").max(100),
+        limit: z.number().min(1).max(100).default(50),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const startTime = Date.now();
+
+      try {
+        const result = await searchEvents(ctx.db, {
+          keyword: input.keyword,
+          userId: ctx.session.user.id,
+          limit: input.limit,
+        });
+
+        const duration = Date.now() - startTime;
+
+        logger.info(
+          {
+            userId: ctx.session.user.id,
+            keyword: input.keyword.substring(0, 20),
+            resultCount: result.total,
+            durationMs: duration,
+          },
+          "events.search: Query completed"
+        );
+
+        return result;
+      } catch (error) {
+        logger.error({ error }, "events.search: Error executing search");
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to execute search. Please try again.",
+        });
+      }
+    }),
 });
