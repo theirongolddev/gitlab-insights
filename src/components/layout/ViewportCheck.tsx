@@ -1,30 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 const MIN_VIEWPORT_WIDTH = 1280;
 
+// External store for viewport width - avoids setState in useEffect
+function subscribeToViewport(callback: () => void) {
+  window.addEventListener("resize", callback);
+  return () => window.removeEventListener("resize", callback);
+}
+
+function getViewportSnapshot() {
+  return window.innerWidth;
+}
+
+function getServerSnapshot() {
+  // Return a large value on server to avoid showing the warning during SSR
+  return MIN_VIEWPORT_WIDTH;
+}
+
 export function ViewportCheck({ children }: { children: React.ReactNode }) {
-  const [isSmallViewport, setIsSmallViewport] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const viewportWidth = useSyncExternalStore(
+    subscribeToViewport,
+    getViewportSnapshot,
+    getServerSnapshot
+  );
 
-  useEffect(() => {
-    setMounted(true);
-
-    const checkViewport = () => {
-      setIsSmallViewport(window.innerWidth < MIN_VIEWPORT_WIDTH);
-    };
-
-    checkViewport();
-    window.addEventListener("resize", checkViewport);
-
-    return () => window.removeEventListener("resize", checkViewport);
-  }, []);
-
-  // Don't render anything during SSR to avoid hydration mismatch
-  if (!mounted) {
-    return <>{children}</>;
-  }
+  const isSmallViewport = viewportWidth < MIN_VIEWPORT_WIDTH;
 
   if (isSmallViewport) {
     return (
@@ -45,7 +47,7 @@ export function ViewportCheck({ children }: { children: React.ReactNode }) {
             <p className="text-xs text-gray-400">
               Current width:{" "}
               <span className="font-mono text-[#9DAA5F]">
-                {typeof window !== "undefined" ? window.innerWidth : 0}px
+                {viewportWidth}px
               </span>
             </p>
             <p className="text-xs text-gray-400">

@@ -2,13 +2,14 @@
 
 import { useSession } from "~/lib/auth-client";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { api } from "~/trpc/react";
 
 export default function OnboardingPage() {
   const { data: session, isPending } = useSession();
   const router = useRouter();
-  const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set());
+  // Track deselected projects (opt-out model: all selected by default)
+  const [deselectedProjects, setDeselectedProjects] = useState<Set<string>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -17,6 +18,11 @@ export default function OnboardingPage() {
     api.gitlab.listUserProjects.useQuery(undefined, {
       enabled: !!session,
     });
+
+  // Derive selected projects: all projects minus deselected ones
+  const selectedProjects = projects
+    ? new Set(projects.filter(p => !deselectedProjects.has(p.id)).map(p => p.id))
+    : new Set<string>();
 
   // Save monitored projects mutation
   const saveMonitoredMutation = api.projects.saveMonitored.useMutation({
@@ -30,36 +36,31 @@ export default function OnboardingPage() {
     },
   });
 
-  // Initialize all projects as selected when data loads (opt-out model)
-  useEffect(() => {
-    if (projects && selectedProjects.size === 0) {
-      setSelectedProjects(new Set(projects.map(p => p.id)));
-    }
-  }, [projects]);
-
-  // Handle individual checkbox toggle
+  // Handle individual checkbox toggle (toggles deselection)
   const handleToggleProject = (projectId: string) => {
-    setSelectedProjects(prev => {
+    setDeselectedProjects(prev => {
       const newSet = new Set(prev);
       if (newSet.has(projectId)) {
+        // Was deselected, now select it
         newSet.delete(projectId);
       } else {
+        // Was selected, now deselect it
         newSet.add(projectId);
       }
       return newSet;
     });
   };
 
-  // Handle "Select All" button
+  // Handle "Select All" button - clear all deselections
   const handleSelectAll = () => {
-    if (projects) {
-      setSelectedProjects(new Set(projects.map(p => p.id)));
-    }
+    setDeselectedProjects(new Set());
   };
 
-  // Handle "Deselect All" button
+  // Handle "Deselect All" button - deselect all projects
   const handleDeselectAll = () => {
-    setSelectedProjects(new Set());
+    if (projects) {
+      setDeselectedProjects(new Set(projects.map(p => p.id)));
+    }
   };
 
   // Filter projects based on search query
@@ -155,7 +156,7 @@ export default function OnboardingPage() {
                 No projects found
               </p>
               <p className="text-gray-600 dark:text-gray-400">
-                You don't have access to any GitLab projects yet. Create a project in GitLab first, or ask for access to existing projects.
+                You don&apos;t have access to any GitLab projects yet. Create a project in GitLab first, or ask for access to existing projects.
               </p>
             </div>
           )}
