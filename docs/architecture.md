@@ -951,7 +951,7 @@ const toggleSplitPane = () => {
 ### ADR-010: Laptop and Desktop Platform (1280px+ minimum)
 **Decision:** Target laptop and desktop web browsers, 1280px minimum width, optimized for 1440px-2560px range
 **Rationale:** Target users (mid-senior engineers) work on both laptops and desktops. Common laptop resolutions include MacBook Air 13" (1440×900 scaled), MacBook Pro 14" (1512×982 scaled), and standard corporate laptops (1366×768 - 1920×1080). Internal tool (no mobile use case). Dense 2-line table layout requires horizontal space but adapts responsively. Keyboard-first UX assumes physical keyboard (present on laptops). Supporting real-world laptop usage critical for remote work and flexible engineering workflows.
-**Consequences:** No mobile/tablet support (acceptable for internal tool), responsive design testing at multiple widths required, optimized UX for laptop and desktop environments, mobile access shows "requires desktop browser" message
+**Consequences:** Mobile/tablet not optimized but accessible (acceptable for internal tool), responsive design testing at multiple widths required, optimized UX for laptop and desktop environments, graceful degradation on smaller viewports (no hard lockout)
 **Status:** Accepted (Amended 2025-11-24 - reduced minimum from 1920px to 1280px to support laptop users)
 **Responsive Strategy:**
 - Compact laptop mode (1280-1679px): Reduced column widths, detail pane off by default, 10-12 items visible

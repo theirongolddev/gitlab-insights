@@ -1586,22 +1586,35 @@ These patterns ensure consistent behavior across the entire application, prevent
 
 **Primary Viewport:** 2560x1440 (1440p - standard in office)
 
-**Supported Range:** 1920px (1080p) minimum → 3840px (4K) and beyond
+**Supported Range:** 1024px (graceful degradation) → 3840px+ (4K and beyond)
 
 ---
 
 #### Breakpoint Strategy
 
-**Desktop Only (MVP):**
-- **Minimum:** 1920px (1080p - baseline support)
-- **Optimal:** 2560px (1440p - primary target, standard in office)
-- **Wide:** 3840px+ (4K and ultra-wide monitors)
+**Desktop-First with Graceful Adaptation:**
+- **Compact:** 1024-1279px (graceful degradation - simplified layout, essential features accessible)
+- **Laptop:** 1280-1679px (laptop baseline - full functionality, compact layout)
+- **Desktop:** 1680-2559px (desktop baseline - optimal feature visibility)
+- **Wide:** 2560-3839px (1440p - primary target, full feature visibility with detail pane)
+- **Ultra-wide:** 3840px+ (4K and ultra-wide monitors)
 
-**Mobile/Tablet:** Not supported in MVP (desktop-first tool)
-- Show message: "GitLab Insights requires a desktop browser (1920px minimum)"
-- Provide link to documentation
+**Responsive Breakpoints:**
+| Breakpoint | Width | Layout Behavior |
+|------------|-------|-----------------|
+| Compact | <1280px | Single-column focus, collapsible sidebar, simplified table, horizontal scroll if needed |
+| Laptop | 1280-1679px | Reduced column widths, detail pane off by default, 10-12 items visible |
+| Desktop | 1680-2559px | Full table layout, detail pane toggleable, comfortable density |
+| Wide | 2560-3839px | Detail pane on by default, expanded columns, generous spacing |
+| Ultra-wide | 3840px+ | Max content width with centered layout, symmetrical margins |
 
-**Rationale:** All engineers use desktop/laptop with 1440p+ displays. Optimize for the actual hardware in use, not industry averages. 1080p support ensures compatibility for remote workers or secondary displays.
+**Mobile/Tablet:**
+- Functional but not optimized in MVP
+- All features accessible via responsive layout (may require horizontal scrolling on very small screens)
+- Touch interactions deferred to post-MVP polish
+- **No hard lockout** - users can access on any screen size
+
+**Rationale:** Engineers use a variety of displays including laptops (1280-1680px) for remote work, standard desktops (1080p-1440p), and 4K monitors. The app gracefully adapts to all screen sizes rather than blocking access. Optimize for the primary target (1440p) while ensuring usability across all reasonable viewport sizes.
 
 ---
 

@@ -5,7 +5,6 @@ import { Geist } from "next/font/google";
 
 import { Providers } from "./providers";
 import { Header } from "~/components/layout/Header";
-import { ViewportCheck } from "~/components/layout/ViewportCheck";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -24,12 +23,10 @@ export default function RootLayout({
     <html lang="en" className={geist.className}>
       <body className="min-h-screen bg-[#FDFFFC] dark:bg-[#2d2e2e]">
         <Providers>
-          <ViewportCheck>
-            <div className="flex min-h-screen flex-col">
-              <Header />
-              <main className="flex-1">{children}</main>
-            </div>
-          </ViewportCheck>
+          <div className="flex min-h-screen flex-col">
+            <Header />
+            <main className="flex-1">{children}</main>
+          </div>
         </Providers>
       </body>
     </html>
