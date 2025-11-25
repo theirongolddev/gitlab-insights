@@ -47,8 +47,8 @@ development_status:
   epic-1-retrospective: optional
 
   # Epic 2: User-Controlled Queries with Keyboard Foundation
-  epic-2: backlog
-  2-1-keyboard-shortcut-system-foundation: backlog
+  epic-2: contexted
+  2-1-keyboard-shortcut-system-foundation: drafted
   2-2-react-aria-table-with-vim-style-navigation: backlog
   2-3-postgresql-full-text-search-backend: backlog
   2-4-search-bar-ui: backlog

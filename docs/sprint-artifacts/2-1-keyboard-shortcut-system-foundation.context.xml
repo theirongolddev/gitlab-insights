@@ -1,0 +1,359 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>1</storyId>
+    <title>Keyboard Shortcut System Foundation</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-24</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-1-keyboard-shortcut-system-foundation.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>power user</asA>
+    <iWant>a global keyboard shortcut system</iWant>
+    <soThat>I can navigate the app efficiently without using a mouse</soThat>
+    <tasks>
+      <task id="1" title="Create ShortcutHandler Component" ac="2.1.1-2.1.5">
+        <subtask id="1.1">Create `src/components/keyboard/ShortcutHandler.tsx` component</subtask>
+        <subtask id="1.2">Add global `keydown` event listener at document level</subtask>
+        <subtask id="1.3">Implement context detection (check if target is INPUT/TEXTAREA)</subtask>
+        <subtask id="1.4">Create shortcut registry Map&lt;key, handler&gt;</subtask>
+        <subtask id="1.5">Add TypeScript interface for shortcut configuration</subtask>
+      </task>
+      <task id="2" title="Implement Context-Aware Routing Logic" ac="2.1.5">
+        <subtask id="2.1">Detect when user is typing in input fields</subtask>
+        <subtask id="2.2">Allow `Esc` through when typing (exception)</subtask>
+        <subtask id="2.3">Suppress navigation shortcuts (`/`, `j`, `k`) when typing</subtask>
+        <subtask id="2.4">Add `contenteditable` detection for rich text editors (future-proofing)</subtask>
+      </task>
+      <task id="3" title="Create Shortcut Context Provider" ac="2.1.1-2.1.4">
+        <subtask id="3.1">Create `src/components/keyboard/ShortcutContext.tsx` with React Context</subtask>
+        <subtask id="3.2">Define context value interface: `{ focusSearch, moveSelectionDown, moveSelectionUp, clearFocusAndModals }`</subtask>
+        <subtask id="3.3">Wrap app with ShortcutProvider in layout</subtask>
+        <subtask id="3.4">Export `useShortcuts` hook for components to register handlers</subtask>
+      </task>
+      <task id="4" title="Implement Core Shortcut Handlers" ac="2.1.1-2.1.4">
+        <subtask id="4.1">`/` handler: Call `focusSearch()` from context</subtask>
+        <subtask id="4.2">`j` handler: Call `moveSelectionDown()` from context</subtask>
+        <subtask id="4.3">`k` handler: Call `moveSelectionUp()` from context</subtask>
+        <subtask id="4.4">`Esc` handler: Call `clearFocusAndModals()` from context</subtask>
+        <subtask id="4.5">Prevent default browser behavior for intercepted keys</subtask>
+      </task>
+      <task id="5" title="Integrate with App Layout" ac="2.1.1-2.1.5">
+        <subtask id="5.1">Import ShortcutProvider in `src/app/layout.tsx`</subtask>
+        <subtask id="5.2">Wrap main content with ShortcutProvider</subtask>
+        <subtask id="5.3">Ensure event listener cleanup on unmount</subtask>
+        <subtask id="5.4">Test with existing Header and dashboard components</subtask>
+      </task>
+      <task id="6" title="Create Placeholder Handlers for Future Stories" ac="2.1.1-2.1.4">
+        <subtask id="6.1">Create no-op placeholder for `focusSearch()` (wired in Story 2.4)</subtask>
+        <subtask id="6.2">Create no-op placeholder for `moveSelectionDown/Up()` (wired in Story 2.2)</subtask>
+        <subtask id="6.3">Create no-op placeholder for `clearFocusAndModals()` (wired progressively)</subtask>
+        <subtask id="6.4">Add console.debug logs for development verification (using pino logger pattern)</subtask>
+      </task>
+      <task id="7" title="Manual Testing - Keyboard Shortcuts" ac="2.1.1-2.1.5">
+        <subtask id="7.1">Test `/` key focuses search input (verify input receives focus)</subtask>
+        <subtask id="7.2">Test `j/k` keys trigger handlers when not in input (verify debug logs)</subtask>
+        <subtask id="7.3">Test `Esc` clears focus (verify search input blurs)</subtask>
+        <subtask id="7.4">Test shortcuts do NOT fire when typing in search input</subtask>
+        <subtask id="7.5">Test shortcuts do NOT fire when typing in any future input fields</subtask>
+        <subtask id="7.6">Test across browsers (Chrome, Firefox, Safari)</subtask>
+      </task>
+      <task id="8" title="Add Minimal Search Input to Header" ac="2.1.1, 2.1.2, 2.1.5">
+        <subtask id="8.1">Add search input element to Header component with placeholder "Search... (/)"</subtask>
+        <subtask id="8.2">Create ref for search input element</subtask>
+        <subtask id="8.3">Style input with olive focus ring (focus:ring-2 focus:ring-[#9DAA5F])</subtask>
+        <subtask id="8.4">Register focusSearch handler via useShortcuts() to focus the input ref</subtask>
+        <subtask id="8.5">Implement clearFocusAndModals to blur active element (document.activeElement)</subtask>
+        <subtask id="8.6">Input is non-functional for search (placeholder for Story 2.4)</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="2.1.1">Pressing `/` from anywhere focuses the search input</criterion>
+    <criterion id="2.1.2">Pressing `Esc` clears focus and closes any open modals</criterion>
+    <criterion id="2.1.3">Pressing `j` outside input fields moves selection down</criterion>
+    <criterion id="2.1.4">Pressing `k` outside input fields moves selection up</criterion>
+    <criterion id="2.1.5">Keyboard shortcuts do NOT trigger when typing in text inputs (except Esc)</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc type="prd" relevance="high">
+        <path>docs/prd.md</path>
+        <sections>
+          <section name="Keyboard Navigation (Priority Requirement)" lines="333-343">
+            - `/` Focus search
+            - `?` Show keyboard shortcuts
+            - `j/k` Navigate items (vim-style)
+            - `o/Enter` Open selected item in GitLab
+            - `f` Focus filter dropdown
+            - Visible focus indicators for all interactive elements
+            - No mouse required for core workflows
+          </section>
+          <section name="FR52-60: Keyboard Navigation" lines="686-720">
+            - FR52: `/` focuses search bar
+            - FR53: `j/k` vim-style navigation
+            - FR54: `o/Enter` opens selected item
+            - FR55: `m` marks as reviewed
+            - FR56: `v` toggles Card/Table view
+            - FR57: `?` shows keyboard shortcut help
+            - FR58: All interactive elements keyboard accessible
+            - FR59: Visible focus indicators
+            - FR60: `r` triggers manual refresh
+          </section>
+        </sections>
+      </doc>
+      <doc type="tech-spec" relevance="high">
+        <path>docs/sprint-artifacts/tech-spec-epic-2.md</path>
+        <sections>
+          <section name="Story 2.1: Keyboard Shortcut System Foundation">
+            - ShortcutHandler.tsx component with global keydown listener
+            - Context-aware routing (detect INPUT/TEXTAREA focus)
+            - Shortcut registry: Map&lt;key, handler&gt;
+            - ShortcutContext with React Context for handler registration
+            - Placeholder handlers for `/`, `j`, `k`, `Esc`
+          </section>
+        </sections>
+      </doc>
+      <doc type="epic-breakdown" relevance="high">
+        <path>docs/epics/epic-2-user-controlled-queries-with-keyboard-foundation-story-breakdown.md</path>
+        <sections>
+          <section name="Story 2.1 Dependencies">
+            - Prerequisite: Story 1.7 (App layout with React Aria) - DONE
+            - Dependent stories: Story 2.2 (Table navigation), Story 2.4 (Search bar)
+          </section>
+        </sections>
+      </doc>
+      <doc type="architecture" relevance="medium">
+        <path>docs/architecture.md</path>
+        <relevance>Component patterns, state management approach</relevance>
+      </doc>
+      <doc type="ux-design" relevance="medium">
+        <path>docs/ux-design-specification.md</path>
+        <relevance>Focus indicator styling (olive ring), interaction patterns</relevance>
+      </doc>
+    </docs>
+
+    <code>
+      <file path="src/app/layout.tsx" relevance="high">
+        <purpose>Root layout - ShortcutProvider wrapping point</purpose>
+        <integration>Wrap children with ShortcutProvider after Providers component</integration>
+        <pattern>Uses Providers component which wraps TRPCReactProvider</pattern>
+      </file>
+      <file path="src/app/providers.tsx" relevance="high">
+        <purpose>Client-side providers wrapper</purpose>
+        <integration>ShortcutProvider can be added here alongside TRPCReactProvider</integration>
+        <code-snippet>
+export function Providers({ children }: { children: React.ReactNode }) {
+  return &lt;TRPCReactProvider&gt;{children}&lt;/TRPCReactProvider&gt;;
+}
+        </code-snippet>
+      </file>
+      <file path="src/app/dashboard/page.tsx" relevance="high">
+        <purpose>Main dashboard with React Aria Tables</purpose>
+        <integration>
+          - Will consume ShortcutContext for j/k navigation
+          - Already uses React Aria Table components
+          - Has section refs for scroll navigation (issuesRef, mrsRef, commentsRef)
+        </integration>
+        <patterns>
+          - React Aria Table with onRowAction for Enter/click
+          - Section navigation via refs and scrollIntoView
+          - Focus ring: focus:ring-2 focus:ring-[#9DAA5F]
+        </patterns>
+      </file>
+      <file path="src/components/layout/Header.tsx" relevance="high">
+        <purpose>App header - MODIFIED in Task 8 to add minimal search input</purpose>
+        <integration>
+          - Add search input with placeholder "Search... (/)"
+          - Create inputRef for focus management
+          - Use useShortcuts() hook to register focusSearch handler
+          - Style with olive focus ring pattern
+        </integration>
+        <implementation-pattern>
+const searchInputRef = useRef&lt;HTMLInputElement&gt;(null);
+const { setFocusSearch } = useShortcuts();
+
+useEffect(() =&gt; {
+  setFocusSearch(() =&gt; searchInputRef.current?.focus());
+}, [setFocusSearch]);
+
+// In JSX:
+&lt;input
+  ref={searchInputRef}
+  type="text"
+  placeholder="Search... (/)"
+  className="... focus:ring-2 focus:ring-[#9DAA5F]"
+/&gt;
+        </implementation-pattern>
+      </file>
+      <file path="src/components/dashboard/ItemRow.tsx" relevance="medium">
+        <purpose>Event row display component</purpose>
+        <note>Selection styling with ring-2 ring-[#9DAA5F] already implemented</note>
+      </file>
+      <file path="src/lib/logger.ts" relevance="low">
+        <purpose>Pino logger - SERVER-SIDE ONLY</purpose>
+        <warning>
+          Pino with pino-pretty is server-side only. For client-side ShortcutHandler.tsx,
+          use console.debug() directly. Do NOT import logger.ts in client components.
+        </warning>
+        <client-side-alternative>
+// In ShortcutHandler.tsx (client component):
+if (process.env.NODE_ENV === 'development') {
+  console.debug('[Shortcuts] focusSearch() called');
+}
+        </client-side-alternative>
+      </file>
+      <file path="src/components/ui/Button.tsx" relevance="low">
+        <purpose>React Aria Button component pattern</purpose>
+        <note>Reference for focus ring styling pattern: focus:ring-2 focus:ring-[#9DAA5F]</note>
+      </file>
+    </code>
+
+    <dependencies>
+      <dependency name="react-aria-components" version="^1.13.0" relevance="high">
+        <usage>
+          - Already used for Table, Button components
+          - Use for keyboard event handling patterns
+          - Consider useFocusRing, useKeyboard hooks
+        </usage>
+      </dependency>
+      <dependency name="react" version="^19.2.0" relevance="high">
+        <usage>
+          - createContext for ShortcutContext
+          - useEffect for global event listener setup/cleanup
+          - useCallback for memoized handlers
+          - useRef for element references
+        </usage>
+      </dependency>
+      <dependency name="pino" version="^10.1.0" relevance="medium">
+        <usage>Debug logging for shortcut handler verification</usage>
+      </dependency>
+      <dependency name="next" version="^16.0.4" relevance="medium">
+        <usage>useRouter for potential navigation shortcuts</usage>
+      </dependency>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="browser-compatibility">
+      Keyboard events must work consistently across Chrome, Firefox, Safari (evergreen browsers)
+    </constraint>
+    <constraint type="performance">
+      Event listeners must not cause re-renders; use useCallback for handlers
+    </constraint>
+    <constraint type="accessibility">
+      Must not break native browser keyboard navigation (Tab, Enter on links/buttons)
+    </constraint>
+    <constraint type="input-safety">
+      CRITICAL: Shortcuts must NOT fire when user is typing in INPUT, TEXTAREA, or contenteditable elements (except Esc)
+    </constraint>
+    <constraint type="cleanup">
+      Event listeners MUST be cleaned up on unmount to prevent memory leaks
+    </constraint>
+    <constraint type="scope">
+      This story creates FOUNDATION only - actual handlers are placeholders.
+      Real implementations come in: Story 2.2 (j/k table nav), Story 2.4 (/ search focus)
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="ShortcutContext">
+      <description>React Context for registering and invoking keyboard shortcut handlers</description>
+      <definition>
+interface ShortcutContextValue {
+  // Handler setters - called by consuming components to register their handlers
+  setFocusSearch: (handler: () => void) => void;
+  setMoveSelectionDown: (handler: () => void) => void;
+  setMoveSelectionUp: (handler: () => void) => void;
+  setClearFocusAndModals: (handler: () => void) => void;
+
+  // Direct invocation (for ShortcutHandler)
+  focusSearch: () => void;
+  moveSelectionDown: () => void;
+  moveSelectionUp: () => void;
+  clearFocusAndModals: () => void;
+}
+      </definition>
+    </interface>
+    <interface name="ShortcutHandler Props">
+      <description>Props for the ShortcutHandler component (likely none, uses context)</description>
+      <definition>
+interface ShortcutHandlerProps {
+  children?: React.ReactNode; // May wrap children or be standalone
+}
+      </definition>
+    </interface>
+    <interface name="useShortcuts Hook">
+      <description>Hook for components to register their shortcut handlers</description>
+      <definition>
+// Returns context value for registering handlers
+function useShortcuts(): ShortcutContextValue;
+
+// Usage example in SearchBar (Story 2.4):
+const { setFocusSearch } = useShortcuts();
+useEffect(() => {
+  setFocusSearch(() => inputRef.current?.focus());
+}, [setFocusSearch]);
+      </definition>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      <standard>No automated test framework configured yet (no jest/vitest in package.json)</standard>
+      <standard>Manual testing specified in story tasks</standard>
+      <standard>Console.debug logs should be visible in development mode</standard>
+      <standard>Test in Chrome, Firefox, Safari per DoD</standard>
+    </standards>
+    <locations>
+      <location>Manual testing in browser dev tools console</location>
+      <location>Tests directory: None configured yet - would be src/__tests__ or tests/</location>
+    </locations>
+    <ideas>
+      <testCase id="1" priority="critical" validation="REAL">
+        <scenario>Pressing `/` when NOT in an input field</scenario>
+        <expected>Search input in Header receives focus</expected>
+        <validation>Verify cursor appears in search input, input has focus ring</validation>
+      </testCase>
+      <testCase id="2" priority="critical" validation="REAL">
+        <scenario>Pressing `/` when typing in the search input</scenario>
+        <expected>Nothing happens - shortcut suppressed, "/" character typed normally</expected>
+        <validation>Focus search input, type "/", verify "/" appears as text in input</validation>
+      </testCase>
+      <testCase id="3" priority="critical" validation="REAL">
+        <scenario>Pressing `Esc` when search input is focused</scenario>
+        <expected>Search input loses focus (blurs)</expected>
+        <validation>Focus search input, press Esc, verify input no longer has focus ring</validation>
+      </testCase>
+      <testCase id="4" priority="high" validation="LOG">
+        <scenario>Pressing `j` and `k` when NOT in input</scenario>
+        <expected>Debug logs fire for moveSelectionDown/Up (placeholder until Story 2.2)</expected>
+        <validation>Check browser console for debug output</validation>
+      </testCase>
+      <testCase id="5" priority="high" validation="REAL">
+        <scenario>Pressing `j` and `k` when typing in search input</scenario>
+        <expected>Shortcuts suppressed - "j" and "k" characters typed normally</expected>
+        <validation>Focus search input, type "jk", verify "jk" appears in input</validation>
+      </testCase>
+      <testCase id="6" priority="medium" validation="REAL">
+        <scenario>Component unmount cleanup</scenario>
+        <expected>No errors when navigating away from dashboard</expected>
+        <validation>Navigate to/from dashboard, check for memory leak warnings</validation>
+      </testCase>
+      <testCase id="7" priority="medium" validation="REAL">
+        <scenario>Cross-browser validation</scenario>
+        <expected>All shortcuts work in Chrome, Firefox, Safari</expected>
+        <validation>Test "/" focus, "Esc" blur, "j/k" suppression in each browser</validation>
+      </testCase>
+      <testCase id="8" priority="medium" validation="REAL">
+        <scenario>Search input placeholder teaches shortcut</scenario>
+        <expected>Placeholder text shows "Search... (/)"</expected>
+        <validation>Visual inspection of Header component</validation>
+      </testCase>
+    </ideas>
+  </tests>
+</story-context>
