@@ -1,0 +1,220 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>7</storyId>
+    <title>Basic App Layout with React Aria</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-24</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/1-7-basic-app-layout-with-react-aria.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>to establish the basic app layout with React Aria Components</iWant>
+    <soThat>I have a consistent, accessible foundation for UI across all pages</soThat>
+    <tasks>
+      - Create Root Layout Component (AC: 1, 2)
+      - Create Header Component (AC: 1, 7, 8)
+      - Integrate React Aria Button Component (AC: 2, 5, 6)
+      - Apply Dark Mode &amp; Olive Accent Styling (AC: 4, 6)
+      - Desktop Responsive Layout (AC: 3)
+      - Accessibility Verification (AC: 2, 5, 6)
+      - Manual Testing - Complete Flow (AC: 1-8)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. Given the app is running, when I navigate to any page, then I see a consistent layout with header (app logo, user avatar, logout button) and main content area
+    2. Layout uses React Aria Components for accessibility
+    3. Layout is responsive for desktop only (1920px+ per ADR-010)
+    4. Dark mode styling is applied with olive accent (#9DAA5F per UX spec)
+    5. All interactive elements are keyboard accessible via Tab navigation
+    6. Focus indicators are visible (2px olive ring per UX spec)
+    7. Header shows authenticated user info (avatar, name from session)
+    8. Logout button works correctly and clears session
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-1.md</path>
+        <title>Epic Technical Specification: Walking Skeleton</title>
+        <section>AC-7: Application Layout and Accessibility</section>
+        <snippet>Consistent layout with header (logo, user avatar, logout). React Aria Components for accessibility. Dark mode with olive accent (#9DAA5F). Keyboard accessible (Tab navigation, Enter/Space to activate). Focus indicators visible on all interactive elements.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>UI Component Patterns (React Aria Components)</section>
+        <snippet>React Aria Components for all interactive UI. Button component with keyboard interaction (Space/Enter). Focus trap, Esc to close for modals. 2px olive (#5e6b24) focus ring. ADR-008: React Aria chosen for keyboard-first UX with unstyled primitives for custom styling.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>ADR-010: Desktop-Only Platform (1920px+ minimum)</section>
+        <snippet>Target desktop web browsers only, 1920px (1080p) minimum width, optimized for 2560px (1440p). No mobile/tablet support. Keyboard-first UX assumes physical keyboard. Show "requires desktop browser" message for viewports &lt;1920px.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>ADR-012: BetterAuth for Next.js 16 Compatibility</section>
+        <snippet>Use BetterAuth 1.4.1 instead of NextAuth for authentication. Configuration in src/lib/auth.ts (BetterAuth convention). Session management with simpler API than NextAuth. Environment Variables: BETTER_AUTH_SECRET, BETTER_AUTH_URL (not NEXTAUTH_*).</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics/epic-1-walking-skeleton-story-breakdown.md</path>
+        <title>Epic 1: Walking Skeleton - Story Breakdown</title>
+        <section>Story 1.7: Basic App Layout with React Aria</section>
+        <snippet>Establish basic app layout with React Aria Components. Header: App logo, user avatar, logout button. Dark mode styling (olive accent #9DAA5F). Keyboard accessibility foundation. React Aria Button for logout. Focus-visible styles (olive ring). Definition of Done includes consistent layout, React Aria installed, header shows user info, dark mode applied, focus indicators visible.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/1-6-2-line-table-view-with-hardcoded-query.md</path>
+        <title>Story 1.6: 2-Line Table View with Hardcoded Query</title>
+        <section>Learnings from Previous Story - React Aria Components Integration</section>
+        <snippet>React Aria Components package (react-aria-components v1.13.0) already installed. Table, Row, Cell components successfully implemented with keyboard navigation. Focus ring pattern established: focus:ring-2 ring-[#9DAA5F]. onRowAction handler pattern for click events with proper security (noopener, noreferrer).</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>src/app/layout.tsx</path>
+        <kind>root-layout</kind>
+        <symbol>RootLayout</symbol>
+        <lines>1-29</lines>
+        <reason>Root layout component that needs to be modified to add Header. Currently wraps children in Providers but no header present. This is the main integration point for AC-1.</reason>
+      </artifact>
+      <artifact>
+        <path>src/components/layout/Header.tsx</path>
+        <kind>component</kind>
+        <symbol>Header</symbol>
+        <lines>1-62</lines>
+        <reason>Header component ALREADY EXISTS and is fully implemented. Shows app logo, user avatar, name, email, and sign out button. Uses BetterAuth useSession hook and signOut function. Implements dark mode styling with olive accent. This component just needs to be integrated into layout.tsx.</reason>
+      </artifact>
+      <artifact>
+        <path>src/lib/auth-client.ts</path>
+        <kind>auth-utility</kind>
+        <symbol>authClient, useSession, signIn, signOut</symbol>
+        <lines>1-8</lines>
+        <reason>BetterAuth client-side utilities. Exports useSession hook for getting session data, and signOut function for logout. Already used by Header component. Required for AC-7 and AC-8.</reason>
+      </artifact>
+      <artifact>
+        <path>src/lib/auth.ts</path>
+        <kind>auth-config</kind>
+        <symbol>auth</symbol>
+        <lines>1-23</lines>
+        <reason>BetterAuth server-side configuration. Sets up GitLab OAuth provider, Prisma adapter, and session management. Exports Session type for TypeScript. Background context for how authentication works in the app.</reason>
+      </artifact>
+      <artifact>
+        <path>src/components/dashboard/RefreshButton.tsx</path>
+        <kind>component</kind>
+        <symbol>RefreshButton</symbol>
+        <lines>1-41</lines>
+        <reason>Example of button component using olive accent colors (#5e6b24). Shows pattern for disabled states, loading states, and transitions. Reference for implementing React Aria Button with similar styling for logout button if Header needs refactoring.</reason>
+      </artifact>
+      <artifact>
+        <path>src/styles/globals.css</path>
+        <kind>styles</kind>
+        <symbol>CSS theme variables</symbol>
+        <lines>1-43</lines>
+        <reason>Tailwind CSS theme configuration with olive accent colors defined (--color-olive: #5e6b24, --color-olive-light: #9DAA5F). Dark mode background (--color-bg-dark: #2d2e2e) and text colors. Animation variables for slide transitions. Required for AC-4 and AC-6.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package>react-aria-components</package>
+        <version>^1.13.0</version>
+        <reason>Already installed in Story 1.6. Provides accessible Button component for AC-2, AC-5, AC-6. If Header needs refactoring to use React Aria Button instead of plain button element.</reason>
+      </node>
+      <node>
+        <package>better-auth</package>
+        <version>^1.4.1</version>
+        <reason>Authentication library. Provides useSession hook and signOut function already used in Header component. Required for AC-7 and AC-8.</reason>
+      </node>
+      <node>
+        <package>next</package>
+        <version>^16.0.4</version>
+        <reason>Next.js framework. App Router layout system (layout.tsx) for consistent header across pages. Image component for user avatar display in Header.</reason>
+      </node>
+      <node>
+        <package>tailwindcss</package>
+        <version>^4.0.15</version>
+        <reason>Utility-first CSS framework. Provides dark mode classes and responsive utilities. Olive accent colors configured in globals.css theme.</reason>
+      </node>
+      <node>
+        <package>react</package>
+        <version>^19.2.0</version>
+        <reason>React library for component development. Client components ("use client") for Header and interactive elements.</reason>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Header component ALREADY EXISTS and is fully implemented at src/components/layout/Header.tsx
+    - Main task is to import Header into src/app/layout.tsx and integrate it into the root layout
+    - Header already uses BetterAuth (not NextAuth) - do not change authentication library
+    - Header already implements dark mode styling with olive accent (#9DAA5F for dark, #5e6b24 for light)
+    - Header already shows user avatar, name, email, and sign out button per AC-1, AC-7
+    - Header already has signOut functionality via BetterAuth authClient.signOut() per AC-8
+    - CRITICAL: Must create src/components/ui/Button.tsx wrapper component that wraps React Aria Button with design system (primary/secondary/ghost variants, olive accent, focus rings)
+    - CRITICAL: Must refactor Header.tsx button element to use new Button wrapper component (AC-5 requirement)
+    - Button wrapper establishes reusable pattern for all future button usage across the application
+    - Laptop and desktop responsive design (1280px+ minimum per ADR-010 Amendment 2025-11-24) - add viewport width check and "desktop/laptop required" message if &lt;1280px
+    - Responsive strategy: compact mode (1280-1679px), standard mode (1680-2559px), wide mode (2560px+)
+    - All interactive elements must be keyboard accessible via Tab navigation (AC-5)
+    - Focus indicators must be visible with 2px olive ring (AC-6) - Button wrapper must implement this
+    - Dark mode is the default and only mode for MVP (ADR-009) - no light mode toggle needed
+    - Olive accent color system: #5e6b24 (light mode), #9DAA5F (dark mode) from globals.css theme
+    - Button wrapper variants: primary (olive bg), secondary (gray bg), ghost (transparent with border)
+    - Session data structure from BetterAuth: session.user.{id, name, email, image}
+    - Layout must render on all authenticated pages - unauthenticated pages (login) should not show header
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>useSession</name>
+      <kind>React Hook</kind>
+      <signature>const { data: session } = useSession()</signature>
+      <path>src/lib/auth-client.ts</path>
+      <description>BetterAuth hook to get current session. Returns session object with user data (id, name, email, image) or null if not authenticated. Already used in Header component.</description>
+    </interface>
+    <interface>
+      <name>signOut</name>
+      <kind>Function</kind>
+      <signature>async function signOut(): Promise&lt;void&gt;</signature>
+      <path>src/lib/auth-client.ts</path>
+      <description>BetterAuth function to sign out user and clear session. Automatically redirects to login page. Already used in Header component's handleSignOut.</description>
+    </interface>
+    <interface>
+      <name>Header Component</name>
+      <kind>React Component</kind>
+      <signature>export function Header(): JSX.Element | null</signature>
+      <path>src/components/layout/Header.tsx</path>
+      <description>Fully implemented header component. Shows app logo, user info (avatar, name, email), and sign out button. Returns null if no session (login page). Uses BetterAuth useSession and signOut. Ready to import into layout.tsx.</description>
+    </interface>
+    <interface>
+      <name>RootLayout</name>
+      <kind>Next.js Layout Component</kind>
+      <signature>export default function RootLayout({ children }: { children: React.ReactNode }): JSX.Element</signature>
+      <path>src/app/layout.tsx</path>
+      <description>Root layout component that wraps all pages. Currently imports Providers and Geist font. Needs to import and render Header component above children to make it persistent across all pages.</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Per ADR-006, Epic 1 uses manual testing only (no automated tests). Minimal testing for fast iteration during MVP phase. Unit tests ONLY for critical business logic. NO Integration or E2E tests until post-MVP. Testing Library: Vitest (if tests needed in future). Philosophy: Fast iteration over test coverage. Tests should not slow down development.</standards>
+    <locations>
+      tests/ (if created in future epics)
+    </locations>
+    <ideas>
+      - AC-1: Manual test - Navigate to dashboard, onboarding, settings pages. Verify header appears on all pages with consistent layout.
+      - AC-2: Manual test - Verify Header uses semantic HTML and ARIA attributes. Check with React DevTools that components are properly structured.
+      - AC-3: Manual test - Resize browser to 1920px, 2560px, 3840px widths. Verify layout doesn't break. Test viewport &lt;1920px shows "desktop required" message if implemented.
+      - AC-4: Manual test - Verify dark mode colors applied (background #2d2e2e, text #FDFFFC, olive accent #9DAA5F on interactive elements).
+      - AC-5: Manual test - Use Tab key to navigate through header elements (logo, user avatar, logout button). Verify all elements are reachable and in logical order.
+      - AC-6: Manual test - Tab to logout button and verify 2px olive ring appears on focus. Check focus:ring-2 ring-[#9DAA5F] class applied.
+      - AC-7: Manual test - Log in with GitLab OAuth. Verify header shows user avatar (if available), name, and email from session.
+      - AC-8: Manual test - Click logout button. Verify redirect to login page and session cleared (cannot access dashboard without re-login).
+      - Integration test: Complete flow - Login → Dashboard → Verify header → Navigate to settings → Header persists → Logout → Verify redirect and session clear
+      - Accessibility test: Use browser DevTools Accessibility panel or axe DevTools extension to validate semantic structure and ARIA compliance
+    </ideas>
+  </tests>
+</story-context>

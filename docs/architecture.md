@@ -948,12 +948,18 @@ const toggleSplitPane = () => {
 **Status:** Accepted
 **Colors:** Background #2d2e2e, Primary text #FDFFFC, Accent #9DAA5F (lightened olive for dark bg contrast)
 
-### ADR-010: Desktop-Only Platform (1920px+ minimum)
-**Decision:** Target desktop web browsers only, 1920px (1080p) minimum width, optimized for 2560px (1440p)
-**Rationale:** All target users (mid-senior engineers) use desktop/laptop with 1440p+ displays in office. Internal tool (no mobile use case). Dense 2-line table layout requires horizontal space. Keyboard-first UX assumes physical keyboard. Optimizing for actual hardware accelerates MVP delivery.
-**Consequences:** No mobile/tablet support (acceptable for internal tool), no responsive mobile design needed, optimized UX for actual user environment, mobile access shows "requires desktop browser" message
-**Status:** Accepted
-**Responsive Strategy:** 1080p baseline (1920-2559px), 1440p optimal (2560-3839px), 4K/ultra-wide (3840px+) with centered max-width content
+### ADR-010: Laptop and Desktop Platform (1280px+ minimum)
+**Decision:** Target laptop and desktop web browsers, 1280px minimum width, optimized for 1440px-2560px range
+**Rationale:** Target users (mid-senior engineers) work on both laptops and desktops. Common laptop resolutions include MacBook Air 13" (1440×900 scaled), MacBook Pro 14" (1512×982 scaled), and standard corporate laptops (1366×768 - 1920×1080). Internal tool (no mobile use case). Dense 2-line table layout requires horizontal space but adapts responsively. Keyboard-first UX assumes physical keyboard (present on laptops). Supporting real-world laptop usage critical for remote work and flexible engineering workflows.
+**Consequences:** No mobile/tablet support (acceptable for internal tool), responsive design testing at multiple widths required, optimized UX for laptop and desktop environments, mobile access shows "requires desktop browser" message
+**Status:** Accepted (Amended 2025-11-24 - reduced minimum from 1920px to 1280px to support laptop users)
+**Responsive Strategy:**
+- Compact laptop mode (1280-1679px): Reduced column widths, detail pane off by default, 10-12 items visible
+- Standard mode (1680-2559px): Full table layout, detail pane toggleable, 8-10 items visible
+- Wide mode (2560px+): Detail pane on by default, maximum information density
+
+**Amendment History:**
+- **2025-11-24**: Revised minimum from 1920px to 1280px. Original ADR assumed "all engineers use 1440p+ displays" without user validation. Real-world usage revealed engineers use laptops (1280-1680px width) for remote work, video calls, and flexible setups. The 1920px minimum would have blocked most laptop usage, creating poor UX for actual engineering workflows.
 
 ### ADR-011: Phased MVP - Mouse-First with Keyboard Layer
 **Decision:** Ship Phase 1 MVP with mouse-driven UI (buttons, nav links, clickable elements), then layer keyboard shortcuts in Phase 2 after validation
