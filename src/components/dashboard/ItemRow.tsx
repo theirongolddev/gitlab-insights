@@ -64,30 +64,15 @@ const getSnippet = (body: string | null, maxLength = 100) => {
  * AC-7: Line 2: First 80-100 chars of body as snippet
  * AC-8: Badge colors per event type
  * AC-9: NEW badge for unreviewed events
+ *
+ * Note: This component renders the content inside a React Aria Table Row.
+ * Keyboard navigation and click handling are managed by the parent Table component.
  */
-export function ItemRow({ item, isSelected, isNew, onClick }: ItemRowProps) {
-  const handleClick = () => {
-    window.open(item.gitlabUrl, "_blank", "noopener,noreferrer");
-    onClick();
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      handleClick();
-    }
-  };
-
+export function ItemRow({ item, isSelected, isNew }: ItemRowProps) {
   return (
     <div
-      role="row"
-      tabIndex={0}
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}
-      className={`h-[52px] px-4 cursor-pointer transition-colors
-        ${isSelected ? "ring-2 ring-[#9DAA5F]" : ""}
-        hover:bg-gray-800
-        focus:outline-none focus:ring-2 focus:ring-[#9DAA5F]`}
+      className={`h-[52px] px-4
+        ${isSelected ? "ring-2 ring-[#9DAA5F]" : ""}`}
     >
       {/* Line 1: Badge + Title + Metadata */}
       <div className="flex items-center justify-between h-7 pt-1.5">
