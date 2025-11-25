@@ -2,7 +2,6 @@
 
 import { useSession } from "~/lib/auth-client";
 import { useRouter } from "next/navigation";
-import { Header } from "~/components/layout/Header";
 import { RefreshButton } from "~/components/dashboard/RefreshButton";
 import { SyncIndicator } from "~/components/dashboard/SyncIndicator";
 import { ItemRow, type DashboardEvent } from "~/components/dashboard/ItemRow";
@@ -185,9 +184,7 @@ export default function DashboardPage() {
   const isEmpty = totalEvents === 0;
 
   return (
-    <>
-      <Header />
-      <main className="flex min-h-screen flex-col bg-[#FDFFFC] dark:bg-[#2d2e2e]">
+    <div className="flex min-h-screen flex-col bg-[#FDFFFC] dark:bg-[#2d2e2e]">
         {/* Header with Manual Refresh */}
         <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -247,7 +244,6 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
-      </main>
-    </>
+    </div>
   );
 }

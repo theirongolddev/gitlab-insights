@@ -4,6 +4,8 @@ import { type Metadata } from "next";
 import { Geist } from "next/font/google";
 
 import { Providers } from "./providers";
+import { Header } from "~/components/layout/Header";
+import { ViewportCheck } from "~/components/layout/ViewportCheck";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -20,8 +22,15 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={geist.className}>
-      <body>
-        <Providers>{children}</Providers>
+      <body className="min-h-screen bg-[#FDFFFC] dark:bg-[#2d2e2e]">
+        <Providers>
+          <ViewportCheck>
+            <div className="flex min-h-screen flex-col">
+              <Header />
+              <main className="flex-1">{children}</main>
+            </div>
+          </ViewportCheck>
+        </Providers>
       </body>
     </html>
   );

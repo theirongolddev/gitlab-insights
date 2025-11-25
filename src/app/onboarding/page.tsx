@@ -3,7 +3,6 @@
 import { useSession } from "~/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Header } from "~/components/layout/Header";
 import { api } from "~/trpc/react";
 
 export default function OnboardingPage() {
@@ -119,9 +118,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <>
-      <Header />
-      <main className="flex min-h-screen flex-col items-center bg-[#FDFFFC] dark:bg-[#2d2e2e] px-4 py-16">
+    <div className="flex min-h-screen flex-col items-center bg-[#FDFFFC] dark:bg-[#2d2e2e] px-4 py-16">
         <div className="container max-w-3xl">
           {/* Header */}
           <div className="mb-12 text-center">
@@ -256,7 +253,6 @@ export default function OnboardingPage() {
             </>
           )}
         </div>
-      </main>
-    </>
+    </div>
   );
 }
