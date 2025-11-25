@@ -2,12 +2,16 @@
  * Queries tRPC Router
  *
  * Story 2.7a: Backend for creating and listing saved queries
+ * Story 2.7b: Backend for updating and deleting saved queries
  *
  * Handles:
  * - queries.create: Save a new query with filters (AC 2.7a.1, 2.7a.3, 2.7a.4)
  * - queries.list: Fetch user's saved queries (enabler for Story 2.8)
+ * - queries.update: Update existing query name/filters (AC 2.7b.1, 2.7b.3-5, 2.7b.7)
+ * - queries.delete: Remove a saved query (AC 2.7b.2-4, 2.7b.6-7)
  */
 
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { QueryFiltersSchema } from "~/lib/filters/types";
@@ -65,4 +69,111 @@ export const queriesRouter = createTRPCRouter({
 
     return queries;
   }),
+
+  /**
+   * Update an existing saved query
+   *
+   * PUT /api/trpc/queries.update
+   *
+   * AC 2.7b.1: queries.update mutation updates query name and/or filters in database
+   * AC 2.7b.3: Authorization check prevents modifying queries not owned by current user
+   * AC 2.7b.4: Returns TRPCError (FORBIDDEN) for unauthorized access
+   * AC 2.7b.5: Input validated with Zod schema (id required, name/filters optional)
+   * AC 2.7b.7: Returns TRPCError (NOT_FOUND) when query id doesn't exist
+   *
+   * Partial update semantics: undefined fields unchanged, provided fields replace entirely
+   */
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        name: z
+          .string()
+          .min(1, "Query name is required")
+          .max(100, "Query name too long")
+          .optional(),
+        filters: QueryFiltersSchema.optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Fetch existing query
+      const existing = await ctx.db.userQuery.findUnique({
+        where: { id: input.id },
+      });
+
+      // AC 2.7b.7: NOT_FOUND if query doesn't exist
+      if (!existing) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Query not found",
+        });
+      }
+
+      // AC 2.7b.3, 2.7b.4: Authorization check
+      if (existing.userId !== ctx.session.user.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to modify this query",
+        });
+      }
+
+      // AC 2.7b.1: Update with provided fields (undefined fields unchanged)
+      const updated = await ctx.db.userQuery.update({
+        where: { id: input.id },
+        data: {
+          ...(input.name !== undefined && { name: input.name }),
+          ...(input.filters !== undefined && { filters: input.filters }),
+        },
+      });
+
+      return updated;
+    }),
+
+  /**
+   * Delete a saved query
+   *
+   * DELETE /api/trpc/queries.delete
+   *
+   * AC 2.7b.2: queries.delete mutation removes query from database
+   * AC 2.7b.3: Authorization check prevents deleting queries not owned by current user
+   * AC 2.7b.4: Returns TRPCError (FORBIDDEN) for unauthorized access
+   * AC 2.7b.6: Returns success confirmation ({ success: true })
+   * AC 2.7b.7: Returns TRPCError (NOT_FOUND) when query id doesn't exist
+   */
+  delete: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Fetch existing query
+      const existing = await ctx.db.userQuery.findUnique({
+        where: { id: input.id },
+      });
+
+      // AC 2.7b.7: NOT_FOUND if query doesn't exist
+      if (!existing) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Query not found",
+        });
+      }
+
+      // AC 2.7b.3, 2.7b.4: Authorization check
+      if (existing.userId !== ctx.session.user.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to delete this query",
+        });
+      }
+
+      // AC 2.7b.2: Delete the query
+      await ctx.db.userQuery.delete({
+        where: { id: input.id },
+      });
+
+      // AC 2.7b.6: Return success confirmation
+      return { success: true };
+    }),
 });
