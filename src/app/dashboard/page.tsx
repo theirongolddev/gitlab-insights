@@ -4,19 +4,10 @@ import { useSession } from "~/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { RefreshButton } from "~/components/dashboard/RefreshButton";
 import { SyncIndicator } from "~/components/dashboard/SyncIndicator";
-import { ItemRow, type DashboardEvent } from "~/components/dashboard/ItemRow";
+import { type DashboardEvent } from "~/components/dashboard/ItemRow";
+import { EventTable } from "~/components/dashboard/EventTable";
 import { api } from "~/trpc/react";
-import { useState, useRef } from "react";
-import {
-  Table,
-  TableBody,
-  Row,
-  Cell,
-  Column,
-  TableHeader,
-} from "react-aria-components";
-
-type SectionType = "issues" | "mergeRequests" | "comments";
+import { useState } from "react";
 
 // AC-10: Hardcoded filter label
 // Developer override: AC-10 specifies "security" but user's GitLab instance lacks this label.
@@ -24,97 +15,15 @@ type SectionType = "issues" | "mergeRequests" | "comments";
 // User-controlled queries will be implemented in Epic 2.
 const HARDCODED_FILTER_LABEL = "bug";
 
-interface SectionHeaderProps {
-  title: string;
-  count: number;
-  sectionId: SectionType;
-  onNavigate: (sectionId: SectionType) => void;
-}
-
-function SectionHeader({ title, count, sectionId, onNavigate }: SectionHeaderProps) {
-  return (
-    <button
-      onClick={() => onNavigate(sectionId)}
-      className="flex items-center gap-2 px-4 py-2 text-left w-full
-        hover:bg-gray-700/50 transition-colors
-        border-b border-gray-700"
-    >
-      <h2 className="text-lg font-semibold text-[#FDFFFC]">{title}</h2>
-      <span className="text-sm text-gray-400">({count})</span>
-    </button>
-  );
-}
-
-interface EventSectionProps {
-  title: string;
-  sectionId: SectionType;
-  events: DashboardEvent[];
-  sectionRef: React.RefObject<HTMLDivElement | null>;
-  onNavigate: (sectionId: SectionType) => void;
-}
-
-function EventSection({ title, sectionId, events, sectionRef, onNavigate }: EventSectionProps) {
-  return (
-    <div ref={sectionRef} className="mb-6">
-      <SectionHeader
-        title={title}
-        count={events.length}
-        sectionId={sectionId}
-        onNavigate={onNavigate}
-      />
-      {/* AC-17: React Aria Table for keyboard Tab navigation */}
-      <Table
-        aria-label={`${title} events`}
-        className="w-full"
-        onRowAction={(key) => {
-          const event = events.find((e) => e.id === key);
-          if (event) {
-            window.open(event.gitlabUrl, "_blank", "noopener,noreferrer");
-          }
-        }}
-      >
-        <TableHeader className="sr-only">
-          <Column isRowHeader>Event</Column>
-        </TableHeader>
-        <TableBody items={events}>
-          {(event) => (
-            <Row
-              key={event.id}
-              id={event.id}
-              className="outline-none cursor-pointer
-                hover:bg-gray-800
-                focus:ring-2 focus:ring-[#9DAA5F]"
-            >
-              <Cell className="p-0">
-                <ItemRow
-                  item={event}
-                  isSelected={false}
-                  isNew={false}
-                  onClick={() => {}}
-                />
-              </Cell>
-            </Row>
-          )}
-        </TableBody>
-      </Table>
-    </div>
-  );
-}
-
 export default function DashboardPage() {
   const { data: session, isPending } = useSession();
   const router = useRouter();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Section refs for scroll navigation
-  const issuesRef = useRef<HTMLDivElement>(null);
-  const mrsRef = useRef<HTMLDivElement>(null);
-  const commentsRef = useRef<HTMLDivElement>(null);
-
   const utils = api.useUtils();
 
   // AC-10: Get dashboard events with hardcoded security label filter
-  const { data: dashboardData } = api.events.getForDashboard.useQuery({
+  const { data: dashboardData, isLoading: eventsLoading } = api.events.getForDashboard.useQuery({
     filterLabel: HARDCODED_FILTER_LABEL,
   });
 
@@ -136,14 +45,9 @@ export default function DashboardPage() {
     manualRefresh.mutate();
   };
 
-  const handleSectionNavigate = (sectionId: SectionType) => {
-    const refs: Record<SectionType, React.RefObject<HTMLDivElement | null>> = {
-      issues: issuesRef,
-      mergeRequests: mrsRef,
-      comments: commentsRef,
-    };
-
-    refs[sectionId].current?.scrollIntoView({ behavior: "smooth" });
+  // Handle row click - open GitLab URL in new tab
+  const handleRowClick = (event: DashboardEvent) => {
+    window.open(event.gitlabUrl, "_blank", "noopener,noreferrer");
   };
 
   if (isPending) {
@@ -159,7 +63,8 @@ export default function DashboardPage() {
     return null;
   }
 
-  // Transform API data to DashboardEvent format
+  // Transform API data to DashboardEvent format and combine into single array
+  // Events are already sorted by createdAt desc from the API
   const issues: DashboardEvent[] = (dashboardData?.issues ?? []).map((e) => ({
     ...e,
     type: e.type as DashboardEvent["type"],
@@ -178,70 +83,38 @@ export default function DashboardPage() {
     createdAt: new Date(e.createdAt),
   }));
 
-  const totalEvents = issues.length + mergeRequests.length + comments.length;
-  const isEmpty = totalEvents === 0;
+  // Combine all events and sort by createdAt desc for unified j/k navigation
+  const allEvents: DashboardEvent[] = [...issues, ...mergeRequests, ...comments].sort(
+    (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+  );
 
   return (
     <div className="flex min-h-screen flex-col bg-[#FDFFFC] dark:bg-[#2d2e2e]">
-        {/* Header with Manual Refresh */}
-        <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-[#2d2e2e] dark:text-[#FDFFFC]">
-                Dashboard
-              </h1>
-              <SyncIndicator />
-            </div>
-            <RefreshButton onRefresh={handleRefresh} isLoading={isRefreshing} />
+      {/* Header with Manual Refresh */}
+      <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-[#2d2e2e] dark:text-[#FDFFFC]">
+              Dashboard
+            </h1>
+            <SyncIndicator />
           </div>
+          <RefreshButton onRefresh={handleRefresh} isLoading={isRefreshing} />
         </div>
+      </div>
 
-        {/* Sectioned Events List */}
-        <div className="container mx-auto px-4 py-6">
-          {isEmpty ? (
-            <div className="text-center py-12">
-              {/* AC-4: Exact empty state message */}
-              <p className="text-lg text-gray-600 dark:text-gray-400">
-                No events match the current filter
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {/* Issues Section */}
-              {issues.length > 0 && (
-                <EventSection
-                  title="Issues"
-                  sectionId="issues"
-                  events={issues}
-                  sectionRef={issuesRef}
-                  onNavigate={handleSectionNavigate}
-                />
-              )}
-
-              {/* Merge Requests Section */}
-              {mergeRequests.length > 0 && (
-                <EventSection
-                  title="Merge Requests"
-                  sectionId="mergeRequests"
-                  events={mergeRequests}
-                  sectionRef={mrsRef}
-                  onNavigate={handleSectionNavigate}
-                />
-              )}
-
-              {/* Comments Section */}
-              {comments.length > 0 && (
-                <EventSection
-                  title="Comments"
-                  sectionId="comments"
-                  events={comments}
-                  sectionRef={commentsRef}
-                  onNavigate={handleSectionNavigate}
-                />
-              )}
-            </div>
-          )}
-        </div>
+      {/* Events Table with vim-style navigation */}
+      <div className="container mx-auto px-4 py-6">
+        {/* Task 6.3: Loading state */}
+        {eventsLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <p className="text-lg text-gray-400">Loading events...</p>
+          </div>
+        ) : (
+          /* Task 6.2: Pass events data to EventTable */
+          <EventTable events={allEvents} onRowClick={handleRowClick} />
+        )}
+      </div>
     </div>
   );
 }

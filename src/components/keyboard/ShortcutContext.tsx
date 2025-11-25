@@ -25,12 +25,16 @@ interface ShortcutContextValue {
   setFocusSearch: (handler: () => void) => void;
   setMoveSelectionDown: (handler: () => void) => void;
   setMoveSelectionUp: (handler: () => void) => void;
+  setJumpHalfPageDown: (handler: () => void) => void;
+  setJumpHalfPageUp: (handler: () => void) => void;
   setClearFocusAndModals: (handler: () => void) => void;
 
   // Direct invocation (for ShortcutHandler)
   focusSearch: () => void;
   moveSelectionDown: () => void;
   moveSelectionUp: () => void;
+  jumpHalfPageDown: () => void;
+  jumpHalfPageUp: () => void;
   clearFocusAndModals: () => void;
 }
 
@@ -49,6 +53,8 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
   const focusSearchRef = useRef<(() => void) | null>(null);
   const moveSelectionDownRef = useRef<(() => void) | null>(null);
   const moveSelectionUpRef = useRef<(() => void) | null>(null);
+  const jumpHalfPageDownRef = useRef<(() => void) | null>(null);
+  const jumpHalfPageUpRef = useRef<(() => void) | null>(null);
   const clearFocusAndModalsRef = useRef<(() => void) | null>(null);
 
   // Setter functions for components to register their handlers
@@ -62,6 +68,14 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
 
   const setMoveSelectionUp = useCallback((handler: () => void) => {
     moveSelectionUpRef.current = handler;
+  }, []);
+
+  const setJumpHalfPageDown = useCallback((handler: () => void) => {
+    jumpHalfPageDownRef.current = handler;
+  }, []);
+
+  const setJumpHalfPageUp = useCallback((handler: () => void) => {
+    jumpHalfPageUpRef.current = handler;
   }, []);
 
   const setClearFocusAndModals = useCallback((handler: () => void) => {
@@ -91,8 +105,28 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
     if (moveSelectionUpRef.current) {
       moveSelectionUpRef.current();
     } else if (process.env.NODE_ENV === "development") {
-      console.log(
+      console.debug(
         "[Shortcuts] moveSelectionUp() called - no handler registered (k key)",
+      );
+    }
+  }, []);
+
+  const jumpHalfPageDown = useCallback(() => {
+    if (jumpHalfPageDownRef.current) {
+      jumpHalfPageDownRef.current();
+    } else if (process.env.NODE_ENV === "development") {
+      console.debug(
+        "[Shortcuts] jumpHalfPageDown() called - no handler registered (Ctrl+d)",
+      );
+    }
+  }, []);
+
+  const jumpHalfPageUp = useCallback(() => {
+    if (jumpHalfPageUpRef.current) {
+      jumpHalfPageUpRef.current();
+    } else if (process.env.NODE_ENV === "development") {
+      console.debug(
+        "[Shortcuts] jumpHalfPageUp() called - no handler registered (Ctrl+u)",
       );
     }
   }, []);
@@ -111,10 +145,14 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
     setFocusSearch,
     setMoveSelectionDown,
     setMoveSelectionUp,
+    setJumpHalfPageDown,
+    setJumpHalfPageUp,
     setClearFocusAndModals,
     focusSearch,
     moveSelectionDown,
     moveSelectionUp,
+    jumpHalfPageDown,
+    jumpHalfPageUp,
     clearFocusAndModals,
   };
 

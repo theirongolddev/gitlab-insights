@@ -38,6 +38,8 @@ export function ShortcutHandler() {
     focusSearch,
     moveSelectionDown,
     moveSelectionUp,
+    jumpHalfPageDown,
+    jumpHalfPageUp,
     clearFocusAndModals,
   } = useShortcuts();
 
@@ -68,9 +70,21 @@ export function ShortcutHandler() {
         case "k":
           moveSelectionUp();
           break;
+        case "d":
+          if (event.ctrlKey) {
+            event.preventDefault(); // Prevent browser bookmark dialog
+            jumpHalfPageDown();
+          }
+          break;
+        case "u":
+          if (event.ctrlKey) {
+            event.preventDefault(); // Prevent view source
+            jumpHalfPageUp();
+          }
+          break;
       }
     },
-    [focusSearch, moveSelectionDown, moveSelectionUp, clearFocusAndModals],
+    [focusSearch, moveSelectionDown, moveSelectionUp, jumpHalfPageDown, jumpHalfPageUp, clearFocusAndModals],
   );
 
   useEffect(() => {
