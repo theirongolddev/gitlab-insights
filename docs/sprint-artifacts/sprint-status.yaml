@@ -54,7 +54,7 @@ development_status:
   2-3-postgresql-full-text-search-backend: done
   2-4-search-bar-ui: done
   2-5-keyword-highlighting-in-search-results: done
-  2-6-filter-ui-logic: backlog
+  2-6-filter-ui-logic: done
   2-7a-create-query-backend: backlog
   2-7b-update-delete-query-backend: backlog
   2-8-sidebar-navigation: backlog

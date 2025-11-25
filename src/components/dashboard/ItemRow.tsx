@@ -75,9 +75,10 @@ const getSnippet = (body: string | null, maxLength = 100) => {
  * Note: This component renders the content inside a React Aria Table Row.
  * Keyboard navigation and click handling are managed by the parent Table component.
  */
-export function ItemRow({ item, isSelected, isNew }: ItemRowProps) {
+export function ItemRow({ item, isSelected, isNew, onClick }: ItemRowProps) {
   return (
     <div
+      onClick={onClick}
       className={`h-[52px] px-4
         ${isSelected ? "ring-2 ring-[#9DAA5F]" : ""}`}
     >

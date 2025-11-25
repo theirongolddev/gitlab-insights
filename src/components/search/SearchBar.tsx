@@ -1,116 +1,144 @@
 "use client";
 
-import { useState, useEffect, useRef, type RefObject } from "react";
+import { useState, useRef, type RefObject, type KeyboardEvent } from "react";
 import {
-  SearchField,
-  Input,
-  Button,
+  TagGroup,
+  TagList,
+  Tag,
+  Button as AriaButton,
   Label,
+  Text,
 } from "react-aria-components";
-import { useDebounce } from "~/hooks/useDebounce";
 
 /**
  * SearchBar Props Interface
  *
- * Party Mode Decision 2025-11-25 (Lag Fix):
- * SearchBar owns local input state for snappy typing, pushes debounced value to context.
- * This isolates re-renders - context consumers only update on debounced changes.
+ * Story 2.6: Redesigned for tag pill input pattern
+ * - Keywords appear as removable pills inside the input
+ * - Press Enter to commit text as a new tag
+ * - Arrow keys navigate between tags (React Aria built-in)
+ * - Backspace/Delete removes focused tag (React Aria built-in)
  */
 export interface SearchBarProps {
-  /** Current debounced search query (from context) */
-  value: string;
-  /** Called with debounced value after 300ms of no typing */
-  onChange: (value: string) => void;
-  /** Called when user clears the search (X button or Esc) */
-  onClear: () => void;
-  /** Shows loading spinner instead of X button when true */
+  /** Array of committed keyword tags */
+  keywords: string[];
+  /** Called when user commits a new keyword (Enter) */
+  onAddKeyword: (keyword: string) => void;
+  /** Called when user removes a keyword tag */
+  onRemoveKeyword: (keyword: string) => void;
+  /** Called when user wants to save current keywords as a query */
+  onSave?: () => void;
+  /** Shows loading spinner when true */
   isLoading?: boolean;
   /** Ref to the input element for keyboard shortcut focus (/) */
   inputRef?: RefObject<HTMLInputElement | null>;
 }
 
 /**
- * SearchBar Component
+ * SearchBar Component - Tag Pill Input Pattern
  *
- * AC 2.4.1: Receives focus on `/` keypress (via inputRef from dashboard)
- * AC 2.4.2: 300ms debounce before triggering search (handled internally)
- * AC 2.4.3: Shows loading indicator when isLoading is true
- * AC 2.4.5: Clear button (X icon) visible when localValue.length > 0
- * AC 2.4.6: Esc clears search and removes focus (via React Aria)
+ * Story 2.6: Filter UI & Logic
+ * AC 2.6.1: Active keywords display as chips with remove buttons
+ * AC 2.6.2: Clicking remove clears that keyword
+ * AC 2.6.3: Save as Query button visible when keywords active
+ * AC 2.6.4: Save button disabled when no keywords
  *
- * Performance: Local state for instant feedback, debounced push to context.
+ * Keyboard Navigation (React Aria TagGroup built-in):
+ * - Type text and press Enter → commits as a tag
+ * - Left/Right arrows → navigate between tags
+ * - Backspace/Delete on focused tag → removes that tag
+ * - Tab → moves focus into/out of tag group
+ *
+ * Custom keyboard handling:
+ * - Backspace on empty input → removes last tag
+ * - ArrowLeft at input start → focuses last tag
+ * - ArrowRight on last tag → focuses input
+ * - Escape → blurs input
  */
 export function SearchBar({
-  value,
-  onChange,
-  onClear,
+  keywords,
+  onAddKeyword,
+  onRemoveKeyword,
+  onSave,
   isLoading = false,
   inputRef,
 }: SearchBarProps) {
-  // Local state for instant typing feedback (no lag)
-  const [localValue, setLocalValue] = useState(value);
-
-  // Track if we're in a clearing state to prevent debounce from reverting
-  const [isClearing, setIsClearing] = useState(false);
-
-  // Debounce local value before pushing to context (AC 2.4.2)
-  const debouncedLocalValue = useDebounce(localValue, 300);
-
-  // Internal ref fallback if no external ref provided
+  const [inputValue, setInputValue] = useState("");
   const internalRef = useRef<HTMLInputElement>(null);
+  const tagGroupRef = useRef<HTMLDivElement>(null);
   const effectiveRef = inputRef ?? internalRef;
 
-  // Sync local state when external value changes (e.g., programmatic clear)
-  useEffect(() => {
-    setLocalValue(value);
-  }, [value]);
+  const hasKeywords = keywords.length > 0;
 
-  // Push debounced value to context when it changes
-  // Skip if we're clearing (to prevent debounce from reverting the clear)
-  useEffect(() => {
-    if (isClearing) {
-      // Reset clearing flag once debounce catches up to empty
-      if (debouncedLocalValue === "") {
-        setIsClearing(false);
+  const handleInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    const input = effectiveRef.current;
+    const cursorAtStart = input?.selectionStart === 0 && input?.selectionEnd === 0;
+
+    if (e.key === "Enter" && inputValue.trim()) {
+      e.preventDefault();
+      onAddKeyword(inputValue.trim());
+      setInputValue("");
+    } else if (e.key === "Backspace" && !inputValue && hasKeywords) {
+      // Remove last tag when backspace on empty input
+      e.preventDefault();
+      const lastKeyword = keywords[keywords.length - 1];
+      if (lastKeyword) {
+        onRemoveKeyword(lastKeyword);
       }
-      return;
+    } else if (e.key === "ArrowLeft" && cursorAtStart && hasKeywords) {
+      // Move focus to last tag when pressing left at start of input
+      e.preventDefault();
+      const lastTag = tagGroupRef.current?.querySelector(
+        '[role="row"]:last-child'
+      ) as HTMLElement;
+      lastTag?.focus();
+    } else if (e.key === "Escape") {
+      // Blur input on Escape
+      effectiveRef.current?.blur();
     }
-    if (debouncedLocalValue !== value) {
-      onChange(debouncedLocalValue);
-    }
-  }, [debouncedLocalValue, onChange, value, isClearing]);
-
-  // Handle local input changes (instant, no lag)
-  const handleLocalChange = (newValue: string) => {
-    setLocalValue(newValue);
   };
 
-  // Handle clear - reset local state and notify context immediately (bypass debounce)
-  const handleClear = () => {
-    setIsClearing(true); // Prevent debounce effect from reverting
-    setLocalValue("");
-    onChange(""); // Immediately update context (bypass debounce for clear)
-    onClear();
-    // Blur the input after clearing to remove focus (AC 2.4.6)
-    effectiveRef.current?.blur();
+  // Handle keyboard navigation from TagGroup back to input
+  const handleTagGroupKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    // When pressing right arrow on the last tag, move focus to input
+    if (e.key === "ArrowRight") {
+      const focusedTag = document.activeElement;
+      const tags = tagGroupRef.current?.querySelectorAll('[role="row"]');
+      const lastTag = tags?.[tags.length - 1];
+
+      if (focusedTag === lastTag) {
+        e.preventDefault();
+        effectiveRef.current?.focus();
+      }
+    }
   };
 
-  const hasValue = localValue.length > 0;
+  const handleSave = () => {
+    if (onSave) {
+      onSave();
+    } else {
+      // Placeholder behavior until Story 2.9 implements modal
+      console.log(`Save as Query: "${keywords.join(", ")}"`);
+    }
+  };
 
   return (
-    <SearchField
-      value={localValue}
-      onChange={handleLocalChange}
-      onClear={handleClear}
-      aria-label="Search events"
-      className="relative w-full max-w-md"
-    >
-      <Label className="sr-only">Search events</Label>
-
-      {/* Search Icon */}
-      <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10">
+    <div className="relative w-full max-w-xl flex items-center gap-2">
+      {/* Search container with tags and input */}
+      <div
+        className="
+          flex flex-1 items-center flex-wrap gap-1.5
+          min-h-[40px] px-3 py-1.5
+          bg-gray-800 text-[#FDFFFC]
+          border border-gray-600 rounded-md
+          focus-within:ring-2 focus-within:ring-[#9DAA5F] focus-within:border-transparent
+          transition-colors duration-150
+        "
+        onClick={() => effectiveRef.current?.focus()}
+      >
+        {/* Search Icon */}
         <svg
-          className="h-4 w-4 text-gray-400"
+          className="h-4 w-4 text-gray-400 flex-shrink-0"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -123,81 +151,152 @@ export function SearchBar({
             d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
           />
         </svg>
+
+        {/* Keyword Tags - React Aria TagGroup handles keyboard navigation */}
+        {hasKeywords && (
+          <div
+            onKeyDown={handleTagGroupKeyDown}
+            className="contents"
+          >
+            <TagGroup
+              ref={tagGroupRef}
+              aria-label="Active search filters"
+              onRemove={(keys) => {
+                const keysArray = Array.from(keys);
+                keysArray.forEach((key) => onRemoveKeyword(String(key)));
+                // Return focus to input after removal
+                effectiveRef.current?.focus();
+              }}
+              className="flex flex-wrap gap-1.5"
+            >
+              <Label className="sr-only">Search filters</Label>
+              <TagList className="flex flex-wrap gap-1.5">
+                {keywords.map((keyword) => (
+                  <Tag
+                    key={keyword}
+                    id={keyword}
+                    textValue={keyword}
+                    className={`
+                      inline-flex items-center gap-1 px-2 py-0.5
+                      text-sm font-medium rounded-full cursor-default
+                      bg-[rgba(157,170,95,0.2)] border border-[#9DAA5F]
+                      text-[#FDFFFC]
+                      outline-none
+                      transition-all duration-150
+                      data-[focus-visible]:ring-2 data-[focus-visible]:ring-[#9DAA5F] data-[focus-visible]:ring-offset-1 data-[focus-visible]:ring-offset-gray-800
+                      data-[selected]:bg-[rgba(157,170,95,0.4)]
+                    `}
+                  >
+                    {({ allowsRemoving }) => (
+                      <>
+                        <span>{keyword}</span>
+                        {allowsRemoving && (
+                          <AriaButton
+                            slot="remove"
+                            aria-label={`Remove ${keyword} filter`}
+                            className={`
+                              flex items-center justify-center
+                              w-4 h-4 rounded-full
+                              text-[#9DAA5F]
+                              transition-colors duration-150
+                              outline-none
+                              data-[hovered]:text-[#FDFFFC] data-[hovered]:bg-[rgba(157,170,95,0.3)]
+                              data-[pressed]:bg-[rgba(157,170,95,0.5)]
+                              data-[focus-visible]:ring-2 data-[focus-visible]:ring-[#9DAA5F]
+                            `}
+                          >
+                            <svg
+                              className="w-3 h-3"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              aria-hidden="true"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M6 18L18 6M6 6l12 12"
+                              />
+                            </svg>
+                          </AriaButton>
+                        )}
+                      </>
+                    )}
+                  </Tag>
+                ))}
+              </TagList>
+              <Text slot="description" className="sr-only">
+                Use arrow keys to navigate between filters, Backspace or Delete to remove
+              </Text>
+            </TagGroup>
+          </div>
+        )}
+
+        {/* Text Input */}
+        <input
+          ref={effectiveRef}
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleInputKeyDown}
+          placeholder={hasKeywords ? "Add filter..." : "Search events..."}
+          className="
+            flex-1 min-w-[120px] bg-transparent
+            text-[#FDFFFC] placeholder:text-gray-500
+            focus:outline-none
+            [&::-webkit-search-cancel-button]:hidden
+            [&::-webkit-search-decoration]:hidden
+          "
+          aria-label={hasKeywords ? "Add another search filter" : "Search events"}
+        />
+
+        {/* Loading Spinner */}
+        {isLoading && (
+          <div className="flex-shrink-0" role="status" aria-label="Searching">
+            <svg
+              className="animate-spin h-4 w-4 text-[#9DAA5F]"
+              fill="none"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+          </div>
+        )}
       </div>
 
-      {/* Input */}
-      <Input
-        ref={effectiveRef}
-        placeholder="Search events..."
-        className="
-          w-full h-10 pl-10 pr-10
-          bg-gray-800 text-[#FDFFFC]
-          border border-gray-600 rounded-md
-          placeholder:text-gray-500
-          focus:outline-none focus:ring-2 focus:ring-[#9DAA5F] focus:border-transparent
-          transition-colors duration-150
-          [&::-webkit-search-cancel-button]:hidden
-          [&::-webkit-search-decoration]:hidden
-        "
-      />
-
-      {/* Loading Spinner - shown during search, positioned absolutely */}
-      {isLoading && (
-        <div
-          className="absolute right-2 top-1/2 -translate-y-1/2 z-10 h-6 w-6 flex items-center justify-center"
-          aria-label="Searching..."
-        >
-          <svg
-            className="animate-spin h-4 w-4 text-[#9DAA5F]"
-            fill="none"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            />
-          </svg>
-        </div>
-      )}
-
-      {/* Clear Button - direct child of SearchField for proper slot connection */}
-      {/* Hidden when loading or empty, positioned absolutely */}
-      <Button
+      {/* Save as Query Button - AC 2.6.3, 2.6.4 */}
+      <AriaButton
+        onPress={handleSave}
+        isDisabled={!hasKeywords}
         className={`
-          absolute right-2 top-1/2 -translate-y-1/2 z-10
-          h-6 w-6 flex items-center justify-center
-          text-gray-400 hover:text-[#FDFFFC]
-          rounded transition-colors duration-150
-          focus:outline-none focus:ring-2 focus:ring-[#9DAA5F]
-          ${(!hasValue || isLoading) ? 'hidden' : ''}
+          flex-shrink-0
+          inline-flex items-center justify-center
+          px-3 py-2 text-sm font-medium rounded-lg
+          transition-colors duration-150
+          outline-none
+          bg-[#9DAA5F] text-white
+          data-[hovered]:bg-[#A8B86C]
+          data-[pressed]:bg-[#8A9A4F]
+          data-[focus-visible]:ring-2 data-[focus-visible]:ring-[#9DAA5F] data-[focus-visible]:ring-offset-2 data-[focus-visible]:ring-offset-[#2d2e2e]
+          data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed
         `}
-        aria-label="Clear search"
       >
-        <svg
-          className="h-4 w-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M6 18L18 6M6 6l12 12"
-          />
-        </svg>
-      </Button>
-    </SearchField>
+        Save
+      </AriaButton>
+    </div>
   );
 }

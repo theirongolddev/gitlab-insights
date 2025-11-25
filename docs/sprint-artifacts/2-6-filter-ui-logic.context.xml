@@ -1,0 +1,233 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>6</storyId>
+    <title>Filter UI &amp; Logic</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-25</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-6-filter-ui-logic.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user viewing search results</asA>
+    <iWant>to see the active keyword displayed as a removable chip</iWant>
+    <soThat>I can easily clear my search and see the "Save as Query" option</soThat>
+    <tasks>
+      <task id="1" title="Create FilterBar Component" acs="2.6.1, 2.6.2">
+        <subtask id="1.1">Create src/components/filters/FilterBar.tsx component</subtask>
+        <subtask id="1.2">Accept props: keyword: string, onClear: () =&gt; void</subtask>
+        <subtask id="1.3">Display keyword as chip (olive background) when keyword.length &gt; 0</subtask>
+        <subtask id="1.4">Add X button on chip to trigger onClear callback</subtask>
+        <subtask id="1.5">Style chip with olive accent color and rounded corners</subtask>
+      </task>
+      <task id="2" title="Integrate FilterBar with SearchContext" acs="2.6.1, 2.6.2">
+        <subtask id="2.1">Add clearSearch function to SearchContext.tsx if not present</subtask>
+        <subtask id="2.2">Import FilterBar in dashboard page</subtask>
+        <subtask id="2.3">Pass keyword from SearchContext to FilterBar</subtask>
+        <subtask id="2.4">Connect onClear to clearSearch from context</subtask>
+        <subtask id="2.5">Verify clearing chip clears search results</subtask>
+      </task>
+      <task id="3" title="Create SaveQueryButton Component" acs="2.6.3, 2.6.4">
+        <subtask id="3.1">Create src/components/queries/SaveQueryButton.tsx component</subtask>
+        <subtask id="3.2">Accept props: keyword: string, onSave: () =&gt; void</subtask>
+        <subtask id="3.3">Button text: "Save as Query" (or "Save as Query (s)" with shortcut hint)</subtask>
+        <subtask id="3.4">Use React Aria Button for accessibility</subtask>
+        <subtask id="3.5">Style with olive accent color when enabled</subtask>
+        <subtask id="3.6">Apply disabled styling (opacity-50) when keyword.length === 0</subtask>
+      </task>
+      <task id="4" title="Integrate SaveQueryButton in FilterBar" acs="2.6.3, 2.6.4">
+        <subtask id="4.1">Add SaveQueryButton to FilterBar layout (right-aligned)</subtask>
+        <subtask id="4.2">Pass keyword prop to determine enabled/disabled state</subtask>
+        <subtask id="4.3">For now, onSave can show alert or console.log (modal implementation in Story 2.9)</subtask>
+        <subtask id="4.4">Verify button disabled when no keyword, enabled when keyword present</subtask>
+      </task>
+      <task id="5" title="Layout and Styling" acs="All">
+        <subtask id="5.1">Position FilterBar below the search bar in Header or dashboard</subtask>
+        <subtask id="5.2">Ensure FilterBar only shows when there's an active keyword</subtask>
+        <subtask id="5.3">Apply consistent spacing and alignment with existing components</subtask>
+        <subtask id="5.4">Verify dark mode styling per ADR-009</subtask>
+      </task>
+      <task id="6" title="Testing and Validation" acs="All">
+        <subtask id="6.1">Verify keyword chip appears when search is active</subtask>
+        <subtask id="6.2">Verify clicking X clears keyword and search results</subtask>
+        <subtask id="6.3">Verify "Save as Query" button enabled when keyword active</subtask>
+        <subtask id="6.4">Verify "Save as Query" button disabled when no keyword</subtask>
+        <subtask id="6.5">Run build, lint, typecheck to ensure no errors</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="2.6.1">Active keyword displays as chip with remove button</criterion>
+    <criterion id="2.6.2">Clicking remove clears the keyword and search results</criterion>
+    <criterion id="2.6.3">"Save as Query" button visible when keyword active</criterion>
+    <criterion id="2.6.4">Button disabled when no keyword active</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>Story 2.6: Filter UI (Simplified)</section>
+        <snippet>FilterBar displays active keyword as chip with remove button. Shows "Save as Query" button when keyword active. Simplified from original multi-filter design - single keyword per query for MVP.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>Component Architecture</section>
+        <snippet>FilterBar.tsx in src/components/filters/ - displays active filter chips. SaveQueryButton.tsx in src/components/queries/ - entry point for saving queries.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>ADR-008: React Aria Components</section>
+        <snippet>Use React Aria Components for keyboard-first UX. Unstyled primitives enable custom olive accent color (#5e6b24). Button component for accessibility.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>ADR-009: Dark Mode Only for MVP</section>
+        <snippet>Colors: Background #2d2e2e, Primary text #FDFFFC, Accent #9DAA5F (lightened olive for dark bg contrast).</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/2-5-keyword-highlighting-in-search-results.md</path>
+        <title>Story 2.5 (Previous Story)</title>
+        <section>Dev Agent Record</section>
+        <snippet>SearchContext Pattern: Dashboard uses SearchContext for global search state. Use useSearch() hook to access keyword, searchResults, isSearchActive. Component Location: Reusable UI in /components/ui/.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>Workflow: Search to Save Query</section>
+        <snippet>User searches with keyword. "Save as Query" button enabled. User clicks button or presses "s". CreateQueryModal opens with keyword pre-filled.</snippet>
+      </doc>
+      <doc>
+        <path>src/styles/globals.css</path>
+        <title>Global Styles</title>
+        <section>Mark tag styling</section>
+        <snippet>Olive accent colors defined: --color-olive: #5e6b24; --color-olive-light: #9DAA5F; Used for highlights and accents.</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <file>
+        <path>src/components/search/SearchContext.tsx</path>
+        <kind>context</kind>
+        <symbol>SearchContextValue, useSearch, clearSearch</symbol>
+        <lines>22-38, 77-79, 102-108</lines>
+        <reason>SearchContext provides searchQuery, isSearchActive, clearSearch() - FilterBar will consume this to display keyword chip and clear functionality.</reason>
+      </file>
+      <file>
+        <path>src/components/search/SearchBar.tsx</path>
+        <kind>component</kind>
+        <symbol>SearchBar</symbol>
+        <lines>43-203</lines>
+        <reason>Existing search component - FilterBar will complement this by showing active keyword as removable chip.</reason>
+      </file>
+      <file>
+        <path>src/app/dashboard/page.tsx</path>
+        <kind>page</kind>
+        <symbol>DashboardPage</symbol>
+        <lines>19-147</lines>
+        <reason>Dashboard page where FilterBar will be integrated. Currently uses useSearch() hook for search state.</reason>
+      </file>
+      <file>
+        <path>src/components/layout/Header.tsx</path>
+        <kind>layout</kind>
+        <symbol>Header</symbol>
+        <lines>14-194</lines>
+        <reason>Header contains SearchBar. FilterBar could be positioned below header or in dashboard sub-header.</reason>
+      </file>
+      <file>
+        <path>src/components/ui/Button.tsx</path>
+        <kind>component</kind>
+        <symbol>Button</symbol>
+        <lines>30-56</lines>
+        <reason>Existing Button component using React Aria. SaveQueryButton should follow same pattern with primary variant styling.</reason>
+      </file>
+      <file>
+        <path>src/components/ui/HighlightedText.tsx</path>
+        <kind>component</kind>
+        <symbol>HighlightedText</symbol>
+        <reason>Example of reusable UI component from Story 2.5 - shows component organization pattern.</reason>
+      </file>
+    </code>
+
+    <dependencies>
+      <ecosystem name="node">
+        <package name="react" version="^19.2.0" />
+        <package name="react-aria-components" version="^1.13.0" />
+        <package name="@tanstack/react-query" version="^5.69.0" />
+        <package name="tailwindcss" version="^4.0.15" />
+      </ecosystem>
+    </dependencies>
+  </artifacts>
+
+  <interfaces>
+    <interface>
+      <name>SearchContextValue</name>
+      <kind>TypeScript interface</kind>
+      <signature>
+interface SearchContextValue {
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+  searchResults: SearchResultEvent[];
+  searchResultsTotal: number;
+  isSearchLoading: boolean;
+  isSearchActive: boolean;
+  clearSearch: () => void;
+}
+      </signature>
+      <path>src/components/search/SearchContext.tsx:22-38</path>
+    </interface>
+    <interface>
+      <name>FilterBarProps</name>
+      <kind>Component props (to be created)</kind>
+      <signature>
+interface FilterBarProps {
+  keyword: string;
+  onClear: () => void;
+  onSave?: () => void;
+}
+      </signature>
+      <path>src/components/filters/FilterBar.tsx (new file)</path>
+    </interface>
+    <interface>
+      <name>SaveQueryButtonProps</name>
+      <kind>Component props (to be created)</kind>
+      <signature>
+interface SaveQueryButtonProps {
+  keyword: string;
+  onSave: () => void;
+}
+      </signature>
+      <path>src/components/queries/SaveQueryButton.tsx (new file)</path>
+    </interface>
+  </interfaces>
+
+  <constraints>
+    <constraint source="ADR-008">Use React Aria Button component for SaveQueryButton - provides keyboard accessibility</constraint>
+    <constraint source="ADR-009">Dark mode only - use colors: bg #2d2e2e, text #FDFFFC, accent #9DAA5F</constraint>
+    <constraint source="ADR-006">Minimal testing - no unit tests required for MVP unless debugging same bug twice</constraint>
+    <constraint source="Story Dev Notes">FilterBar simplified to keyword-only for MVP - no multi-filter support (labels, authors, projects, date ranges deferred)</constraint>
+    <constraint source="Story Dev Notes">SaveQueryButton onSave can be placeholder (console.log/alert) - modal implementation in Story 2.9</constraint>
+    <constraint source="Tech Spec">Chip styling: olive background rgba(157, 170, 95, 0.2), border 1px solid #9DAA5F, pill shape (border-radius: 9999px)</constraint>
+    <constraint source="Tech Spec">Button disabled state: 50% opacity when keyword.length === 0</constraint>
+  </constraints>
+
+  <tests>
+    <standards>Per ADR-006, minimal testing for fast MVP iteration. No unit tests required unless debugging same bug twice. Manual validation is primary testing method for UI components.</standards>
+    <locations>
+      <location>tests/lib/</location>
+      <location>Manual: verify in browser at /dashboard with active search</location>
+    </locations>
+    <ideas>
+      <idea ac="2.6.1">Manual: Search for keyword, verify chip appears with keyword text and X button</idea>
+      <idea ac="2.6.2">Manual: Click X on chip, verify keyword clears and results return to default view</idea>
+      <idea ac="2.6.3">Manual: Search for keyword, verify "Save as Query" button is visible and clickable</idea>
+      <idea ac="2.6.4">Manual: Clear search, verify "Save as Query" button is disabled (opacity-50)</idea>
+    </ideas>
+  </tests>
+</story-context>

@@ -301,7 +301,8 @@ export const eventsRouter = createTRPCRouter({
   search: protectedProcedure
     .input(
       z.object({
-        keyword: z.string().min(1, "Search keyword is required").max(100),
+        // Story 2.6: Changed from single keyword to array for multi-tag AND search
+        keywords: z.array(z.string().max(100)).min(1, "At least one keyword is required").max(10),
         limit: z.number().min(1).max(100).default(50),
       })
     )
@@ -310,7 +311,7 @@ export const eventsRouter = createTRPCRouter({
 
       try {
         const result = await searchEvents(ctx.db, {
-          keyword: input.keyword,
+          keywords: input.keywords,
           userId: ctx.session.user.id,
           limit: input.limit,
         });
@@ -320,7 +321,8 @@ export const eventsRouter = createTRPCRouter({
         logger.info(
           {
             userId: ctx.session.user.id,
-            keyword: input.keyword.substring(0, 20),
+            keywordCount: input.keywords.length,
+            keywords: input.keywords.map((k) => k.substring(0, 20)),
             resultCount: result.total,
             durationMs: duration,
           },

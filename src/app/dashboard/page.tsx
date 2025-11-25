@@ -10,27 +10,18 @@ import { EventTable } from "~/components/dashboard/EventTable";
 import { useSearch } from "~/components/search/SearchContext";
 import { api } from "~/trpc/react";
 
-// AC-10: Hardcoded filter label
-// Developer override: AC-10 specifies "security" but user's GitLab instance lacks this label.
-// Changed to "bug" for practical testing. Reviewer accepted this deviation.
-// User-controlled queries will be implemented in Epic 2.
-const HARDCODED_FILTER_LABEL = "bug";
-
 export default function DashboardPage() {
   const { data: session, isPending } = useSession();
   const router = useRouter();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Story 2.4: Search state from global SearchContext (Party Mode Decision 2025-11-25)
-  // Search input lives in Header, results displayed here
+  // Story 2.6: Search state from global SearchContext
+  // Search input lives in Header with tag pills, results displayed here
   const { searchResults, isSearchActive } = useSearch();
 
   const utils = api.useUtils();
 
-  // AC-10: Get dashboard events with hardcoded security label filter
-  const { data: dashboardData, isLoading: eventsLoading } = api.events.getForDashboard.useQuery({
-    filterLabel: HARDCODED_FILTER_LABEL,
-  });
+  const { data: dashboardData, isLoading: eventsLoading } = api.events.getForDashboard.useQuery({});
 
   // Manual refresh mutation
   const manualRefresh = api.events.manualRefresh.useMutation({

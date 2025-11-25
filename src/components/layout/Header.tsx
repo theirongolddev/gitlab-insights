@@ -17,8 +17,8 @@ export function Header() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { setFocusSearch, setClearFocusAndModals } = useShortcuts();
 
-  // Story 2.4: Search state from context
-  const { searchQuery, setSearchQuery, clearSearch, isSearchLoading } = useSearch();
+  // Story 2.6: Search state from context - now uses keywords array
+  const { keywords, addKeyword, removeKeyword, isSearchLoading } = useSearch();
 
   // Register keyboard shortcut handlers
   useEffect(() => {
@@ -53,12 +53,12 @@ export function Header() {
           </h1>
         </Link>
 
-        {/* Story 2.4: Global SearchBar - AC 2.4.1, 2.4.3, 2.4.5, 2.4.6 */}
+        {/* Story 2.6: Global SearchBar with tag pill input */}
         <div className="flex flex-1 items-center justify-center px-4">
           <SearchBar
-            value={searchQuery}
-            onChange={setSearchQuery}
-            onClear={clearSearch}
+            keywords={keywords}
+            onAddKeyword={addKeyword}
+            onRemoveKeyword={removeKeyword}
             isLoading={isSearchLoading}
             inputRef={searchInputRef}
           />
