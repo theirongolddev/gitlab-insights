@@ -13,6 +13,8 @@ export interface DashboardEvent {
   labels: string[];
   gitlabUrl: string;
   createdAt: Date;
+  /** FTS relevance rank (only present for search results) */
+  rank?: number;
 }
 
 interface ItemRowProps {
@@ -84,6 +86,15 @@ export function ItemRow({ item, isSelected, isNew }: ItemRowProps) {
         </div>
         {/* Right-aligned metadata column */}
         <div className="flex items-center gap-2 text-xs text-gray-400 ml-4 shrink-0">
+          {/* Show relevance rank for search results */}
+          {item.rank !== undefined && (
+            <>
+              <span className="text-[#9DAA5F] font-mono" title="FTS relevance score">
+                {item.rank.toFixed(4)}
+              </span>
+              <span>•</span>
+            </>
+          )}
           <span>{item.author}</span>
           <span>•</span>
           <span className="max-w-[120px] truncate">{item.project}</span>

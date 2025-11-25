@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "~/components/ui/Button";
 import { useShortcuts } from "~/components/keyboard/ShortcutContext";
+import { useSearch } from "~/components/search/SearchContext";
+import { SearchBar } from "~/components/search/SearchBar";
 import { Menu, MenuTrigger, MenuItem, Popover } from "react-aria-components";
 
 export function Header() {
@@ -15,8 +17,12 @@ export function Header() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { setFocusSearch, setClearFocusAndModals } = useShortcuts();
 
+  // Story 2.4: Search state from context
+  const { searchQuery, setSearchQuery, clearSearch, isSearchLoading } = useSearch();
+
   // Register keyboard shortcut handlers
   useEffect(() => {
+    // AC 2.4.1: `/` focuses search input
     setFocusSearch(() => {
       searchInputRef.current?.focus();
     });
@@ -47,13 +53,14 @@ export function Header() {
           </h1>
         </Link>
 
+        {/* Story 2.4: Global SearchBar - AC 2.4.1, 2.4.3, 2.4.5, 2.4.6 */}
         <div className="flex flex-1 items-center justify-center px-4">
-          <input
-            ref={searchInputRef}
-            type="text"
-            placeholder="Search... (/)"
-            className="w-full max-w-md rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-[#2d2e2e] placeholder-gray-500 outline-none focus:ring-2 focus:ring-[#9DAA5F] dark:border-gray-600 dark:bg-[#3d3e3e] dark:text-[#FDFFFC] dark:placeholder-gray-400"
-            readOnly
+          <SearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+            onClear={clearSearch}
+            isLoading={isSearchLoading}
+            inputRef={searchInputRef}
           />
         </div>
 

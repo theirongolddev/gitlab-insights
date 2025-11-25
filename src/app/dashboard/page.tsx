@@ -2,12 +2,13 @@
 
 import { useSession } from "~/lib/auth-client";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { RefreshButton } from "~/components/dashboard/RefreshButton";
 import { SyncIndicator } from "~/components/dashboard/SyncIndicator";
 import { type DashboardEvent } from "~/components/dashboard/ItemRow";
 import { EventTable } from "~/components/dashboard/EventTable";
+import { useSearch } from "~/components/search/SearchContext";
 import { api } from "~/trpc/react";
-import { useState } from "react";
 
 // AC-10: Hardcoded filter label
 // Developer override: AC-10 specifies "security" but user's GitLab instance lacks this label.
@@ -19,6 +20,10 @@ export default function DashboardPage() {
   const { data: session, isPending } = useSession();
   const router = useRouter();
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Story 2.4: Search state from global SearchContext (Party Mode Decision 2025-11-25)
+  // Search input lives in Header, results displayed here
+  const { searchResults, isSearchActive } = useSearch();
 
   const utils = api.useUtils();
 
@@ -84,13 +89,33 @@ export default function DashboardPage() {
   }));
 
   // Combine all events and sort by createdAt desc for unified j/k navigation
-  const allEvents: DashboardEvent[] = [...issues, ...mergeRequests, ...comments].sort(
+  const allDashboardEvents: DashboardEvent[] = [...issues, ...mergeRequests, ...comments].sort(
     (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
   );
 
+  // Story 2.4: Transform SearchResultEvent[] to DashboardEvent[] format
+  // Search results come from SearchContext (global Header search)
+  // Include rank for relevance display in search results
+  const searchEventsAsDashboard: DashboardEvent[] = searchResults.map((e) => ({
+    id: e.id,
+    type: e.type as DashboardEvent["type"],
+    title: e.title,
+    body: e.body,
+    author: e.author,
+    authorAvatar: e.authorAvatar,
+    project: e.project,
+    labels: e.labels,
+    gitlabUrl: e.gitlabUrl,
+    createdAt: new Date(e.createdAt),
+    rank: e.rank,
+  }));
+
+  // Final events to display - search results when searching, all events otherwise
+  const displayEvents = isSearchActive ? searchEventsAsDashboard : allDashboardEvents;
+
   return (
     <div className="flex min-h-screen flex-col bg-[#FDFFFC] dark:bg-[#2d2e2e]">
-      {/* Header with Manual Refresh */}
+      {/* Dashboard sub-header with sync indicator and refresh */}
       <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div>
@@ -105,14 +130,14 @@ export default function DashboardPage() {
 
       {/* Events Table with vim-style navigation */}
       <div className="container mx-auto px-4 py-6">
-        {/* Task 6.3: Loading state */}
-        {eventsLoading ? (
+        {/* Loading state for initial dashboard load */}
+        {eventsLoading && !isSearchActive ? (
           <div className="flex items-center justify-center py-12">
             <p className="text-lg text-gray-400">Loading events...</p>
           </div>
         ) : (
-          /* Task 6.2: Pass events data to EventTable */
-          <EventTable events={allEvents} onRowClick={handleRowClick} />
+          /* Pass displayEvents - either search results or all events */
+          <EventTable events={displayEvents} onRowClick={handleRowClick} />
         )}
       </div>
     </div>
