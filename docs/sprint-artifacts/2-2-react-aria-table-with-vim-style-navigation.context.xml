@@ -1,0 +1,221 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>2.2</storyId>
+    <title>React Aria Table with vim-style Navigation</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-25</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-2-react-aria-table-with-vim-style-navigation.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user viewing the dashboard</asA>
+    <iWant>to navigate events with `j/k` keys like vim</iWant>
+    <soThat>I can quickly scan items without reaching for the mouse</soThat>
+    <tasks>
+      - Task 1: Create EventTable Component with React Aria (AC: 2.2.1, 2.2.5)
+      - Task 2: Implement vim-style Navigation (AC: 2.2.2)
+      - Task 3: Implement Focus Router Pattern (AC: 2.2.2)
+      - Task 4: Style Selected Row with Olive Focus Ring (AC: 2.2.3)
+      - Task 5: Ensure WCAG 2.1 AA Compliance (AC: 2.2.4)
+      - Task 6: Integrate with Dashboard Page (AC: 2.2.1)
+      - Task 7: Manual Testing - Table Navigation (AC: 2.2.2, 2.2.3, 2.2.4)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="2.2.1">EventTable uses React Aria Table components</criterion>
+    <criterion id="2.2.2">`j/k` keys navigate items (override default arrow behavior)</criterion>
+    <criterion id="2.2.3">Selected row displays olive focus ring (2px solid #9DAA5F)</criterion>
+    <criterion id="2.2.4">Focus indicators are WCAG 2.1 AA compliant</criterion>
+    <criterion id="2.2.5">Table integrates with existing ItemRow component from Epic 1</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>Story 2.2: React Aria Table with vim-style Navigation</section>
+        <snippet>EventTable component uses React Aria Table with single-selection mode. Custom onKeyDown handler overrides arrows with j/k. Olive focus ring on selected rows. Integration with existing ItemRow from Story 1.6.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics/epic-2-user-controlled-queries-with-keyboard-foundation-story-breakdown.md</path>
+        <title>Epic 2 Story Breakdown</title>
+        <section>Story 2.2: React Aria Table with vim-style Navigation</section>
+        <snippet>React Aria Table with single-selection mode, j/k override for vim-style navigation, olive focus ring styling, WCAG 2.1 AA compliance requirements.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture Document</title>
+        <section>ADR-008: React Aria Components for Keyboard-First UX</section>
+        <snippet>React Aria provides industry-leading keyboard navigation and focus management. Unstyled primitives enable custom olive accent color (#9DAA5F). WCAG AA+ accessibility built-in.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture Document</title>
+        <section>Implementation Patterns - Naming Conventions</section>
+        <snippet>Components: PascalCase (EventCard.tsx, QueryList.tsx). React components: PascalCase. Functions: camelCase. Constants: UPPER_SNAKE_CASE.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture Document</title>
+        <section>UI Component Patterns (React Aria Components)</section>
+        <snippet>Table: Main list view with focus management, keyboard navigation. Override arrow keys with j/k (vim-style). Row selection with olive (#5e6b24) focus ring.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture Document</title>
+        <section>Two-Line Row Layout Pattern</section>
+        <snippet>ItemRow component: 52px height, 8-10 items visible. Line 1: Badge + Title + Metadata. Line 2: Snippet. States: hover, selected (2px olive ring), dimmed.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/2-1-keyboard-shortcut-system-foundation.md</path>
+        <title>Story 2.1: Keyboard Shortcut System Foundation</title>
+        <section>Completion Notes</section>
+        <snippet>ShortcutContext and ShortcutHandler components created. Context-aware routing suppresses shortcuts when typing. useShortcuts() hook provides setMoveSelectionDown/Up handlers for registration.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>src/components/dashboard/ItemRow.tsx</path>
+        <kind>component</kind>
+        <symbol>ItemRow</symbol>
+        <lines>71-103</lines>
+        <reason>Existing 2-line row component from Story 1.6 that must be integrated into React Aria Table. Accepts item prop (DashboardEvent), isSelected, isNew, onClick. Already implements 52px height, badge, title, snippet layout.</reason>
+      </artifact>
+      <artifact>
+        <path>src/components/dashboard/ItemRow.tsx</path>
+        <kind>interface</kind>
+        <symbol>DashboardEvent</symbol>
+        <lines>5-16</lines>
+        <reason>Event data interface that EventTable will work with. Contains id, type, title, body, author, project, labels, gitlabUrl, createdAt fields.</reason>
+      </artifact>
+      <artifact>
+        <path>src/components/keyboard/ShortcutContext.tsx</path>
+        <kind>context</kind>
+        <symbol>ShortcutContext</symbol>
+        <lines>1-50</lines>
+        <reason>Keyboard shortcut system from Story 2.1. EventTable must use setMoveSelectionDown/Up to register j/k handlers. Ref-based registration to avoid re-renders.</reason>
+      </artifact>
+      <artifact>
+        <path>src/components/keyboard/ShortcutContext.tsx</path>
+        <kind>interface</kind>
+        <symbol>ShortcutContextValue</symbol>
+        <lines>23-35</lines>
+        <reason>Interface showing available handlers: setFocusSearch, setMoveSelectionDown, setMoveSelectionUp, setClearFocusAndModals. EventTable needs moveSelection handlers.</reason>
+      </artifact>
+      <artifact>
+        <path>src/app/dashboard/page.tsx</path>
+        <kind>page</kind>
+        <symbol>DashboardPage</symbol>
+        <lines>full-file</lines>
+        <reason>Dashboard page that currently displays hardcoded events. Will be modified to use new EventTable component instead of existing table rendering.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="react-aria-components" version="^1.13.0" />
+        <package name="@react-aria/table" version="^3.17.8" />
+        <package name="@react-stately/table" version="^3.15.1" />
+        <package name="react" version="^19.2.0" />
+        <package name="react-dom" version="^19.2.0" />
+        <package name="next" version="^16.0.4" />
+        <package name="typescript" version="^5.8.2" />
+        <package name="tailwindcss" version="^4.0.15" />
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>
+      <type>architecture</type>
+      <description>ADR-008: Use React Aria Components for all interactive UI. Provides keyboard navigation, focus management, and WCAG AA+ accessibility out of the box.</description>
+    </constraint>
+    <constraint>
+      <type>architecture</type>
+      <description>ADR-011: Phased MVP - This story implements keyboard shortcuts (Phase 2 requirement). Shortcuts wire to existing handlers established in Story 2.1.</description>
+    </constraint>
+    <constraint>
+      <type>naming</type>
+      <description>Components: PascalCase (EventTable.tsx). React components: PascalCase (&lt;EventTable /&gt;). Functions: camelCase (moveSelection).</description>
+    </constraint>
+    <constraint>
+      <type>styling</type>
+      <description>Olive focus ring pattern: outline-2 outline-[#9DAA5F] outline-offset-[-2px] on selected rows. Use [data-focused] and [data-selected] attributes from React Aria.</description>
+    </constraint>
+    <constraint>
+      <type>accessibility</type>
+      <description>WCAG 2.1 AA compliance required: Focus indicators minimum 2px width, contrast ratio olive (#9DAA5F) on dark (#2d2e2e) = 4.2:1 (exceeds 3:1 minimum). All table interactions keyboard accessible.</description>
+    </constraint>
+    <constraint>
+      <type>integration</type>
+      <description>Must reuse existing ItemRow component from Story 1.6. Do not recreate the 2-line row layout - wrap ItemRow in React Aria Row/Cell components.</description>
+    </constraint>
+    <constraint>
+      <type>keyboard</type>
+      <description>Focus Router Pattern: Global j/k handlers from Story 2.1 auto-focus table on first keypress. Use useShortcuts() to register handlers that check if table has focus - if NO focus, call tableRef.current?.focus() then move selection. If HAS focus, no-op (let Table's local onKeyDown handle it). Add tabIndex={0} to Table for focusability.</description>
+    </constraint>
+    <constraint>
+      <type>empty-state</type>
+      <description>When events.length === 0, display centered empty state message in table area: "No events to display" with helper text "Try syncing your GitLab projects". j/k handlers should return early (silent no-op) when no events.</description>
+    </constraint>
+    <constraint>
+      <type>performance</type>
+      <description>Keyboard response: &lt;50ms from keypress to visual feedback. Selection state updates must be synchronous (no visible delay).</description>
+    </constraint>
+    <constraint>
+      <type>testing</type>
+      <description>ADR-006: Minimal testing for fast iteration. Manual browser testing required (Task 7). No unit tests required for MVP.</description>
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>useShortcuts</name>
+      <kind>React Hook</kind>
+      <signature>const { setMoveSelectionDown, setMoveSelectionUp } = useShortcuts();</signature>
+      <path>src/components/keyboard/ShortcutContext.tsx</path>
+      <usage>Import in EventTable component. Call setMoveSelectionDown(() => { /* move logic */ }) and setMoveSelectionUp(() => { /* move logic */ }) in useEffect to register handlers.</usage>
+    </interface>
+    <interface>
+      <name>ItemRow</name>
+      <kind>React Component</kind>
+      <signature>&lt;ItemRow item={DashboardEvent} isSelected={boolean} isNew={boolean} onClick={() => void} /&gt;</signature>
+      <path>src/components/dashboard/ItemRow.tsx</path>
+      <usage>Wrap ItemRow in React Aria &lt;Row&gt; and &lt;Cell&gt; components. Pass event data as item prop, selection state as isSelected, isNew based on lastViewedAt, onClick for future detail pane integration.</usage>
+    </interface>
+    <interface>
+      <name>DashboardEvent</name>
+      <kind>TypeScript Interface</kind>
+      <signature>interface DashboardEvent { id: string; type: EventType; title: string; body: string | null; author: string; authorAvatar: string | null; project: string; labels: string[]; gitlabUrl: string; createdAt: Date; }</signature>
+      <path>src/components/dashboard/ItemRow.tsx</path>
+      <usage>EventTable accepts events: DashboardEvent[] as prop. Each event rendered as ItemRow inside React Aria Table.</usage>
+    </interface>
+    <interface>
+      <name>React Aria Table Components</name>
+      <kind>Component Library</kind>
+      <signature>import { Table, TableHeader, TableBody, Row, Cell, Column } from 'react-aria-components';</signature>
+      <path>node_modules/react-aria-components</path>
+      <usage>Use Table with selectionMode="single", selectedKeys state, onSelectionChange handler, onKeyDown for j/k override. TableHeader defines columns, TableBody contains Rows with Cells.</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Per ADR-006 (Minimal Testing for Fast Iteration), Epic 2 follows minimal testing approach. No unit tests required for MVP. Critical validation through manual browser testing (Task 7). Testing Library: Vitest (for future use). Coverage Target: No coverage requirements - manual validation sufficient for keyboard navigation.
+    </standards>
+    <locations>
+      No test files currently exist. Future tests would go in: tests/components/EventTable.test.tsx (if added post-MVP).
+    </locations>
+    <ideas>
+      <idea ac="2.2.1">Manual: Verify EventTable renders with React Aria Table components (inspect DOM for data-attributes)</idea>
+      <idea ac="2.2.2">Manual: Test j key moves selection down row-by-row. Test k key moves selection up. Verify arrow keys do NOT move selection (overridden). Test focus router: page loads, press j without clicking anything, table should auto-focus AND first row selected.</idea>
+      <idea ac="2.2.3">Manual: Verify selected row shows olive focus ring (2px solid #9DAA5F). Check with browser DevTools.</idea>
+      <idea ac="2.2.4">Manual: Verify focus indicators visible when navigating with Tab key. Test all table interactions accessible via keyboard only (no mouse).</idea>
+      <idea ac="2.2.5">Manual: Verify ItemRow component rendered inside table with same 2-line layout from Story 1.6. Check badge, title, snippet, metadata display correctly.</idea>
+      <idea ac="2.2.1">Manual: Test empty state - when events.length === 0, verify centered message "No events to display" with helper text appears. Press j/k and verify silent no-op (no error, no action).</idea>
+    </ideas>
+  </tests>
+</story-context>

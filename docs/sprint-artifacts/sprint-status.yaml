@@ -49,7 +49,7 @@ development_status:
   # Epic 2: User-Controlled Queries with Keyboard Foundation
   epic-2: contexted
   2-1-keyboard-shortcut-system-foundation: done
-  2-2-react-aria-table-with-vim-style-navigation: backlog
+  2-2-react-aria-table-with-vim-style-navigation: ready-for-dev
   2-3-postgresql-full-text-search-backend: backlog
   2-4-search-bar-ui: backlog
   2-5-keyword-highlighting-in-search-results: backlog
