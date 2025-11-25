@@ -1,0 +1,192 @@
+<story-context id="2-7b-update-delete-query-backend" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>7b</storyId>
+    <title>Update/Delete Query Backend</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-25</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-7b-update-delete-query-backend.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user with saved queries</asA>
+    <iWant>to edit or remove my saved queries</iWant>
+    <soThat>I can maintain an organized and relevant query list</soThat>
+    <tasks>
+      <task id="1" ac="2.7b.4">Add TRPCError Import
+        <subtask>1.1 Import TRPCError from @trpc/server in src/server/api/routers/queries.ts</subtask>
+      </task>
+      <task id="2" ac="2.7b.1,2.7b.3,2.7b.4,2.7b.5,2.7b.7">Implement queries.update Mutation
+        <subtask>2.1 Define input schema: { id: z.string(), name: z.string().min(1).max(100).optional(), filters: QueryFiltersSchema.optional() }</subtask>
+        <subtask>2.2 Use protectedProcedure to ensure user is authenticated</subtask>
+        <subtask>2.3 Fetch existing query by id using ctx.db.userQuery.findUnique()</subtask>
+        <subtask>2.4 Check if query exists - if not, throw TRPCError with code 'NOT_FOUND'</subtask>
+        <subtask>2.5 Authorization check: Compare existing.userId !== ctx.session.user.id - if true, throw TRPCError with code 'FORBIDDEN'</subtask>
+        <subtask>2.6 Update query using ctx.db.userQuery.update() with provided name/filters</subtask>
+        <subtask>2.7 Return updated query object</subtask>
+      </task>
+      <task id="3" ac="2.7b.2,2.7b.3,2.7b.4,2.7b.6,2.7b.7">Implement queries.delete Mutation
+        <subtask>3.1 Define input schema: { id: z.string() }</subtask>
+        <subtask>3.2 Use protectedProcedure to ensure user is authenticated</subtask>
+        <subtask>3.3 Fetch existing query by id using ctx.db.userQuery.findUnique()</subtask>
+        <subtask>3.4 Check if query exists - if not, throw TRPCError with code 'NOT_FOUND'</subtask>
+        <subtask>3.5 Authorization check: Compare existing.userId !== ctx.session.user.id - if true, throw TRPCError with code 'FORBIDDEN'</subtask>
+        <subtask>3.6 Delete query using ctx.db.userQuery.delete()</subtask>
+        <subtask>3.7 Return { success: true }</subtask>
+      </task>
+      <task id="4" ac="all">Testing and Validation
+        <subtask>4.1 Run npm run build</subtask>
+        <subtask>4.2 Run npm run lint</subtask>
+        <subtask>4.3 Run npm run typecheck</subtask>
+        <subtask>4.4 Manual test: Create query, update name, verify change persists</subtask>
+        <subtask>4.5 Manual test: Create query, delete it, verify removed from list</subtask>
+        <subtask>4.6 Authorization test: Use Prisma Studio to create query with different userId, attempt update/delete, verify FORBIDDEN</subtask>
+        <subtask>4.7 NOT_FOUND test: Attempt update/delete with non-existent id, verify NOT_FOUND</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="2.7b.1">queries.update mutation updates query name and/or filters in database</criterion>
+    <criterion id="2.7b.2">queries.delete mutation removes query from database</criterion>
+    <criterion id="2.7b.3">Authorization check prevents modifying/deleting queries not owned by current user</criterion>
+    <criterion id="2.7b.4">Returns appropriate TRPCError (FORBIDDEN) for unauthorized access attempts</criterion>
+    <criterion id="2.7b.5">Input validated with Zod schema (id: string required, name/filters optional for update)</criterion>
+    <criterion id="2.7b.6">Delete returns success confirmation ({ success: true })</criterion>
+    <criterion id="2.7b.7">Returns TRPCError (NOT_FOUND) when query id doesn't exist</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-2.md</path>
+        <title>Epic 2 Tech Spec</title>
+        <section>Story 2.7b: Update/Delete Query Backend</section>
+        <snippet>Authorization pattern: fetch existing query by id, verify userId matches session user before mutation. TRPCError codes: FORBIDDEN for unauthorized, NOT_FOUND for missing query.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics/epic-2-user-controlled-queries-with-keyboard-foundation-story-breakdown.md</path>
+        <title>Epic 2 Story Breakdown</title>
+        <section>Story 2.7b: Update/Delete Query Backend</section>
+        <snippet>User wants to edit or remove saved queries. Authorization prevents modifying others' queries. Returns appropriate errors for unauthorized access.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>Error Handling Patterns</section>
+        <snippet>Use TRPCError with appropriate codes. FORBIDDEN (403) for authorization failures, NOT_FOUND (404) for missing resources. Include descriptive messages.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/2-7a-create-query-backend.md</path>
+        <title>Story 2.7a: Create Query Backend</title>
+        <section>Dev Agent Record</section>
+        <snippet>Predecessor story. Created queries router with create/list procedures. TRPCError import mentioned but not used. Uses QueryFiltersSchema with keywords: string[].</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>src/server/api/routers/queries.ts</path>
+        <kind>router</kind>
+        <symbol>queriesRouter</symbol>
+        <lines>1-68</lines>
+        <reason>Target file for this story. Add update/delete mutations to existing create/list procedures.</reason>
+      </file>
+      <file>
+        <path>src/lib/filters/types.ts</path>
+        <kind>types</kind>
+        <symbol>QueryFiltersSchema, QueryFilters</symbol>
+        <lines>1-29</lines>
+        <reason>Zod schema for query filters. Reuse for update mutation input validation.</reason>
+      </file>
+      <file>
+        <path>src/server/api/trpc.ts</path>
+        <kind>config</kind>
+        <symbol>protectedProcedure, TRPCError</symbol>
+        <lines>10,166</lines>
+        <reason>TRPCError imported here. protectedProcedure provides ctx.session.user.id for authorization.</reason>
+      </file>
+      <file>
+        <path>src/server/api/routers/events.ts</path>
+        <kind>router</kind>
+        <symbol>TRPCError usage example</symbol>
+        <lines>1-80</lines>
+        <reason>Reference for TRPCError import and usage patterns (UNAUTHORIZED, BAD_REQUEST codes).</reason>
+      </file>
+      <file>
+        <path>prisma/schema.prisma</path>
+        <kind>schema</kind>
+        <symbol>UserQuery</symbol>
+        <lines>94-105</lines>
+        <reason>UserQuery model definition. Fields: id, userId, name, filters (Json), lastViewedAt, createdAt, updatedAt.</reason>
+      </file>
+    </code>
+    <dependencies>
+      <npm>
+        <package name="@trpc/server" version="^11.0.0">tRPC server - TRPCError class</package>
+        <package name="zod" version="^3.24.2">Schema validation</package>
+        <package name="@prisma/client" version="^6.6.0">Database client - userQuery.update, userQuery.delete</package>
+      </npm>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="authorization">CRITICAL: Must verify query.userId === ctx.session.user.id before any mutation</constraint>
+    <constraint type="pattern">Two-step validation: 1) Fetch by id, 2) Verify ownership, 3) Mutate</constraint>
+    <constraint type="security">Return NOT_FOUND for missing queries (don't leak existence info)</constraint>
+    <constraint type="semantics">Partial update: undefined fields unchanged, provided fields replace entirely (no merge)</constraint>
+    <constraint type="drycode">Consider assertQueryOwnership helper for shared authorization logic</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>queries.update</name>
+      <kind>tRPC mutation</kind>
+      <signature>protectedProcedure.input({ id: string, name?: string, filters?: QueryFilters }).mutation()</signature>
+      <path>src/server/api/routers/queries.ts</path>
+    </interface>
+    <interface>
+      <name>queries.delete</name>
+      <kind>tRPC mutation</kind>
+      <signature>protectedProcedure.input({ id: string }).mutation()</signature>
+      <path>src/server/api/routers/queries.ts</path>
+    </interface>
+    <interface>
+      <name>ctx.db.userQuery.findUnique</name>
+      <kind>Prisma query</kind>
+      <signature>findUnique({ where: { id: string } }): UserQuery | null</signature>
+      <path>generated/prisma</path>
+    </interface>
+    <interface>
+      <name>ctx.db.userQuery.update</name>
+      <kind>Prisma mutation</kind>
+      <signature>update({ where: { id: string }, data: { name?: string, filters?: Json } }): UserQuery</signature>
+      <path>generated/prisma</path>
+    </interface>
+    <interface>
+      <name>ctx.db.userQuery.delete</name>
+      <kind>Prisma mutation</kind>
+      <signature>delete({ where: { id: string } }): UserQuery</signature>
+      <path>generated/prisma</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Per ADR-006 (MVP testing approach), unit tests are not required for tRPC mutations. Validation via build/lint/typecheck and manual testing. Authorization and NOT_FOUND error paths must be manually verified using Prisma Studio to create test data with different userIds.</standards>
+    <locations>
+      <location>Manual testing via tRPC client or Prisma Studio</location>
+      <location>npm run build / npm run lint / npm run typecheck</location>
+    </locations>
+    <ideas>
+      <idea ac="2.7b.1">Create query, call update with new name, verify name changed in DB</idea>
+      <idea ac="2.7b.1">Create query, call update with new filters, verify filters replaced in DB</idea>
+      <idea ac="2.7b.2">Create query, call delete, verify query removed from queries.list</idea>
+      <idea ac="2.7b.3,2.7b.4">Via Prisma Studio create query with different userId, attempt update - expect FORBIDDEN</idea>
+      <idea ac="2.7b.3,2.7b.4">Via Prisma Studio create query with different userId, attempt delete - expect FORBIDDEN</idea>
+      <idea ac="2.7b.5">Call update with invalid id format - expect validation error</idea>
+      <idea ac="2.7b.6">Call delete, verify response is { success: true }</idea>
+      <idea ac="2.7b.7">Call update with non-existent id - expect NOT_FOUND</idea>
+      <idea ac="2.7b.7">Call delete with non-existent id - expect NOT_FOUND</idea>
+    </ideas>
+  </tests>
+</story-context>
