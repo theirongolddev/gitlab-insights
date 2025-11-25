@@ -10,6 +10,7 @@ import { useShortcuts } from "~/components/keyboard/ShortcutContext";
 import { useSearch } from "~/components/search/SearchContext";
 import { SearchBar } from "~/components/search/SearchBar";
 import { Menu, MenuTrigger, MenuItem, Popover } from "react-aria-components";
+import { api } from "~/trpc/react";
 
 export function Header() {
   const { data: session } = useSession();
@@ -19,6 +20,27 @@ export function Header() {
 
   // Story 2.6: Search state from context - now uses keywords array
   const { keywords, addKeyword, removeKeyword, isSearchLoading } = useSearch();
+
+  // Story 2.7a: Save query mutation
+  const createQuery = api.queries.create.useMutation({
+    onSuccess: (data) => {
+      alert(`Query saved! "${data.name}"`);
+    },
+    onError: (error) => {
+      alert(`Failed to save query: ${error.message}`);
+    },
+  });
+
+  const handleSaveQuery = () => {
+    // Simple prompt for query name (Story 2.9 will add proper modal)
+    const name = prompt("Enter a name for this query:", keywords.join(" + "));
+    if (name) {
+      createQuery.mutate({
+        name,
+        filters: { keywords },
+      });
+    }
+  };
 
   // Register keyboard shortcut handlers
   useEffect(() => {
@@ -59,6 +81,7 @@ export function Header() {
             keywords={keywords}
             onAddKeyword={addKeyword}
             onRemoveKeyword={removeKeyword}
+            onSave={handleSaveQuery}
             isLoading={isSearchLoading}
             inputRef={searchInputRef}
           />

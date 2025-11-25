@@ -2,6 +2,7 @@ import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 import { gitlabRouter } from "~/server/api/routers/gitlab";
 import { projectsRouter } from "~/server/api/routers/projects";
 import { eventsRouter } from "~/server/api/routers/events";
+import { queriesRouter } from "~/server/api/routers/queries";
 
 /**
  * This is the primary router for your server.
@@ -12,6 +13,7 @@ export const appRouter = createTRPCRouter({
   gitlab: gitlabRouter,
   projects: projectsRouter,
   events: eventsRouter,
+  queries: queriesRouter,
 });
 
 // export type definition of API
