@@ -1,0 +1,188 @@
+<story-context id="2-3-postgresql-full-text-search-backend" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>2.3</storyId>
+    <title>PostgreSQL Full-Text Search Backend</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-25</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-3-postgresql-full-text-search-backend.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>PostgreSQL full-text search with GIN indexes</iWant>
+    <soThat>search queries return results in &lt;1 second across 10,000+ events</soThat>
+    <tasks>
+      <task id="1" ac="2.3.1">Create GIN Index Migration
+        <subtask>1.1 Create Prisma migration file for FTS index</subtask>
+        <subtask>1.2 Add GIN index on to_tsvector('english', title || ' ' || COALESCE(body, ''))</subtask>
+        <subtask>1.3 Run npx prisma migrate dev to apply migration</subtask>
+        <subtask>1.4 Verify index exists via \d events in psql or Prisma Studio</subtask>
+      </task>
+      <task id="2" ac="2.3.2,2.3.3,2.3.4">Implement FTS Query Builder
+        <subtask>2.1 Create src/lib/search/postgres-fts.ts module</subtask>
+        <subtask>2.2 Implement searchEvents() function using Prisma $queryRaw</subtask>
+        <subtask>2.3 Use plainto_tsquery('english', keyword) for query parsing</subtask>
+        <subtask>2.4 Use ts_rank() for relevance scoring</subtask>
+        <subtask>2.5 Order results by rank DESC, then created_at DESC</subtask>
+        <subtask>2.6 Limit results to 50 by default (configurable)</subtask>
+        <subtask>2.7 Filter by userId for user isolation</subtask>
+      </task>
+      <task id="3" ac="2.3.2,2.3.3,2.3.4">Create tRPC Search Endpoint
+        <subtask>3.1 Add events.search query to src/server/api/routers/events.ts</subtask>
+        <subtask>3.2 Define input schema with Zod: { keyword: string, limit?: number }</subtask>
+        <subtask>3.3 Call FTS query builder from router</subtask>
+        <subtask>3.4 Return { events: SearchResult[], total: number }</subtask>
+        <subtask>3.5 Add highlightedTitle and highlightedSnippet using ts_headline()</subtask>
+      </task>
+      <task id="4" ac="2.3.5">Create Seed Script for Performance Testing
+        <subtask>4.1 Create scripts/seed-events.ts with realistic event data</subtask>
+        <subtask>4.2 Generate 10,000 events with varied titles and bodies</subtask>
+        <subtask>4.3 Include mix of event types: issue, merge_request, comment</subtask>
+        <subtask>4.4 Add varied keywords for search testing (auth, webhook, api, etc.)</subtask>
+        <subtask>4.5 Associate events with test user</subtask>
+      </task>
+      <task id="5" ac="2.3.2">Performance Validation
+        <subtask>5.1 Run seed script to populate database</subtask>
+        <subtask>5.2 Execute search queries with console.time/timeEnd</subtask>
+        <subtask>5.3 Test various keywords and verify &lt;1s response</subtask>
+        <subtask>5.4 Test with empty results (edge case)</subtask>
+        <subtask>5.5 Document performance results in completion notes</subtask>
+      </task>
+      <task id="6" ac="2.3.1-2.3.5">Testing
+        <subtask>6.1 Verify GIN index exists after migration</subtask>
+        <subtask>6.2 Test search returns ranked results</subtask>
+        <subtask>6.3 Test search filters by userId (user isolation)</subtask>
+        <subtask>6.4 Test search across all event types</subtask>
+        <subtask>6.5 Test empty keyword returns error or empty array</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="2.3.1">GIN index created on events table via Prisma migration</criterion>
+    <criterion id="2.3.2">Search returns results in &lt;1s on 10k events</criterion>
+    <criterion id="2.3.3">Results ranked by relevance using ts_rank</criterion>
+    <criterion id="2.3.4">Search returns events across all types (Issues, MRs, Comments)</criterion>
+    <criterion id="2.3.5">Seed script creates 10k realistic test events</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/architecture.md" title="Architecture" section="PostgreSQL Full-Text Search Implementation Details">
+        GIN index on to_tsvector('english', title || ' ' || body) for events table. Query using ts_rank() for relevance scoring, ts_headline() for highlighting. Combined filters with FTS in single query.
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture" section="ADR-004: PostgreSQL Full-Text Search for MVP">
+        Zero additional infrastructure, GIN indexes meet &lt;1s requirement at MVP scale, native Prisma integration. Migration path to Elasticsearch if needed post-MVP.
+      </doc>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-2.md" title="Epic 2 Tech Spec" section="Story 2.3: PostgreSQL Full-Text Search Backend">
+        Complete implementation spec including GIN index migration, query implementation with $queryRaw, SearchResult type, performance testing requirements.
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture" section="Testing Strategy (ADR-006)">
+        Minimal testing for fast iteration. Unit tests ONLY for critical business logic. No integration/E2E tests for MVP. Vitest for testing library.
+      </doc>
+      <doc path="docs/sprint-artifacts/2-2-react-aria-table-with-vim-style-navigation.md" title="Previous Story" section="Dev Agent Record">
+        EventTable component created at src/components/dashboard/EventTable.tsx. Dashboard unified list ready for search results display.
+      </doc>
+    </docs>
+    <code>
+      <file path="src/server/api/routers/events.ts" kind="router" symbol="eventsRouter" reason="Add events.search query endpoint here. Existing patterns: getRecent, getForDashboard, manualRefresh. Use protectedProcedure with ctx.db for database access."/>
+      <file path="src/server/api/trpc.ts" kind="config" symbol="protectedProcedure, createTRPCRouter" reason="Import protectedProcedure for authenticated endpoints. ctx.db provides Prisma client, ctx.session.user.id for user isolation."/>
+      <file path="src/server/db.ts" kind="database" symbol="db" reason="Prisma client export. Use db.$queryRaw for raw SQL FTS queries."/>
+      <file path="prisma/schema.prisma" kind="schema" symbol="Event model" lines="71-92" reason="Event model with id, userId, type, title, body, author, project, projectId, labels, gitlabEventId, gitlabUrl, createdAt, updatedAt. Table mapped to 'event'. Add GIN index on title+body for FTS."/>
+      <file path="src/components/dashboard/EventTable.tsx" kind="component" symbol="EventTable" reason="Created in Story 2.2. Will consume search results. Unified event list display with vim-style navigation."/>
+      <file path="src/lib/logger.ts" kind="utility" symbol="logger" reason="Pino logger for server-side logging. Use for search metrics logging."/>
+    </code>
+    <dependencies>
+      <node>
+        <package name="@prisma/client" version="^6.6.0" note="Prisma ORM with $queryRaw for raw SQL"/>
+        <package name="prisma" version="^6.6.0" note="CLI for migrations: npx prisma migrate dev"/>
+        <package name="@trpc/server" version="^11.0.0" note="tRPC server for API endpoints"/>
+        <package name="zod" version="^3.24.2" note="Input validation for search query schema"/>
+        <package name="pino" version="^10.1.0" note="Logging for search metrics"/>
+      </node>
+      <database>
+        <provider>PostgreSQL</provider>
+        <features>Full-Text Search with GIN indexes, tsvector, tsquery, ts_rank, ts_headline</features>
+      </database>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="security">All queries MUST filter by ctx.session.user.id for user isolation</constraint>
+    <constraint type="security">Use Prisma $queryRaw with tagged template literals for SQL injection prevention</constraint>
+    <constraint type="performance">Search must return results in &lt;1s on 10k events</constraint>
+    <constraint type="performance">Limit results to 50 by default to maintain response time</constraint>
+    <constraint type="architecture">GIN index on tsvector column for O(log n) FTS queries</constraint>
+    <constraint type="pattern">Follow existing eventsRouter patterns: protectedProcedure, Zod input validation, structured response</constraint>
+    <constraint type="naming">Migration file: add_fts_index. Module: src/lib/search/postgres-fts.ts</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="events.search" kind="tRPC query" path="src/server/api/routers/events.ts">
+      <signature>
+        protectedProcedure
+          .input(z.object({
+            keyword: z.string().min(1).max(100),
+            limit: z.number().min(1).max(100).default(50),
+          }))
+          .query(async ({ ctx, input }) => SearchResult)
+      </signature>
+    </interface>
+    <interface name="SearchResult" kind="type" path="src/lib/search/postgres-fts.ts">
+      <signature>
+        interface SearchResult {
+          events: Array&lt;Event &amp; {
+            rank: number;
+            highlightedTitle: string;
+            highlightedSnippet: string;
+          }&gt;;
+          total: number;
+        }
+      </signature>
+    </interface>
+    <interface name="GIN Index" kind="SQL migration" path="prisma/migrations/XXXXXX_add_fts_index/migration.sql">
+      <signature>
+        CREATE INDEX events_fts_idx ON "event"
+        USING gin(to_tsvector('english', title || ' ' || COALESCE(body, '')));
+      </signature>
+    </interface>
+    <interface name="FTS Query" kind="SQL pattern" path="src/lib/search/postgres-fts.ts">
+      <signature>
+        SELECT *,
+          ts_rank(to_tsvector('english', title || ' ' || COALESCE(body, '')),
+                  plainto_tsquery('english', $keyword)) as rank,
+          ts_headline('english', title, plainto_tsquery('english', $keyword),
+                      'StartSel=&lt;mark&gt;, StopSel=&lt;/mark&gt;, MaxWords=50') as "highlightedTitle",
+          ts_headline('english', COALESCE(body, ''), plainto_tsquery('english', $keyword),
+                      'StartSel=&lt;mark&gt;, StopSel=&lt;/mark&gt;, MaxWords=100') as "highlightedSnippet"
+        FROM "event"
+        WHERE user_id = $userId
+          AND to_tsvector('english', title || ' ' || COALESCE(body, '')) @@ plainto_tsquery('english', $keyword)
+        ORDER BY rank DESC, created_at DESC
+        LIMIT $limit
+      </signature>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Per ADR-006 (Minimal Testing for Fast Iteration): Focus on unit tests for critical business logic only. Use Vitest as testing library. No integration or E2E tests for MVP. Performance testing via seed script with console.time/timeEnd. Manual validation of search results. Add tests only when debugging the same bug twice.
+    </standards>
+    <locations>
+      <location>tests/lib/ (unit tests for critical logic)</location>
+      <location>scripts/seed-events.ts (performance testing data)</location>
+    </locations>
+    <ideas>
+      <idea ac="2.3.1">Verify GIN index exists after migration using psql \d command or database inspection</idea>
+      <idea ac="2.3.2">Performance test: console.time search on 10k seeded events, assert &lt;1000ms</idea>
+      <idea ac="2.3.3">Test search returns results ordered by rank DESC (most relevant first)</idea>
+      <idea ac="2.3.4">Test search returns mixed event types (issue, merge_request, comment) in results</idea>
+      <idea ac="2.3.5">Seed script generates exactly 10k events with varied content for realistic testing</idea>
+      <idea ac="security">Test user isolation: search only returns events for ctx.session.user.id</idea>
+      <idea ac="edge">Test empty keyword returns validation error or empty array</idea>
+      <idea ac="edge">Test non-matching keyword returns empty results array</idea>
+    </ideas>
+  </tests>
+</story-context>
