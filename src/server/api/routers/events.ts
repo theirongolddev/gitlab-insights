@@ -5,6 +5,7 @@
  */
 
 import { TRPCError } from "@trpc/server";
+import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { GitLabClient, GitLabAPIError } from "~/server/services/gitlab-client";
 import {
@@ -214,6 +215,57 @@ export const eventsRouter = createTRPCRouter({
 
     return events;
   }),
+
+  /**
+   * Get events for dashboard with optional label filter
+   *
+   * GET /api/trpc/events.getForDashboard
+   *
+   * Returns events optionally filtered by label, grouped by type
+   * AC-11: PostgreSQL array containment (Prisma: has)
+   * AC-12: Returns { issues: [], mergeRequests: [], comments: [] }
+   * AC-13: Limit 50 per section, ordered by createdAt DESC
+   */
+  getForDashboard: protectedProcedure
+    .input(
+      z.object({
+        filterLabel: z.string().nullable().optional(),
+      }).optional()
+    )
+    .query(async ({ ctx, input }) => {
+      const filterLabel = input?.filterLabel;
+
+      // Build where clause - only add label filter if provided
+      const whereClause: { userId: string; labels?: { has: string } } = {
+        userId: ctx.session.user.id,
+      };
+
+      if (filterLabel) {
+        whereClause.labels = { has: filterLabel };
+      }
+
+      // Fetch events, limited to 150 (50 * 3 sections max)
+      const events = await ctx.db.event.findMany({
+        where: whereClause,
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 150,
+      });
+
+      // Group by type and limit to 50 per section
+      const issues = events
+        .filter((e) => e.type === "issue")
+        .slice(0, 50);
+      const mergeRequests = events
+        .filter((e) => e.type === "merge_request")
+        .slice(0, 50);
+      const comments = events
+        .filter((e) => e.type === "comment")
+        .slice(0, 50);
+
+      return { issues, mergeRequests, comments };
+    }),
 
   /**
    * Get last sync timestamp

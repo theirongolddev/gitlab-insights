@@ -5,7 +5,7 @@
  * Handles deduplication and determines which events are new
  */
 
-import type { PrismaClient } from "~/generated/prisma";
+import type { PrismaClient } from "@prisma/client";
 import type {
   GitLabIssue,
   GitLabMergeRequest,
