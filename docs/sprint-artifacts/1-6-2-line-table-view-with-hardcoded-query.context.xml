@@ -1,0 +1,349 @@
+<story-context id="1-6-2-line-table-view-with-hardcoded-query" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>1.6</storyId>
+    <title>2-Line Table View with Hardcoded Query</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-24</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/1-6-2-line-table-view-with-hardcoded-query.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user viewing the dashboard</asA>
+    <iWant>to see GitLab events in a dense 2-line table format organized by sections (Issues, MRs, Comments)</iWant>
+    <soThat>I can quickly scan and identify relevant activity without excessive scrolling</soThat>
+    <tasks>
+      <task id="1" acs="5,6,7,8,9">Create ItemRow Component - 2-line layout with badge, title, snippet, metadata</task>
+      <task id="2" acs="1,2,3,4">Create Sectioned Dashboard Layout - 3 sections with headers</task>
+      <task id="3" acs="10,11,12,13">Implement Hardcoded Filter in Backend - label:security filter</task>
+      <task id="4" acs="17">Integrate React Aria Table for Accessibility</task>
+      <task id="5" acs="14">Implement Click-Through to GitLab</task>
+      <task id="6" acs="5,8,15,16">Apply Visual Styling per UX Spec</task>
+      <task id="7" acs="18,19,20">Integrate with Existing Components</task>
+      <task id="8" acs="21,22">Performance Testing</task>
+      <task id="9" acs="1-22">Manual Testing - Complete Flow</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <category name="Dashboard Layout">
+      <ac id="1">Dashboard displays events in 3 sections: Issues, Merge Requests, Comments</ac>
+      <ac id="2">Each section has clickable header for navigation/filtering</ac>
+      <ac id="3">Items sorted by createdAt DESC within each section</ac>
+      <ac id="4">Empty state: "No events match the current filter"</ac>
+    </category>
+    <category name="2-Line Row Display">
+      <ac id="5">52px row height, 8-10 items visible without scrolling</ac>
+      <ac id="6">Line 1: Badge + Title (truncated >120 chars) + right-aligned metadata column</ac>
+      <ac id="7">Line 2: First 80-100 chars of body as snippet (gray, smaller font)</ac>
+      <ac id="8">Badge colors: Issue (purple #8B5CF6), MR (blue #38BDF8), Comment (gray #94A3B8)</ac>
+      <ac id="9">NEW badge (olive #9DAA5F) for unreviewed events</ac>
+    </category>
+    <category name="Hardcoded Filter">
+      <ac id="10">Filter by label:security (hardcoded)</ac>
+      <ac id="11">PostgreSQL array containment: WHERE labels @> ARRAY['security']</ac>
+      <ac id="12">Return grouped by type: { issues: [], mergeRequests: [], comments: [] }</ac>
+      <ac id="13">Limit 50 per section, order by createdAt DESC</ac>
+    </category>
+    <category name="Interaction">
+      <ac id="14">Click row opens GitLab URL in new tab</ac>
+      <ac id="15">Hover: bg-gray-800 background</ac>
+      <ac id="16">Selection: 2px olive ring</ac>
+      <ac id="17">Keyboard Tab navigation via React Aria Table</ac>
+    </category>
+    <category name="Integration">
+      <ac id="18">RefreshButton from Story 1.5 retained</ac>
+      <ac id="19">SyncIndicator from Story 1.5 retained</ac>
+      <ac id="20">SimpleEventList replaced with sectioned ItemRow layout</ac>
+    </category>
+    <category name="Performance">
+      <ac id="21">Page load &lt;500ms (P95)</ac>
+      <ac id="22">Query response &lt;200ms (P95)</ac>
+    </category>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-1.md" relevance="high">
+        <summary>Epic 1 technical specification with AC-6 defining dashboard display requirements</summary>
+        <sections>
+          <section name="AC-6" line="749">Dashboard Display with Hardcoded Filter - events filtered by label:security, 3 sections, 2-line rows, click-through to GitLab, &lt;500ms load time</section>
+          <section name="Data Models" line="100">DashboardEvent interface with type, title, snippet, author, timeAgo, gitlabUrl, labels</section>
+          <section name="APIs" line="279">events.getForDashboard procedure - grouped events by type with filtering</section>
+        </sections>
+      </doc>
+      <doc path="docs/architecture.md" relevance="high">
+        <summary>System architecture including React Aria patterns, two-line row layout, and implementation patterns</summary>
+        <sections>
+          <section name="Two-Line Row Layout Pattern" line="772">52px height spec, Line 1/Line 2 structure, badge colors, states (hover, selected)</section>
+          <section name="UI Component Patterns" line="689">React Aria Components usage - Table, Dialog, Button with custom olive accent</section>
+          <section name="Database Query Patterns" line="626">Use proper indexes, transaction patterns, always filter by userId</section>
+          <section name="Keyboard Shortcut System" line="719">ShortcutHandler implementation pattern (j/k navigation, o open, r refresh)</section>
+        </sections>
+      </doc>
+      <doc path="docs/ux-design-specification.md" relevance="high">
+        <summary>UX design specification with dense table layout, color system, and interaction states</summary>
+        <sections>
+          <section name="Section 4.1">Two-line dense table (52px rows, 8-10 items visible)</section>
+          <section name="Section 3.1">Event type colors (purple=Issue, blue=MR, gray=Comment), olive accent #9DAA5F</section>
+          <section name="Section 7.1">Hover states (bg-gray-800), focus indicators (ring-olive)</section>
+        </sections>
+      </doc>
+      <doc path="docs/sprint-artifacts/1-5-gitlab-api-client-with-manual-refresh.md" relevance="high">
+        <summary>Previous story with established patterns and reusable components</summary>
+        <learnings>
+          <learning>tRPC protected procedures enforce auth via protectedProcedure middleware</learning>
+          <learning>User-scoped queries: Always filter by session.user.id</learning>
+          <learning>Olive accent styling (#9DAA5F) for buttons and active states</learning>
+          <learning>formatRelativeTime helper exists in SyncIndicator.tsx</learning>
+        </learnings>
+      </doc>
+    </docs>
+    <code>
+      <file path="src/server/api/routers/events.ts" action="MODIFY" relevance="critical">
+        <summary>Events tRPC router - add getForDashboard query with hardcoded filter</summary>
+        <currentState>
+          <procedure name="manualRefresh" line="32">Mutation to fetch events from GitLab</procedure>
+          <procedure name="getRecent" line="204">Query returning all events sorted by createdAt DESC, limit 50</procedure>
+          <procedure name="getLastSync" line="225">Query returning last sync timestamp</procedure>
+        </currentState>
+        <modification>
+          <add>
+            <procedure name="getForDashboard">
+              <purpose>Return events filtered by label:security, grouped by type</purpose>
+              <signature>protectedProcedure.query</signature>
+              <implementation>
+                - Query Event table with labels array containment: labels: { has: 'security' }
+                - Filter by userId from session
+                - Order by createdAt DESC
+                - Limit 50 per type
+                - Return { issues: [], mergeRequests: [], comments: [] }
+              </implementation>
+            </procedure>
+          </add>
+        </modification>
+      </file>
+      <file path="src/app/dashboard/page.tsx" action="MODIFY" relevance="critical">
+        <summary>Dashboard page - replace SimpleEventList with sectioned ItemRow layout</summary>
+        <currentState>
+          <imports>Header, RefreshButton, SyncIndicator, SimpleEventList</imports>
+          <hooks>useSession, api.events.manualRefresh, api.useUtils</hooks>
+          <layout>Header + page header with title/sync/refresh + SimpleEventList</layout>
+        </currentState>
+        <modification>
+          <replace>SimpleEventList with sectioned layout using ItemRow components</replace>
+          <add>3 sections (Issues, MRs, Comments) with clickable headers</add>
+          <add>Use new api.events.getForDashboard query instead of getRecent</add>
+          <add>Empty state for when no events match filter</add>
+          <keep>Header, RefreshButton, SyncIndicator components</keep>
+        </modification>
+      </file>
+      <file path="src/components/dashboard/ItemRow.tsx" action="CREATE" relevance="critical">
+        <summary>New 2-line dense table row component</summary>
+        <specification>
+          <height>52px fixed</height>
+          <line1>Badge (11px) + Title (truncate >120 chars) + right-aligned Metadata (author, project, timeAgo)</line1>
+          <line2>Snippet (80-100 chars of body, text-sm, gray-400)</line2>
+          <states>
+            <default>Normal appearance</default>
+            <hover>bg-gray-800</hover>
+            <selected>ring-2 ring-olive</selected>
+          </states>
+          <props>item: DashboardEvent, isSelected: boolean, isNew: boolean, onClick: () => void</props>
+        </specification>
+      </file>
+      <file path="src/components/dashboard/Badge.tsx" action="CREATE" relevance="critical">
+        <summary>Event type badge component</summary>
+        <specification>
+          <variants>
+            <variant type="issue" color="purple (#8B5CF6)" text="Issue"/>
+            <variant type="merge_request" color="blue (#38BDF8)" text="MR"/>
+            <variant type="comment" color="gray (#94A3B8)" text="Comment"/>
+          </variants>
+          <newBadge color="olive (#9DAA5F)" text="NEW"/>
+          <size>11px text, px-2 py-0.5, rounded-full</size>
+        </specification>
+      </file>
+      <file path="src/components/dashboard/RefreshButton.tsx" action="KEEP" relevance="medium">
+        <summary>Manual refresh button - reuse from Story 1.5</summary>
+        <note>No changes needed, component is complete</note>
+      </file>
+      <file path="src/components/dashboard/SyncIndicator.tsx" action="KEEP" relevance="medium">
+        <summary>Last sync timestamp indicator - reuse from Story 1.5</summary>
+        <note>Contains formatRelativeTime helper that can be extracted for ItemRow use</note>
+      </file>
+      <file path="src/components/dashboard/SimpleEventList.tsx" action="DEPRECATE" relevance="low">
+        <summary>Simple event list - replaced by sectioned ItemRow layout</summary>
+        <note>May be deleted after Story 1.6 is complete, or kept for reference</note>
+      </file>
+    </code>
+    <dependencies>
+      <package name="@react-aria/table" action="INSTALL" reason="AC-17 keyboard accessibility">
+        <note>React Aria Table for accessible, keyboard-navigable tables</note>
+        <command>npm install @react-aria/table @react-stately/table</command>
+      </package>
+      <package name="date-fns" status="NOT_INSTALLED" action="CONSIDER">
+        <note>Relative time formatting - currently using inline helper in SyncIndicator.tsx</note>
+        <alternative>Extract formatRelativeTime to shared utility, or install date-fns for formatDistanceToNow</alternative>
+      </package>
+      <package name="react" version="^19.2.0" status="INSTALLED"/>
+      <package name="@prisma/client" version="^6.6.0" status="INSTALLED"/>
+      <package name="@trpc/react-query" version="^11.0.0" status="INSTALLED"/>
+      <package name="tailwindcss" version="^4.0.15" status="INSTALLED"/>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="performance">Page load must be &lt;500ms (P95) - measure with browser DevTools</constraint>
+    <constraint type="performance">Query response must be &lt;200ms (P95) - check Network tab</constraint>
+    <constraint type="database">All queries must be scoped by userId (security requirement)</constraint>
+    <constraint type="accessibility">Table rows must be keyboard-navigable via Tab</constraint>
+    <constraint type="styling">Must use olive accent #9DAA5F for dark mode selection/NEW badge</constraint>
+    <constraint type="layout">Row height fixed at 52px (8-10 items visible without scroll)</constraint>
+    <constraint type="filter">Hardcoded label:security filter - not user-configurable in this story</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="DashboardEvent" location="Define in events.ts router or shared types">
+      <field name="id" type="string"/>
+      <field name="type" type="'issue' | 'merge_request' | 'comment'"/>
+      <field name="title" type="string"/>
+      <field name="body" type="string | null"/>
+      <field name="author" type="string"/>
+      <field name="authorAvatar" type="string | null"/>
+      <field name="project" type="string"/>
+      <field name="labels" type="string[]"/>
+      <field name="gitlabUrl" type="string"/>
+      <field name="createdAt" type="Date"/>
+    </interface>
+    <interface name="DashboardData" location="events.ts router return type">
+      <field name="issues" type="DashboardEvent[]"/>
+      <field name="mergeRequests" type="DashboardEvent[]"/>
+      <field name="comments" type="DashboardEvent[]"/>
+    </interface>
+    <interface name="ItemRowProps" location="ItemRow.tsx">
+      <field name="item" type="DashboardEvent"/>
+      <field name="isSelected" type="boolean"/>
+      <field name="isNew" type="boolean"/>
+      <field name="onClick" type="() => void"/>
+    </interface>
+    <interface name="BadgeProps" location="Badge.tsx">
+      <field name="type" type="'issue' | 'merge_request' | 'comment'"/>
+      <field name="isNew" type="boolean" optional="true"/>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      <standard>Manual testing only for Epic 1 (per ADR-006)</standard>
+      <standard>Verify each AC manually using browser and DevTools</standard>
+      <standard>Performance testing via Network tab timing</standard>
+    </standards>
+    <locations>
+      <location>No automated test files required for this story</location>
+      <location>Manual testing checklist in story Tasks section</location>
+    </locations>
+    <ideas>
+      <testCase ac="1-4">Load dashboard, verify 3 sections display with correct headers</testCase>
+      <testCase ac="5-9">Verify 2-line rows: 52px height, badge colors, title truncation, snippet display</testCase>
+      <testCase ac="10-13">Verify only security-labeled items appear, query returns grouped data</testCase>
+      <testCase ac="14">Click event row, verify GitLab opens in new tab with correct URL</testCase>
+      <testCase ac="15-16">Test hover state (bg-gray-800) and selection state (olive ring)</testCase>
+      <testCase ac="17">Tab through rows, verify focus moves correctly</testCase>
+      <testCase ac="18-20">Verify RefreshButton and SyncIndicator still work, SimpleEventList replaced</testCase>
+      <testCase ac="21-22">Measure page load and query response in DevTools Network tab</testCase>
+      <testCase edge="empty">Test with no security-labeled events - verify empty state message</testCase>
+      <testCase edge="truncation">Test with long title (>120 chars) - verify ellipsis truncation</testCase>
+      <testCase edge="noBody">Test with events that have null body - verify snippet handles gracefully</testCase>
+    </ideas>
+  </tests>
+
+  <prismaSchema>
+    <model name="Event" relevance="critical">
+      <field name="id" type="String" pk="true"/>
+      <field name="userId" type="String" indexed="true"/>
+      <field name="type" type="String" note="'issue' | 'merge_request' | 'comment'"/>
+      <field name="title" type="String"/>
+      <field name="body" type="String?" dbType="Text"/>
+      <field name="author" type="String"/>
+      <field name="authorAvatar" type="String?"/>
+      <field name="project" type="String"/>
+      <field name="projectId" type="String"/>
+      <field name="labels" type="String[]" note="PostgreSQL array - use 'has' for containment"/>
+      <field name="gitlabEventId" type="String" unique="true"/>
+      <field name="gitlabUrl" type="String"/>
+      <field name="createdAt" type="DateTime"/>
+      <field name="updatedAt" type="DateTime"/>
+      <index name="userId_createdAt" fields="userId, createdAt(desc)" note="Optimizes dashboard queries"/>
+    </model>
+  </prismaSchema>
+
+  <codeSnippets>
+    <snippet name="Prisma array containment query" usage="events.getForDashboard">
+```typescript
+// Query events with label:security filter
+const events = await ctx.db.event.findMany({
+  where: {
+    userId: ctx.session.user.id,
+    labels: { has: 'security' }  // PostgreSQL array containment
+  },
+  orderBy: { createdAt: 'desc' },
+  take: 50
+});
+```
+    </snippet>
+    <snippet name="Group events by type" usage="events.getForDashboard return">
+```typescript
+const issues = events.filter(e => e.type === 'issue');
+const mergeRequests = events.filter(e => e.type === 'merge_request');
+const comments = events.filter(e => e.type === 'comment');
+
+return { issues, mergeRequests, comments };
+```
+    </snippet>
+    <snippet name="formatRelativeTime helper" usage="ItemRow component">
+```typescript
+// From SyncIndicator.tsx - can be extracted to shared util
+const formatRelativeTime = (date: Date) => {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return `${diffDays}d ago`;
+};
+```
+    </snippet>
+    <snippet name="Truncate title helper" usage="ItemRow component">
+```typescript
+const truncateTitle = (title: string, maxLength = 120) => {
+  if (title.length <= maxLength) return title;
+  return title.slice(0, maxLength) + '...';
+};
+```
+    </snippet>
+    <snippet name="Badge color map" usage="Badge component">
+```typescript
+const badgeColors = {
+  issue: 'bg-purple-500 text-white',      // #8B5CF6
+  merge_request: 'bg-blue-400 text-white', // #38BDF8
+  comment: 'bg-gray-400 text-white',       // #94A3B8
+} as const;
+
+const newBadgeClass = 'bg-[#9DAA5F] text-white'; // Olive accent
+```
+    </snippet>
+    <snippet name="ItemRow click handler" usage="Open in GitLab">
+```typescript
+const handleClick = () => {
+  window.open(item.gitlabUrl, '_blank', 'noopener,noreferrer');
+};
+```
+    </snippet>
+  </codeSnippets>
+</story-context>
