@@ -61,7 +61,15 @@ development_status:
   2-8-5-save-as-query-entry-points: done
   2-9-create-query-modal: done  # Merged into Story 2.8.5
   2-10-edit-delete-query-actions: done
-  epic-2-retrospective: optional
+  epic-2-retro:
+    description: "Epic 2 retrospective meeting"
+    status: done
+    completed_date: "2025-11-26"
+    artifacts:
+      - docs/sprint-artifacts/epic-2-retrospective.md
+      - docs/ui-component-architecture.md
+      - src/styles/globals.css (design tokens completed)
+      - docs/architecture.md (Quality-First principle added)
 
   # Epic 3: Catch-Up Mode & Background Sync
   epic-3: backlog

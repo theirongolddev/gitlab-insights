@@ -224,6 +224,28 @@ npm install better-auth
 
 **These patterns apply to ALL components and MUST be followed by all AI agents for consistency.**
 
+### UI Component Architecture
+
+**Reference Document:** [`docs/ui-component-architecture.md`](./ui-component-architecture.md)
+
+**Critical Standards:**
+1. **Design Tokens Only** - NEVER use hardcoded hex values (e.g., `text-[#9DAA5F]`). Always use design tokens defined in `src/styles/globals.css`.
+2. **React Aria First** - Use React Aria Components for all interactive and semantic UI elements (buttons, headings, text, form inputs, modals).
+3. **Button Wrapper Mandatory** - ALL buttons must use `~/components/ui/Button.tsx` wrapper component.
+4. **Form Components** - Use React Aria `TextField`, `Checkbox`, `Select`, etc. instead of raw HTML inputs.
+5. **Typography** - Use React Aria `Heading` and `Text` components instead of raw `<h1-6>`, `<p>`, `<span>`.
+
+**Quick Reference:**
+- ✅ CORRECT: `<Button variant="primary">Save</Button>`
+- ❌ WRONG: `<button className="bg-[#5e6b24]">Save</button>`
+
+- ✅ CORRECT: `<Heading level={1} className="text-xl">Dashboard</Heading>`
+- ❌ WRONG: `<h1 className="text-xl text-[#FDFFFC]">Dashboard</h1>`
+
+**Rationale:** Ensures accessibility (WCAG 2.1 Level AA), consistency across codebase, and maintainability through systematic color changes.
+
+**Established:** 2025-11-26 (Epic 2 Retrospective action item)
+
 ### Error Handling Strategy
 - **API/Backend (tRPC):** Throw `TRPCError` with typed codes (`BAD_REQUEST`, `UNAUTHORIZED`, `INTERNAL_SERVER_ERROR`, `NOT_FOUND`)
 - **Frontend:** React Error Boundaries catch component errors, toast notifications for user-facing errors
@@ -463,6 +485,47 @@ gitlab-insights/
 ## Implementation Patterns (Agent Consistency Rules)
 
 **CRITICAL: These patterns ensure multiple AI agents write compatible code. All agents MUST follow these conventions exactly.**
+
+### Quality-First Development Principle
+
+**Core Expectation:** Proactive quality assurance over compliance
+
+**What This Means:**
+1. **Surface Concerns Proactively** - If you identify issues in documentation, code, architecture, or patterns, ALERT the user immediately. Don't silently proceed.
+2. **Challenge When Appropriate** - If requirements seem incomplete, inconsistent, or problematic, raise concerns and propose alternatives.
+3. **Quality Over Speed** - Top-quality results matter more than fast completion. Take time to do it right.
+4. **Document Gaps** - If you notice missing documentation, incomplete patterns, or unclear standards, call them out explicitly.
+5. **Don't Just Comply** - Following instructions exactly is baseline; thoughtful critique and improvement suggestions are valued.
+
+**Examples:**
+- ✅ GOOD: "I noticed the UX spec defines 30 colors but only 6 are implemented in globals.css. This will cause developers to hardcode values. Should I complete the design token system?"
+- ❌ BAD: Silently hardcoding `text-[#9DAA5F]` because you saw it in existing code.
+
+- ✅ GOOD: "This component uses raw `<button>` but we have a Button wrapper. This creates inconsistency. Should I refactor?"
+- ❌ BAD: Copying the raw `<button>` pattern without questioning it.
+
+- ✅ GOOD: "The story says 'add authentication' but doesn't specify token refresh logic. Should we handle OAuth token expiration?"
+- ❌ BAD: Implementing basic auth without considering token lifecycle.
+
+**When in Doubt:**
+- Ask clarifying questions
+- Propose solutions with trade-offs
+- Document assumptions explicitly
+- Escalate architectural concerns
+
+**What Makes BMad Happy:**
+- Being alerted to quality issues before they compound
+- Thoughtful analysis of requirements and patterns
+- Proactive identification of gaps or inconsistencies
+- Honest assessment of implementation quality
+
+**What Doesn't:**
+- Silently following broken patterns
+- Marking tasks complete when quality is compromised
+- Avoiding difficult conversations about technical debt
+- Prioritizing speed over correctness
+
+**Established:** 2025-11-26 (Epic 2 Retrospective)
 
 ### Naming Conventions
 

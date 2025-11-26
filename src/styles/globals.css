@@ -14,6 +14,51 @@
   --color-bg-dark: #2d2e2e;
   --color-bg-light: #FDFFFC;
 
+  /* Semantic Colors - Success */
+  --color-success: #16A34A;        /* Light mode */
+  --color-success-dark: #22C55E;   /* Dark mode */
+
+  /* Semantic Colors - Warning */
+  --color-warning: #F59E0B;        /* Light mode */
+  --color-warning-dark: #FDE047;   /* Dark mode */
+
+  /* Semantic Colors - Error */
+  --color-error: #B91C1C;          /* Light mode */
+  --color-error-dark: #DC2626;     /* Dark mode */
+
+  /* Semantic Colors - Info */
+  --color-info: #0284C7;           /* Light mode */
+  --color-info-dark: #38BDF8;      /* Dark mode */
+
+  /* Event Type Badge Colors */
+  --color-badge-issue: #8B5CF6;        /* Light mode purple */
+  --color-badge-issue-dark: #A78BFA;   /* Dark mode purple */
+  --color-badge-mr: #0EA5E9;           /* Light mode blue */
+  --color-badge-mr-dark: #38BDF8;      /* Dark mode blue */
+  --color-badge-comment: #64748B;      /* Light mode gray */
+  --color-badge-comment-dark: #94A3B8; /* Dark mode gray */
+
+  /* Neutral Gray Scale */
+  --color-gray-50: #F9FAFB;
+  --color-gray-100: #F3F4F6;
+  --color-gray-200: #E5E7EB;
+  --color-gray-300: #D1D5DB;
+  --color-gray-400: #9CA3AF;
+  --color-gray-500: #6B7280;
+  --color-gray-600: #4B5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1F2937;
+  --color-gray-900: #111827;
+
+  /* Semantic Tokens (Dark Mode Context) */
+  --color-text-primary: var(--color-gray-50);
+  --color-text-secondary: var(--color-gray-300);
+  --color-text-tertiary: var(--color-gray-400);
+  --color-bg-surface: var(--color-gray-800);
+  --color-bg-elevated: var(--color-gray-700);
+  --color-border-default: var(--color-gray-600);
+  --color-border-subtle: var(--color-gray-700);
+
   /* Animation Durations */
   --transition-slide: 200ms ease-out;
 
