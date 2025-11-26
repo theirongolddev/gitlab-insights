@@ -1,0 +1,327 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>1</storyId>
+    <title>Catch-Up Mode Backend - "New Since Last Visit" Logic</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-26</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/3-1-catch-up-mode-backend-new-since-last-visit-logic.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user with saved queries</asA>
+    <iWant>the system to track when I last viewed each query</iWant>
+    <soThat>I can see only new items since my last visit</soThat>
+    <tasks>
+- Task 1: Add `last_visited_at` Field to Prisma Schema (AC: 3.1.1)
+  - 1.1 Open `prisma/schema.prisma`
+  - 1.2 Locate `UserQuery` model definition
+  - 1.3 Add field: `last_visited_at DateTime? @default(now())`
+  - 1.4 Field is nullable (?) to handle existing queries
+  - 1.5 Default to current timestamp for new queries
+  - 1.6 Review schema changes with team patterns
+
+- Task 2: Create and Run Database Migration (AC: 3.1.2)
+  - 2.1 Run: `npx prisma migrate dev --name add_last_visited_at`
+  - 2.2 Verify migration file created in `prisma/migrations/`
+  - 2.3 Review generated SQL for correctness
+  - 2.4 Migration should: `ALTER TABLE "UserQuery" ADD COLUMN "last_visited_at" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP`
+  - 2.5 Verify migration applies successfully to local database
+  - 2.6 Run: `npx prisma generate` to update Prisma Client types
+  - 2.7 Verify TypeScript recognizes new field in UserQuery type
+
+- Task 3: Implement `queries.getNewItems` tRPC Query (AC: 3.1.3-3.1.5, 3.1.7-3.1.8)
+  - 3.1 Open `src/server/api/routers/queries.ts`
+  - 3.2 Add new query procedure: `getNewItems`
+  - 3.3 Import Zod for input validation: `import { z } from "zod"`
+  - 3.4 Define input schema: `z.object({ queryId: z.string() })`
+  - 3.5 Use `protectedProcedure` to ensure authentication
+  - 3.6 Fetch query from database: `ctx.db.userQuery.findUnique({ where: { id: input.queryId } })`
+  - 3.7 Authorization check: Verify `query.userId === ctx.session.user.id`, throw FORBIDDEN if not
+  - 3.8 Handle query not found: Throw NOT_FOUND TRPCError if query doesn't exist
+  - 3.9 Determine lastVisited: `const lastVisited = query.last_visited_at || new Date(0)` (epoch = never visited)
+  - 3.10 Build filter WHERE clause: Call existing `buildFilterWhereClause(query.filters)` helper
+  - 3.11 Combine filters: `where: { AND: [buildFilterWhereClause(...), { createdAt: { gt: lastVisited } }] }`
+  - 3.12 Query events: `ctx.db.event.findMany({ where: ..., orderBy: { createdAt: 'desc' } })`
+  - 3.13 Return response object: `{ queryId, queryName, newCount: events.length, events }`
+  - 3.14 Verify TypeScript types align with expected response shape
+
+- Task 4: Handle Timezone Correctly (AC: 3.1.6)
+  - 4.1 Verify Prisma stores `DateTime` fields as UTC (default behavior)
+  - 4.2 Ensure `last_visited_at` column type is `TIMESTAMP(3)` with timezone
+  - 4.3 Backend always works in UTC (no timezone conversion in queries)
+  - 4.4 Frontend receives ISO 8601 UTC strings from tRPC
+  - 4.5 Note: Frontend will handle timezone conversion for display (defer to Story 3.2)
+  - 4.6 Validate: Compare timestamps in database (UTC) vs API response (UTC ISO string)
+
+- Task 5: Testing and Validation (AC: All)
+  - 5.1 Run `npm run typecheck` to verify no TypeScript errors
+  - 5.2 Run `npm run build` to verify build succeeds
+  - 5.3 Test: Create new query → verify `last_visited_at` defaults to current time
+  - 5.4 Test: Call `getNewItems` on never-visited query → returns all matching events (AC 3.1.4)
+  - 5.5 Test: Call `getNewItems` immediately after visiting → returns empty array (AC 3.1.5)
+  - 5.6 Test: Create event matching query → call `getNewItems` → verify event in response
+  - 5.7 Test: Verify response shape matches AC 3.1.7 (queryId, queryName, newCount, events)
+  - 5.8 Test: Authorization - attempt to access another user's query → verify FORBIDDEN error
+  - 5.9 Test: Invalid queryId → verify NOT_FOUND error
+  - 5.10 Manual: Verify timestamps in database are UTC
+</tasks>
+  </story>
+
+  <acceptanceCriteria>
+| AC ID | Criterion |
+|-------|-----------|
+| 3.1.1 | UserQuery Prisma model includes `last_visited_at` field (TIMESTAMP, nullable, defaults to NOW) |
+| 3.1.2 | Prisma migration successfully adds `last_visited_at` column to database |
+| 3.1.3 | tRPC query `queries.getNewItems({ queryId })` returns events created after `last_visited_at` |
+| 3.1.4 | When user has never visited a query, `getNewItems` returns all matching events |
+| 3.1.5 | When user visited query 1 second ago, `getNewItems` returns empty array |
+| 3.1.6 | Timestamps stored in UTC in database, displayed in user's local timezone |
+| 3.1.7 | `getNewItems` response includes: queryId, queryName, newCount, events array |
+| 3.1.8 | Query filters combined with "new since" filter using AND logic |
+</acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <!-- Epic 3 Story Breakdown -->
+      <doc>
+        <path>docs/epics/epic-3-catch-up-mode-background-sync-story-breakdown.md</path>
+        <title>Epic 3: Catch-Up Mode & Background Sync - Story Breakdown</title>
+        <section>Story 3.1: Catch-Up Mode Backend - "New Since Last Visit" Logic</section>
+        <snippet>
+          Backend implementation for tracking last_visited_at timestamps per query and returning events
+          created after that timestamp. Includes database migration, tRPC query implementation, and
+          timezone handling (UTC storage, local display).
+        </snippet>
+      </doc>
+
+      <!-- Architecture -->
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture - tRPC Error Handling & Implementation Patterns</title>
+        <section>Implementation Patterns (Agent Consistency Rules)</section>
+        <snippet>
+          Error Handling Strategy: Throw TRPCError with typed codes (BAD_REQUEST, UNAUTHORIZED,
+          INTERNAL_SERVER_ERROR, NOT_FOUND, FORBIDDEN). Date/Time Handling: Store as PostgreSQL
+          timestamptz (UTC), transmit as ISO 8601 UTC strings, display in user timezone using date-fns.
+        </snippet>
+      </doc>
+
+      <!-- UX Design Specification -->
+      <doc>
+        <path>docs/ux-design-specification.md</path>
+        <title>UX Design Specification - Catch-Up Mode</title>
+        <section>Novel UX Patterns - Catch-Up Mode Toggle</section>
+        <snippet>
+          Catch-Up Mode shows items grouped by saved queries, only new items since last login/review.
+          Badge count shows total new items. "Mark All as Reviewed" resets baseline. Works efficiently
+          with polling-based architecture.
+        </snippet>
+      </doc>
+
+      <!-- UI Component Architecture -->
+      <doc>
+        <path>docs/ui-component-architecture.md</path>
+        <title>UI Component Architecture - Standards</title>
+        <section>Quality-First Development Principle</section>
+        <snippet>
+          Never use hardcoded hex values - always use design tokens. All buttons must use Button wrapper.
+          Use React Aria primitives for semantic UI. Follow WCAG 2.1 Level AA compliance.
+        </snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <!-- Prisma Schema - UserQuery Model -->
+      <artifact>
+        <path>prisma/schema.prisma</path>
+        <kind>database-schema</kind>
+        <symbol>UserQuery</symbol>
+        <lines>94-107</lines>
+        <reason>
+          Current UserQuery model with filters (Json) and UNUSED lastViewedAt field at line 99.
+          Story will REMOVE unused field and ADD: lastVisitedAt DateTime? @default(now()) @map("last_visited_at")
+          This creates snake_case DB column (last_visited_at) with camelCase Prisma accessor (lastVisitedAt).
+          Migration is safe - existing field is unused, no data loss.
+        </reason>
+      </artifact>
+
+      <!-- tRPC Queries Router -->
+      <artifact>
+        <path>src/server/api/routers/queries.ts</path>
+        <kind>trpc-router</kind>
+        <symbol>queriesRouter</symbol>
+        <lines>1-274</lines>
+        <reason>
+          Existing queries router with create, list, getById, update, delete procedures. Story 3.1 will add TWO new procedures:
+          1. getNewItems query - Returns events created after query.lastVisitedAt
+          2. testSetup mutation - Test-only helper to NULL lastVisitedAt for AC 3.1.4 validation
+
+          Shows authorization pattern (userId check), error handling (TRPCError), and FTS query pattern at lines 94-99.
+          The list procedure demonstrates inline FTS query - REUSE this pattern, no buildFilterWhereClause helper exists.
+        </reason>
+      </artifact>
+
+      <!-- Filter Types Schema -->
+      <artifact>
+        <path>src/lib/filters/types.ts</path>
+        <kind>types</kind>
+        <symbol>QueryFiltersSchema</symbol>
+        <lines>1-30</lines>
+        <reason>
+          Defines QueryFilters type structure used in UserQuery.filters field. Story 3.1 needs to
+          understand filter structure to combine query filters with "new since" date filter using AND logic.
+        </reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <ecosystem name="Node.js">
+        <package name="@prisma/client" version="^6.6.0" />
+        <package name="@trpc/server" version="^11.0.0" />
+        <package name="zod" version="^3.24.2" />
+        <package name="next" version="^16.0.4" />
+        <package name="react-aria-components" version="^1.13.0" />
+      </ecosystem>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Database field naming: Use snake_case for PostgreSQL columns (last_visited_at)
+    - Prisma @map directive: Use @map("last_visited_at") to map DB snake_case to Prisma camelCase
+    - Code references: Always use camelCase query.lastVisitedAt (NOT query.last_visited_at)
+    - SQL references: Use snake_case column name last_visited_at in raw queries
+    - Migration replaces unused field: DROP COLUMN "lastViewedAt", ADD COLUMN "last_visited_at"
+    - All timestamps MUST be stored as UTC in PostgreSQL TIMESTAMP(3) type
+    - API responses MUST return ISO 8601 UTC strings (e.g., "2025-11-26T10:30:00.000Z")
+    - Frontend handles timezone conversion for display (defer to Story 3.2)
+    - Use protectedProcedure for all authenticated endpoints
+    - Authorization: ALWAYS check query.userId === ctx.session.user.id before allowing access
+    - Error codes: FORBIDDEN for ownership violations, NOT_FOUND for missing queries
+    - Never expose internal error details to users in production
+    - Filter implementation: Use inline FTS query pattern from queries.list (lines 94-99), no helper function exists
+    - Filter combination: Use AND logic to combine FTS filter with date filter in raw SQL
+    - TypeScript compilation MUST pass (npm run typecheck)
+    - Build MUST succeed (npm run build)
+    - Test route testSetup is temporary: Mark "TEST ONLY - Remove before production"
+    - No unit tests required for MVP (ADR-006: Minimal Testing)
+  </constraints>
+
+  <interfaces>
+    <!-- tRPC Query Interface -->
+    <interface>
+      <name>queries.getNewItems</name>
+      <kind>tRPC query procedure</kind>
+      <signature>
+        queries.getNewItems({ queryId: string })
+        Returns: { queryId: string, queryName: string, newCount: number, events: Event[] }
+      </signature>
+      <path>src/server/api/routers/queries.ts</path>
+    </interface>
+
+    <!-- Prisma UserQuery Model (After Migration) -->
+    <interface>
+      <name>UserQuery</name>
+      <kind>Prisma model</kind>
+      <signature>
+        model UserQuery {
+          id: string
+          userId: string
+          name: string
+          filters: Json (QueryFilters type)
+          lastVisitedAt: DateTime? @default(now()) @map("last_visited_at")
+            // Note: Prisma Client uses camelCase (lastVisitedAt)
+            // PostgreSQL uses snake_case (last_visited_at)
+          createdAt: DateTime
+          updatedAt: DateTime
+        }
+      </signature>
+      <path>prisma/schema.prisma</path>
+    </interface>
+
+    <!-- Test Setup Route Interface -->
+    <interface>
+      <name>queries.testSetup</name>
+      <kind>tRPC mutation procedure (TEST ONLY)</kind>
+      <signature>
+        queries.testSetup({ action: "nullLastVisited", queryId: string })
+        Returns: { success: true }
+        Purpose: Sets lastVisitedAt to NULL for testing "never visited" scenario (AC 3.1.4)
+        Note: Remove before production deployment
+      </signature>
+      <path>src/server/api/routers/queries.ts</path>
+    </interface>
+
+    <!-- PostgreSQL Event Table -->
+    <interface>
+      <name>Event</name>
+      <kind>Database table</kind>
+      <signature>
+        Columns: id, userId, type, title, body, author, project, projectId, labels[],
+                 gitlabEventId, gitlabUrl, createdAt, updatedAt
+        Indexes: (userId, createdAt DESC), gitlabEventId
+      </signature>
+      <path>prisma/schema.prisma</path>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>
+      Per ADR-006 (Minimal Testing for MVP): TypeScript compilation (typecheck) and build validation
+      are REQUIRED. Unit tests and integration tests are NOT required for MVP. Manual testing of core
+      functionality is expected. Testing philosophy: Fast iteration over test coverage. Only add tests
+      when debugging the same bug twice.
+    </standards>
+
+    <locations>
+      - tests/lib/ - Unit tests for critical logic (optional, not required for MVP)
+      - No integration or E2E tests for MVP
+      - Manual testing via API client or browser dev tools
+    </locations>
+
+    <ideas>
+      Manual Test Scenarios for AC Validation:
+
+      - AC 3.1.1: Prisma schema includes lastVisitedAt field with correct mapping
+        → Check: prisma/schema.prisma has lastVisitedAt DateTime? @default(now()) @map("last_visited_at")
+        → Verify: Old unused lastViewedAt field removed
+
+      - AC 3.1.2: Migration replaces field successfully
+        → Run: npx prisma migrate dev --name replace_lastViewedAt_with_last_visited_at
+        → Verify: Migration file created in prisma/migrations/
+        → Check: Migration includes DROP COLUMN "lastViewedAt" and ADD COLUMN "last_visited_at"
+        → Verify: Database has last_visited_at column with TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP
+        → Confirm: No data loss (old field was unused)
+
+      - AC 3.1.3-3.1.5: getNewItems returns correct events
+        → Test 1: Create new query → verify lastVisitedAt defaults to now()
+        → Test 2a: Use testSetup mutation to NULL lastVisitedAt on test query
+        → Test 2b: Call getNewItems on never-visited query (lastVisitedAt = null) → returns all matching events (AC 3.1.4)
+        → Test 3: Call getNewItems immediately after visiting → returns empty array (visited 1 second ago) (AC 3.1.5)
+        → Test 4: Create event matching query → call getNewItems → verify event in response
+
+      - AC 3.1.6: Timestamps stored in UTC, displayed in user timezone
+        → Check: Database stores timestamps as UTC (query database directly)
+        → Verify: API response returns ISO 8601 UTC strings (e.g., "2025-11-26T10:30:00.000Z")
+        → Note: Frontend timezone conversion deferred to Story 3.2
+
+      - AC 3.1.7: Response shape includes queryId, queryName, newCount, events
+        → Verify: getNewItems response has all 4 fields with correct types
+
+      - AC 3.1.8: Query filters combined with "new since" using AND logic
+        → Test: Query with keyword filter + new since date → verify both filters apply
+        → Example: keywords: ["security"] AND createdAt > lastVisited
+        → Verify: Uses inline FTS query pattern from queries.list (lines 94-99)
+
+      Edge Cases:
+      - Test: Authorization - attempt to access another user's query → verify FORBIDDEN error
+      - Test: Invalid queryId → verify NOT_FOUND error
+      - Test: Clock skew - database and app clocks differ slightly (use db timestamps as authoritative)
+
+      Test Setup Route Validation:
+      - Test: testSetup with "nullLastVisited" action sets lastVisitedAt to NULL
+      - Test: testSetup enforces authorization (rejects other users' queries)
+      - Note: Document removal of testSetup route before production deployment
+    </ideas>
+  </tests>
+</story-context>

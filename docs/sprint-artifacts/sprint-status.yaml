@@ -73,7 +73,7 @@ development_status:
 
   # Epic 3: Catch-Up Mode & Background Sync
   epic-3: backlog
-  3-1-catch-up-mode-backend-new-since-last-visit-logic: backlog
+  3-1-catch-up-mode-backend-new-since-last-visit-logic: ready-for-dev
   3-2-catch-up-mode-view-with-toggle: backlog
   3-3-mark-query-as-reviewed: backlog
   3-4-sidebar-new-item-badges: backlog
