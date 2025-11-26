@@ -271,4 +271,134 @@ export const queriesRouter = createTRPCRouter({
       // AC 2.7b.6: Return success confirmation
       return { success: true };
     }),
+
+  /**
+   * Get new items for a query since last visit
+   *
+   * GET /api/trpc/queries.getNewItems
+   *
+   * Story 3.1: Catch-Up Mode Backend - "New Since Last Visit" Logic
+   * AC 3.1.3: Returns events created after query.lastVisitedAt
+   * AC 3.1.4: When user has never visited query, returns all matching events
+   * AC 3.1.5: When user visited query 1 second ago, returns empty array
+   * AC 3.1.7: Response includes queryId, queryName, newCount, events array
+   * AC 3.1.8: Query filters combined with "new since" filter using AND logic
+   */
+  getNewItems: protectedProcedure
+    .input(z.object({ queryId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      // Fetch query and authorize
+      const query = await ctx.db.userQuery.findUnique({
+        where: { id: input.queryId },
+      });
+
+      // AC: Handle query not found
+      if (!query) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Query not found",
+        });
+      }
+
+      // AC: Authorization check (FORBIDDEN for wrong user)
+      if (query.userId !== ctx.session.user.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to access this query",
+        });
+      }
+
+      // AC 3.1.4: Determine last visited (epoch if never visited = NULL)
+      // Note: Prisma Client uses camelCase (lastVisitedAt), PostgreSQL uses snake_case (last_visited_at)
+      const lastVisited = query.lastVisitedAt ?? new Date(0);
+
+      // AC 3.1.8: Extract keywords from filters for FTS query
+      const filters = query.filters as QueryFilters;
+      const searchTerms = filters.keywords.join(" ");
+
+      // AC 3.1.3, 3.1.8: Query events using FTS + date filter (AND logic)
+      // AC 3.1.5: If lastVisited is very recent (1 second ago), createdAt > lastVisited returns empty
+      interface EventRow {
+        id: string;
+        userId: string;
+        type: string;
+        title: string;
+        body: string | null;
+        author: string;
+        authorAvatar: string | null;
+        project: string;
+        projectId: string;
+        labels: string[];
+        gitlabEventId: string;
+        gitlabUrl: string;
+        createdAt: Date;
+        updatedAt: Date;
+      }
+
+      const events = await ctx.db.$queryRaw<EventRow[]>`
+        SELECT * FROM "Event"
+        WHERE "userId" = ${ctx.session.user.id}
+          AND to_tsvector('english', title || ' ' || COALESCE(body, ''))
+              @@ plainto_tsquery('english', ${searchTerms})
+          AND "createdAt" > ${lastVisited}
+        ORDER BY "createdAt" DESC
+      `;
+
+      // AC 3.1.7: Return response with queryId, queryName, newCount, events
+      return {
+        queryId: query.id,
+        queryName: query.name,
+        newCount: events.length,
+        events,
+      };
+    }),
+
+  /**
+   * Test setup helper for manual validation
+   *
+   * POST /api/trpc/queries.testSetup
+   *
+   * Story 3.1: Task 6 - Test-only mutation for AC 3.1.4 validation
+   * TEST ONLY - Remove before production deployment
+   *
+   * Allows setting lastVisitedAt to NULL to test "never visited" scenario
+   */
+  testSetup: protectedProcedure
+    .input(
+      z.object({
+        action: z.enum(["nullLastVisited"]),
+        queryId: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Fetch query
+      const query = await ctx.db.userQuery.findUnique({
+        where: { id: input.queryId },
+      });
+
+      if (!query) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Query not found",
+        });
+      }
+
+      // Authorization check (prevent modifying other users' queries)
+      if (query.userId !== ctx.session.user.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to modify this query",
+        });
+      }
+
+      // Execute requested action
+      if (input.action === "nullLastVisited") {
+        await ctx.db.userQuery.update({
+          where: { id: input.queryId },
+          data: { lastVisitedAt: null },
+        });
+      }
+
+      return { success: true };
+    }),
 });
