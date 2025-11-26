@@ -46,14 +46,6 @@ const formatRelativeTime = (date: Date) => {
 };
 
 /**
- * Truncate title to max length with ellipsis
- */
-const truncateTitle = (title: string, maxLength = 120) => {
-  if (title.length <= maxLength) return title;
-  return title.slice(0, maxLength) + "...";
-};
-
-/**
  * Get snippet from body (first 80-100 chars)
  */
 const getSnippet = (body: string | null, maxLength = 100) => {
@@ -93,7 +85,7 @@ export function ItemRow({ item, isSelected, isNew, onClick }: ItemRowProps) {
             />
           ) : (
             <span className="text-sm font-medium text-[#2d2e2e] dark:text-[#FDFFFC] truncate">
-              {truncateTitle(item.title)}
+              {item.title}
             </span>
           )}
         </div>
