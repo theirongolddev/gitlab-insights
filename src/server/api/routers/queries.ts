@@ -40,6 +40,21 @@ export const queriesRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      // Check if query with same name already exists for this user
+      const existing = await ctx.db.userQuery.findFirst({
+        where: {
+          userId: ctx.session.user.id,
+          name: input.name,
+        },
+      });
+
+      if (existing) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "A query with this name already exists",
+        });
+      }
+
       const query = await ctx.db.userQuery.create({
         data: {
           userId: ctx.session.user.id,
@@ -178,6 +193,23 @@ export const queriesRouter = createTRPCRouter({
           code: "FORBIDDEN",
           message: "You do not have permission to modify this query",
         });
+      }
+
+      // If name is being changed, check for duplicates
+      if (input.name !== undefined && input.name !== existing.name) {
+        const duplicate = await ctx.db.userQuery.findFirst({
+          where: {
+            userId: ctx.session.user.id,
+            name: input.name,
+          },
+        });
+
+        if (duplicate) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "A query with this name already exists",
+          });
+        }
       }
 
       // AC 2.7b.1: Update with provided fields (undefined fields unchanged)

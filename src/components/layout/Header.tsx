@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { signOut, useSession } from "~/lib/auth-client";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -9,37 +9,24 @@ import { Button } from "~/components/ui/Button";
 import { useShortcuts } from "~/components/keyboard/ShortcutContext";
 import { useSearch } from "~/components/search/SearchContext";
 import { SearchBar } from "~/components/search/SearchBar";
+import { CreateQueryModal } from "~/components/queries/CreateQueryModal";
 import { Menu, MenuTrigger, MenuItem, Popover } from "react-aria-components";
-import { api } from "~/trpc/react";
 
 export function Header() {
   const { data: session } = useSession();
   const router = useRouter();
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const { setFocusSearch, setClearFocusAndModals } = useShortcuts();
+  const { setFocusSearch, setClearFocusAndModals, setOpenSaveModal } = useShortcuts();
 
   // Story 2.6: Search state from context - now uses keywords array
   const { keywords, addKeyword, removeKeyword, isSearchLoading } = useSearch();
 
-  // Story 2.7a: Save query mutation
-  const createQuery = api.queries.create.useMutation({
-    onSuccess: (data) => {
-      alert(`Query saved! "${data.name}"`);
-    },
-    onError: (error) => {
-      alert(`Failed to save query: ${error.message}`);
-    },
-  });
+  // Story 2.8.5: Modal state for CreateQueryModal
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleSaveQuery = () => {
-    // Simple prompt for query name (Story 2.9 will add proper modal)
-    const name = prompt("Enter a name for this query:", keywords.join(" + "));
-    if (name) {
-      createQuery.mutate({
-        name,
-        filters: { keywords },
-      });
-    }
+    // Story 2.8.5: Open modal instead of prompt()
+    setIsModalOpen(true);
   };
 
   // Register keyboard shortcut handlers
@@ -55,7 +42,14 @@ export function Header() {
         document.activeElement.blur();
       }
     });
-  }, [setFocusSearch, setClearFocusAndModals]);
+
+    // Story 2.8.5 (AC 2.8.5.4): 's' key opens save modal (only if keywords exist)
+    setOpenSaveModal(() => {
+      if (keywords.length > 0) {
+        setIsModalOpen(true);
+      }
+    });
+  }, [setFocusSearch, setClearFocusAndModals, setOpenSaveModal, keywords.length]);
 
   if (!session?.user) {
     return null; // Don't show header on login page
@@ -67,25 +61,33 @@ export function Header() {
   };
 
   return (
-    <header className="border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-[#2d2e2e]">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-        <Link href="/dashboard" className="flex items-center gap-3">
-          <h1 className="text-xl font-bold text-[#2d2e2e] dark:text-[#FDFFFC]">
-            GitLab <span className="text-[#5e6b24] dark:text-[#9DAA5F]">Insights</span>
-          </h1>
-        </Link>
+    <>
+      {/* Story 2.8.5: CreateQueryModal */}
+      <CreateQueryModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        keywords={keywords}
+      />
 
-        {/* Story 2.6: Global SearchBar with tag pill input */}
-        <div className="flex flex-1 items-center justify-center px-4">
-          <SearchBar
-            keywords={keywords}
-            onAddKeyword={addKeyword}
-            onRemoveKeyword={removeKeyword}
-            onSave={handleSaveQuery}
-            isLoading={isSearchLoading}
-            inputRef={searchInputRef}
-          />
-        </div>
+      <header className="border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-[#2d2e2e]">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+          <Link href="/dashboard" className="flex items-center gap-3">
+            <h1 className="text-xl font-bold text-[#2d2e2e] dark:text-[#FDFFFC]">
+              GitLab <span className="text-[#5e6b24] dark:text-[#9DAA5F]">Insights</span>
+            </h1>
+          </Link>
+
+          {/* Story 2.6: Global SearchBar with tag pill input */}
+          <div className="flex flex-1 items-center justify-center px-4">
+            <SearchBar
+              keywords={keywords}
+              onAddKeyword={addKeyword}
+              onRemoveKeyword={removeKeyword}
+              onSave={handleSaveQuery}
+              isLoading={isSearchLoading}
+              inputRef={searchInputRef}
+            />
+          </div>
 
         <div className="flex items-center gap-4">
           {/* Settings link */}
@@ -213,5 +215,6 @@ export function Header() {
         </div>
       </div>
     </header>
+    </>
   );
 }

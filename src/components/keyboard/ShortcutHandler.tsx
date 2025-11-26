@@ -42,6 +42,7 @@ export function ShortcutHandler() {
     jumpHalfPageUp,
     clearFocusAndModals,
     navigateToQuery,
+    openSaveModal,
   } = useShortcuts();
 
   const handleKeyDown = useCallback(
@@ -83,6 +84,10 @@ export function ShortcutHandler() {
             jumpHalfPageUp();
           }
           break;
+        // Story 2.8.5 (AC 2.8.5.4): 's' key opens save query modal
+        case "s":
+          openSaveModal();
+          break;
         // Story 2.8 (AC 2.8.4): Number keys 1-9 navigate to query by position
         case "1":
         case "2":
@@ -98,7 +103,7 @@ export function ShortcutHandler() {
           break;
       }
     },
-    [focusSearch, moveSelectionDown, moveSelectionUp, jumpHalfPageDown, jumpHalfPageUp, clearFocusAndModals, navigateToQuery],
+    [focusSearch, moveSelectionDown, moveSelectionUp, jumpHalfPageDown, jumpHalfPageUp, clearFocusAndModals, navigateToQuery, openSaveModal],
   );
 
   useEffect(() => {

@@ -58,7 +58,7 @@ development_status:
   2-7a-create-query-backend: done
   2-7b-update-delete-query-backend: done
   2-8-sidebar-navigation: done
-  2-8-5-save-as-query-entry-points: ready-for-dev
+  2-8-5-save-as-query-entry-points: done
   2-9-create-query-modal: backlog
   2-10-edit-delete-query-actions: backlog
   epic-2-retrospective: optional

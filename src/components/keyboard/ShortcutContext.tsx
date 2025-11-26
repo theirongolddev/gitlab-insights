@@ -30,6 +30,8 @@ interface ShortcutContextValue {
   setClearFocusAndModals: (handler: () => void) => void;
   // Story 2.8: Navigate to query by index (1-9 keys)
   setNavigateToQuery: (handler: (index: number) => void) => void;
+  // Story 2.8.5: Open save query modal (s key)
+  setOpenSaveModal: (handler: () => void) => void;
 
   // Direct invocation (for ShortcutHandler)
   focusSearch: () => void;
@@ -40,6 +42,8 @@ interface ShortcutContextValue {
   clearFocusAndModals: () => void;
   // Story 2.8: Navigate to query by index (AC 2.8.4)
   navigateToQuery: (index: number) => void;
+  // Story 2.8.5: Open save query modal (AC 2.8.5.4)
+  openSaveModal: () => void;
 }
 
 const ShortcutContext = createContext<ShortcutContextValue | null>(null);
@@ -62,6 +66,8 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
   const clearFocusAndModalsRef = useRef<(() => void) | null>(null);
   // Story 2.8: Navigate to query by index
   const navigateToQueryRef = useRef<((index: number) => void) | null>(null);
+  // Story 2.8.5: Open save query modal
+  const openSaveModalRef = useRef<(() => void) | null>(null);
 
   // Setter functions for components to register their handlers
   const setFocusSearch = useCallback((handler: () => void) => {
@@ -91,6 +97,11 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
   // Story 2.8: Setter for query navigation handler
   const setNavigateToQuery = useCallback((handler: (index: number) => void) => {
     navigateToQueryRef.current = handler;
+  }, []);
+
+  // Story 2.8.5: Setter for save modal handler
+  const setOpenSaveModal = useCallback((handler: () => void) => {
+    openSaveModalRef.current = handler;
   }, []);
 
   // Invocation functions that call the registered handlers
@@ -163,6 +174,17 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
     }
   }, []);
 
+  // Story 2.8.5: Invoke save modal handler (AC 2.8.5.4)
+  const openSaveModal = useCallback(() => {
+    if (openSaveModalRef.current) {
+      openSaveModalRef.current();
+    } else if (process.env.NODE_ENV === "development") {
+      console.debug(
+        "[Shortcuts] openSaveModal() called - no handler registered (s key)",
+      );
+    }
+  }, []);
+
   const value: ShortcutContextValue = {
     setFocusSearch,
     setMoveSelectionDown,
@@ -171,6 +193,7 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
     setJumpHalfPageUp,
     setClearFocusAndModals,
     setNavigateToQuery,
+    setOpenSaveModal,
     focusSearch,
     moveSelectionDown,
     moveSelectionUp,
@@ -178,6 +201,7 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
     jumpHalfPageUp,
     clearFocusAndModals,
     navigateToQuery,
+    openSaveModal,
   };
 
   return (
