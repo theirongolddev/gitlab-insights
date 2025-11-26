@@ -89,16 +89,16 @@ export function ItemRow({ item, isSelected, isNew, onClick }: ItemRowProps) {
           {item.highlightedTitle ? (
             <HighlightedText
               html={item.highlightedTitle}
-              className="text-sm font-medium text-[#FDFFFC] truncate"
+              className="text-sm font-medium text-[#2d2e2e] dark:text-[#FDFFFC] truncate"
             />
           ) : (
-            <span className="text-sm font-medium text-[#FDFFFC] truncate">
+            <span className="text-sm font-medium text-[#2d2e2e] dark:text-[#FDFFFC] truncate">
               {truncateTitle(item.title)}
             </span>
           )}
         </div>
         {/* Right-aligned metadata column */}
-        <div className="flex items-center gap-2 text-xs text-gray-400 ml-4 shrink-0">
+        <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 ml-4 shrink-0">
           {/* Show relevance rank for search results */}
           {item.rank !== undefined && (
             <>
@@ -121,10 +121,10 @@ export function ItemRow({ item, isSelected, isNew, onClick }: ItemRowProps) {
         {item.highlightedSnippet ? (
           <HighlightedText
             html={item.highlightedSnippet}
-            className="text-sm text-gray-400 truncate block"
+            className="text-sm text-gray-600 dark:text-gray-400 truncate block"
           />
         ) : (
-          <p className="text-sm text-gray-400 truncate">
+          <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
             {getSnippet(item.body)}
           </p>
         )}

@@ -153,8 +153,8 @@ export function EventTable({ events, onRowClick }: EventTableProps) {
   if (events.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <p className="text-lg text-gray-400">No events to display</p>
-        <p className="text-sm text-gray-500 mt-2">
+        <p className="text-lg text-gray-600 dark:text-gray-400">No events to display</p>
+        <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
           Try syncing your GitLab projects
         </p>
       </div>

@@ -3,10 +3,12 @@
  *
  * Story 2.7a: Backend for creating and listing saved queries
  * Story 2.7b: Backend for updating and deleting saved queries
+ * Story 2.8: Sidebar navigation with query counts
  *
  * Handles:
  * - queries.create: Save a new query with filters (AC 2.7a.1, 2.7a.3, 2.7a.4)
- * - queries.list: Fetch user's saved queries (enabler for Story 2.8)
+ * - queries.list: Fetch user's saved queries with FTS counts (AC 2.8.2)
+ * - queries.getById: Fetch single query by ID with authorization (AC 2.8.3)
  * - queries.update: Update existing query name/filters (AC 2.7b.1, 2.7b.3-5, 2.7b.7)
  * - queries.delete: Remove a saved query (AC 2.7b.2-4, 2.7b.6-7)
  */
@@ -14,7 +16,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
-import { QueryFiltersSchema } from "~/lib/filters/types";
+import { QueryFiltersSchema, type QueryFilters } from "~/lib/filters/types";
 
 export const queriesRouter = createTRPCRouter({
   /**
@@ -50,12 +52,12 @@ export const queriesRouter = createTRPCRouter({
     }),
 
   /**
-   * List user's saved queries
+   * List user's saved queries with FTS match counts
    *
    * GET /api/trpc/queries.list
    *
-   * Enabler for Story 2.8 (Sidebar Navigation)
-   * Returns queries ordered by creation date (newest first)
+   * Story 2.8: Sidebar Navigation (AC 2.8.2)
+   * Returns queries ordered by creation date (newest first) with count of matching events
    */
   list: protectedProcedure.query(async ({ ctx }) => {
     const queries = await ctx.db.userQuery.findMany({
@@ -67,8 +69,69 @@ export const queriesRouter = createTRPCRouter({
       },
     });
 
-    return queries;
+    // AC 2.8.2: Get FTS counts for each query's keywords
+    const queriesWithCounts = await Promise.all(
+      queries.map(async (query) => {
+        const filters = query.filters as QueryFilters;
+        const searchTerms = filters.keywords.join(" ");
+
+        // Use PostgreSQL FTS to count matching events for this user
+        const countResult = await ctx.db.$queryRaw<[{ count: bigint }]>`
+          SELECT COUNT(*) as count FROM "Event"
+          WHERE "userId" = ${ctx.session.user.id}
+            AND to_tsvector('english', title || ' ' || COALESCE(body, ''))
+                @@ plainto_tsquery('english', ${searchTerms})
+        `;
+
+        return { ...query, count: Number(countResult[0]?.count ?? 0) };
+      })
+    );
+
+    return queriesWithCounts;
   }),
+
+  /**
+   * Get a single query by ID with authorization
+   *
+   * GET /api/trpc/queries.getById
+   *
+   * Story 2.8: Sidebar Navigation (AC 2.8.3)
+   * Returns query with count, or throws NOT_FOUND/FORBIDDEN
+   */
+  getById: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const query = await ctx.db.userQuery.findUnique({
+        where: { id: input.id },
+      });
+
+      if (!query) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Query not found",
+        });
+      }
+
+      if (query.userId !== ctx.session.user.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to view this query",
+        });
+      }
+
+      // Get FTS count for this query
+      const filters = query.filters as QueryFilters;
+      const searchTerms = filters.keywords.join(" ");
+
+      const countResult = await ctx.db.$queryRaw<[{ count: bigint }]>`
+        SELECT COUNT(*) as count FROM "Event"
+        WHERE "userId" = ${ctx.session.user.id}
+          AND to_tsvector('english', title || ' ' || COALESCE(body, ''))
+              @@ plainto_tsquery('english', ${searchTerms})
+      `;
+
+      return { ...query, count: Number(countResult[0]?.count ?? 0) };
+    }),
 
   /**
    * Update an existing saved query

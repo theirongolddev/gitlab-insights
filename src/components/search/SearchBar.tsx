@@ -129,8 +129,8 @@ export function SearchBar({
         className="
           flex flex-1 items-center flex-wrap gap-1.5
           min-h-[40px] px-3 py-1.5
-          bg-gray-800 text-[#FDFFFC]
-          border border-gray-600 rounded-md
+          bg-gray-100 text-[#2d2e2e] dark:bg-gray-800 dark:text-[#FDFFFC]
+          border border-gray-300 dark:border-gray-600 rounded-md
           focus-within:ring-2 focus-within:ring-[#9DAA5F] focus-within:border-transparent
           transition-colors duration-150
         "
@@ -138,7 +138,7 @@ export function SearchBar({
       >
         {/* Search Icon */}
         <svg
-          className="h-4 w-4 text-gray-400 flex-shrink-0"
+          className="h-4 w-4 text-gray-500 dark:text-gray-400 flex-shrink-0"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -179,12 +179,12 @@ export function SearchBar({
                     className={`
                       inline-flex items-center gap-1 px-2 py-0.5
                       text-sm font-medium rounded-full cursor-default
-                      bg-[rgba(157,170,95,0.2)] border border-[#9DAA5F]
-                      text-[#FDFFFC]
+                      bg-[#9DAA5F]/15 border border-[#9DAA5F]/50 dark:bg-[#9DAA5F]/20 dark:border-[#9DAA5F]
+                      text-[#5e6b24] dark:text-[#FDFFFC]
                       outline-none
                       transition-all duration-150
-                      data-[focus-visible]:ring-2 data-[focus-visible]:ring-[#9DAA5F] data-[focus-visible]:ring-offset-1 data-[focus-visible]:ring-offset-gray-800
-                      data-[selected]:bg-[rgba(157,170,95,0.4)]
+                      data-[focus-visible]:ring-2 data-[focus-visible]:ring-[#9DAA5F] data-[focus-visible]:ring-offset-1 data-[focus-visible]:ring-offset-white dark:data-[focus-visible]:ring-offset-gray-800
+                      data-[selected]:bg-[#9DAA5F]/30 dark:data-[selected]:bg-[#9DAA5F]/40
                     `}
                   >
                     {({ allowsRemoving }) => (
@@ -243,7 +243,7 @@ export function SearchBar({
           placeholder={hasKeywords ? "Add filter..." : "Search events..."}
           className="
             flex-1 min-w-[120px] bg-transparent
-            text-[#FDFFFC] placeholder:text-gray-500
+            text-[#2d2e2e] dark:text-[#FDFFFC] placeholder:text-gray-500 dark:placeholder:text-gray-500
             focus:outline-none
             [&::-webkit-search-cancel-button]:hidden
             [&::-webkit-search-decoration]:hidden
@@ -291,7 +291,7 @@ export function SearchBar({
           bg-[#9DAA5F] text-white
           data-[hovered]:bg-[#A8B86C]
           data-[pressed]:bg-[#8A9A4F]
-          data-[focus-visible]:ring-2 data-[focus-visible]:ring-[#9DAA5F] data-[focus-visible]:ring-offset-2 data-[focus-visible]:ring-offset-[#2d2e2e]
+          data-[focus-visible]:ring-2 data-[focus-visible]:ring-[#9DAA5F] data-[focus-visible]:ring-offset-2 data-[focus-visible]:ring-offset-white dark:data-[focus-visible]:ring-offset-[#2d2e2e]
           data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed
         `}
       >

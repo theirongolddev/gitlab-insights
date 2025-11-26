@@ -41,6 +41,7 @@ export function ShortcutHandler() {
     jumpHalfPageDown,
     jumpHalfPageUp,
     clearFocusAndModals,
+    navigateToQuery,
   } = useShortcuts();
 
   const handleKeyDown = useCallback(
@@ -82,9 +83,22 @@ export function ShortcutHandler() {
             jumpHalfPageUp();
           }
           break;
+        // Story 2.8 (AC 2.8.4): Number keys 1-9 navigate to query by position
+        case "1":
+        case "2":
+        case "3":
+        case "4":
+        case "5":
+        case "6":
+        case "7":
+        case "8":
+        case "9":
+          // Convert key to 0-based index (key "1" = index 0)
+          navigateToQuery(parseInt(event.key) - 1);
+          break;
       }
     },
-    [focusSearch, moveSelectionDown, moveSelectionUp, jumpHalfPageDown, jumpHalfPageUp, clearFocusAndModals],
+    [focusSearch, moveSelectionDown, moveSelectionUp, jumpHalfPageDown, jumpHalfPageUp, clearFocusAndModals, navigateToQuery],
   );
 
   useEffect(() => {

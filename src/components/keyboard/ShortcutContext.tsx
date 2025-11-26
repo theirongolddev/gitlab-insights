@@ -28,6 +28,8 @@ interface ShortcutContextValue {
   setJumpHalfPageDown: (handler: () => void) => void;
   setJumpHalfPageUp: (handler: () => void) => void;
   setClearFocusAndModals: (handler: () => void) => void;
+  // Story 2.8: Navigate to query by index (1-9 keys)
+  setNavigateToQuery: (handler: (index: number) => void) => void;
 
   // Direct invocation (for ShortcutHandler)
   focusSearch: () => void;
@@ -36,6 +38,8 @@ interface ShortcutContextValue {
   jumpHalfPageDown: () => void;
   jumpHalfPageUp: () => void;
   clearFocusAndModals: () => void;
+  // Story 2.8: Navigate to query by index (AC 2.8.4)
+  navigateToQuery: (index: number) => void;
 }
 
 const ShortcutContext = createContext<ShortcutContextValue | null>(null);
@@ -56,6 +60,8 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
   const jumpHalfPageDownRef = useRef<(() => void) | null>(null);
   const jumpHalfPageUpRef = useRef<(() => void) | null>(null);
   const clearFocusAndModalsRef = useRef<(() => void) | null>(null);
+  // Story 2.8: Navigate to query by index
+  const navigateToQueryRef = useRef<((index: number) => void) | null>(null);
 
   // Setter functions for components to register their handlers
   const setFocusSearch = useCallback((handler: () => void) => {
@@ -80,6 +86,11 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
 
   const setClearFocusAndModals = useCallback((handler: () => void) => {
     clearFocusAndModalsRef.current = handler;
+  }, []);
+
+  // Story 2.8: Setter for query navigation handler
+  const setNavigateToQuery = useCallback((handler: (index: number) => void) => {
+    navigateToQueryRef.current = handler;
   }, []);
 
   // Invocation functions that call the registered handlers
@@ -141,6 +152,17 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
     }
   }, []);
 
+  // Story 2.8: Invoke query navigation handler (AC 2.8.4)
+  const navigateToQuery = useCallback((index: number) => {
+    if (navigateToQueryRef.current) {
+      navigateToQueryRef.current(index);
+    } else if (process.env.NODE_ENV === "development") {
+      console.debug(
+        `[Shortcuts] navigateToQuery(${index}) called - no handler registered`,
+      );
+    }
+  }, []);
+
   const value: ShortcutContextValue = {
     setFocusSearch,
     setMoveSelectionDown,
@@ -148,12 +170,14 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
     setJumpHalfPageDown,
     setJumpHalfPageUp,
     setClearFocusAndModals,
+    setNavigateToQuery,
     focusSearch,
     moveSelectionDown,
     moveSelectionUp,
     jumpHalfPageDown,
     jumpHalfPageUp,
     clearFocusAndModals,
+    navigateToQuery,
   };
 
   return (
