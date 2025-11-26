@@ -79,8 +79,8 @@ export function ItemRow({ item, isSelected, isNew, onClick }: ItemRowProps) {
   return (
     <div
       onClick={onClick}
-      className={`h-[52px] px-4
-        ${isSelected ? "ring-2 ring-[#9DAA5F]" : ""}`}
+      className={`min-h-10 px-4 mb-2 rounded-lg 
+        ${isSelected ? "ring-2 ring-olive-light" : ""}`}
     >
       {/* Line 1: Badge + Title + Metadata */}
       <div className="flex items-center justify-between h-7 pt-1.5">
@@ -102,7 +102,7 @@ export function ItemRow({ item, isSelected, isNew, onClick }: ItemRowProps) {
           {/* Show relevance rank for search results */}
           {item.rank !== undefined && (
             <>
-              <span className="text-[#9DAA5F] font-mono" title="FTS relevance score">
+              <span className="text-olive-light font-mono" title="FTS relevance score">
                 {item.rank.toFixed(4)}
               </span>
               <span>•</span>
@@ -117,11 +117,11 @@ export function ItemRow({ item, isSelected, isNew, onClick }: ItemRowProps) {
       </div>
 
       {/* Line 2: Snippet */}
-      <div className="h-5 pl-0">
+      <div className="pl-4 pt-1 text-wrap">
         {item.highlightedSnippet ? (
           <HighlightedText
             html={item.highlightedSnippet}
-            className="text-sm text-gray-600 dark:text-gray-400 truncate block"
+            className="text-sm text-gray-600 dark:text-gray-400 truncate block text-wrap"
           />
         ) : (
           <p className="text-sm text-gray-600 dark:text-gray-400 truncate">

@@ -18,6 +18,10 @@ import {
  * - Press Enter to commit text as a new tag
  * - Arrow keys navigate between tags (React Aria built-in)
  * - Backspace/Delete removes focused tag (React Aria built-in)
+ *
+ * Story 2.10: Context-aware behavior
+ * - When on query page, shows "Update Query" instead of "Save"
+ * - onUpdate callback handles updating existing query
  */
 export interface SearchBarProps {
   /** Array of committed keyword tags */
@@ -28,6 +32,10 @@ export interface SearchBarProps {
   onRemoveKeyword: (keyword: string) => void;
   /** Called when user wants to save current keywords as a query */
   onSave?: () => void;
+  /** Called when user wants to update existing query (Story 2.10) */
+  onUpdate?: () => void;
+  /** Current query context (if on query page) - Story 2.10 */
+  currentQuery?: { id: string; name: string; filters: unknown } | null;
   /** Shows loading spinner when true */
   isLoading?: boolean;
   /** Ref to the input element for keyboard shortcut focus (/) */
@@ -60,6 +68,8 @@ export function SearchBar({
   onAddKeyword,
   onRemoveKeyword,
   onSave,
+  onUpdate,
+  currentQuery,
   isLoading = false,
   inputRef,
 }: SearchBarProps) {
@@ -69,6 +79,17 @@ export function SearchBar({
   const effectiveRef = inputRef ?? internalRef;
 
   const hasKeywords = keywords.length > 0;
+  const isOnQueryPage = !!currentQuery;
+
+  // AC 2.10.7: Detect if keywords have changed from saved query
+  const hasChanges = currentQuery
+    ? JSON.stringify([...keywords].sort()) !== JSON.stringify([...(currentQuery.filters as { keywords: string[] }).keywords].sort())
+    : hasKeywords;
+
+  // Button should be visible when:
+  // - On query page AND keywords have changed, OR
+  // - Not on query page AND has keywords
+  const shouldShowButton = hasKeywords && (!isOnQueryPage || hasChanges);
 
   const handleInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     const input = effectiveRef.current;
@@ -114,7 +135,10 @@ export function SearchBar({
   };
 
   const handleSave = () => {
-    if (onSave) {
+    // Story 2.10: Context-aware - call onUpdate if on query page, otherwise onSave
+    if (isOnQueryPage && onUpdate) {
+      onUpdate();
+    } else if (onSave) {
       onSave();
     } else {
       // Placeholder behavior until Story 2.9 implements modal
@@ -278,25 +302,26 @@ export function SearchBar({
         )}
       </div>
 
-      {/* Save as Query Button - AC 2.6.3, 2.6.4 */}
-      <AriaButton
-        onPress={handleSave}
-        isDisabled={!hasKeywords}
-        className={`
-          flex-shrink-0
-          inline-flex items-center justify-center
-          px-3 py-2 text-sm font-medium rounded-lg
-          transition-colors duration-150
-          outline-none
-          bg-[#9DAA5F] text-white
-          data-[hovered]:bg-[#A8B86C]
-          data-[pressed]:bg-[#8A9A4F]
-          data-[focus-visible]:ring-2 data-[focus-visible]:ring-[#9DAA5F] data-[focus-visible]:ring-offset-2 data-[focus-visible]:ring-offset-white dark:data-[focus-visible]:ring-offset-[#2d2e2e]
-          data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed
-        `}
-      >
-        Save
-      </AriaButton>
+      {/* Save/Update Button - AC 2.6.3, 2.6.4 | Story 2.10: Context-aware label */}
+      {/* AC 2.10.7: Hidden when on query page with no changes */}
+      {shouldShowButton && (
+        <AriaButton
+          onPress={handleSave}
+          className={`
+            flex-shrink-0
+            inline-flex items-center justify-center
+            px-3 py-2 text-sm font-medium rounded-lg
+            transition-colors duration-150
+            outline-none
+            bg-[#9DAA5F] text-white
+            data-[hovered]:bg-[#A8B86C]
+            data-[pressed]:bg-[#8A9A4F]
+            data-[focus-visible]:ring-2 data-[focus-visible]:ring-[#9DAA5F] data-[focus-visible]:ring-offset-2 data-[focus-visible]:ring-offset-white dark:data-[focus-visible]:ring-offset-[#2d2e2e]
+          `}
+        >
+          {isOnQueryPage ? "Update Query" : "Save"}
+        </AriaButton>
+      )}
     </div>
   );
 }

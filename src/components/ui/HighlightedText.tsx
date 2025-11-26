@@ -23,7 +23,7 @@ export function HighlightedText({ html, className = "" }: HighlightedTextProps) 
   const sanitized = renderHighlightedText(html);
 
   return (
-    <span
+    <div
       className={className}
       dangerouslySetInnerHTML={sanitized}
     />

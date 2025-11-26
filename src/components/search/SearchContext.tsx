@@ -29,6 +29,8 @@ interface SearchContextValue {
   addKeyword: (keyword: string) => void;
   /** Remove a keyword tag */
   removeKeyword: (keyword: string) => void;
+  /** Set all keywords at once (for query page population) - Story 2.10 */
+  setKeywords: (keywords: string[]) => void;
   /** Clear all keywords and reset search */
   clearSearch: () => void;
   /** Search results from tRPC query */
@@ -99,10 +101,16 @@ export function SearchProvider({ children }: SearchProviderProps) {
     setKeywords([]);
   }, []);
 
+  // Story 2.10: Expose setKeywords for bulk keyword setting (query page population)
+  const setKeywordsCallback = useCallback((newKeywords: string[]) => {
+    setKeywords(newKeywords);
+  }, []);
+
   const value: SearchContextValue = {
     keywords,
     addKeyword,
     removeKeyword,
+    setKeywords: setKeywordsCallback,
     clearSearch,
     searchResults: searchData?.events ?? [],
     searchResultsTotal: searchData?.total ?? 0,

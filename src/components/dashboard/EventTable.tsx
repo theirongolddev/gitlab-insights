@@ -190,8 +190,10 @@ export function EventTable({ events, onRowClick }: EventTableProps) {
                 hover:bg-gray-800
                 outline-2 outline-transparent outline-offset-[-2px]
                 transition-[outline-color] duration-125 ease-out
-                data-[focused]:outline-[#9DAA5F]
-                data-[selected=true]:outline-[#9DAA5F]"
+                data-[focused]:outline-olive-light
+                data-[selected=true]:outline-olive-light
+                rounded-lg
+              "
             >
               <Cell className="p-0">
                 {/* Task 1.5: Integrate existing ItemRow component */}

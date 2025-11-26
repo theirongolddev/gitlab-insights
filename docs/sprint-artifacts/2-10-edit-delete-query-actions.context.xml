@@ -1,0 +1,334 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.1">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>2.10</storyId>
+    <title>Edit/Delete Query Actions</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-11-26</generatedAt>
+    <generator>BMAD Story Context Workflow (Updated after Party Mode Review)</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-10-edit-delete-query-actions.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user with saved queries</asA>
+    <iWant>to edit or delete my saved queries</iWant>
+    <soThat>I can maintain and refine my query list over time</soThat>
+    <tasks>
+      <task id="1" ac="2.10.1-2.10.5">Add Inline Name Editing to Query Page</task>
+      <task id="2" ac="2.10.6-2.10.10">Make SearchBar Context-Aware</task>
+      <task id="3" ac="2.10.11-2.10.14">Add Delete Query Functionality</task>
+      <task id="4" ac="2.10.15-2.10.16">Error Handling</task>
+      <task id="5" ac="All">Testing and Validation</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <category name="Inline Rename">
+      <criterion id="2.10.1">Pencil icon appears next to query name on query page header</criterion>
+      <criterion id="2.10.2">Clicking pencil converts name to editable TextField with auto-focus</criterion>
+      <criterion id="2.10.3">Checkmark icon replaces pencil icon while editing</criterion>
+      <criterion id="2.10.4">Clicking checkmark saves new name via queries.update mutation, returns to read-only</criterion>
+      <criterion id="2.10.5">Pressing Esc or clicking outside input cancels edit without saving changes</criterion>
+    </category>
+    <category name="SearchBar Context Awareness">
+      <criterion id="2.10.6">SearchBar in Header auto-populates with query keywords when on query page</criterion>
+      <criterion id="2.10.7">"Save" button hidden when keywords match saved query (no changes detected)</criterion>
+      <criterion id="2.10.8">"Save" button changes to "Update Query" when keywords differ from saved query</criterion>
+      <criterion id="2.10.9">Clicking "Update Query" calls queries.update mutation with new keywords</criterion>
+      <criterion id="2.10.10">Query page results refresh immediately after successful update</criterion>
+    </category>
+    <category name="Delete Query">
+      <criterion id="2.10.11">Trash icon button visible in query page header area</criterion>
+      <criterion id="2.10.12">Clicking trash icon opens AlertDialog with "Delete '[query.name]'?" confirmation message</criterion>
+      <criterion id="2.10.13">Confirm button in dialog deletes query via queries.delete mutation and navigates to home (/)</criterion>
+      <criterion id="2.10.14">Deleted query removed from sidebar immediately (optimistic update)</criterion>
+    </category>
+    <category name="Error Handling">
+      <criterion id="2.10.15">Duplicate name error displays user-friendly message: "A query with this name already exists"</criterion>
+      <criterion id="2.10.16">Failed update/delete operations show user-friendly error messages via toast notifications</criterion>
+    </category>
+  </acceptanceCriteria>
+
+  <partyModeDecisions date="2025-11-26">
+    <decision id="1" topic="Edit UX Pattern">
+      <rejected>EditQueryModal component (modal interrupts flow)</rejected>
+      <approved>Inline editing with pencil → TextField → checkmark pattern</approved>
+      <rationale>Better UX - immediate, contextual, no modal overhead</rationale>
+    </decision>
+    <decision id="2" topic="Filter Editing">
+      <rejected>Separate filter editing UI in modal</rejected>
+      <approved>SearchBar context-awareness - "Save" becomes "Update Query" when on query page</approved>
+      <rationale>Reuses existing SearchBar, consistent with user mental model</rationale>
+    </decision>
+    <decision id="3" topic="Keyboard Shortcuts">
+      <rejected>Add 'e' and 'Delete' shortcuts for this story</rejected>
+      <approved>Defer all new shortcuts to holistic keyboard shortcuts system</approved>
+      <rationale>Shortcuts accumulating without discoverability (no help modal). Need comprehensive approach with '?' help overlay.</rationale>
+    </decision>
+    <decision id="4" topic="SearchBar Bug Fix">
+      <identified>SearchBar shows "Save" button even when viewing saved query (allows duplicate saves)</identified>
+      <solution>Context-aware button state - hide when keywords match, show "Update" when changed</solution>
+    </decision>
+    <decision id="5" topic="Delete Navigation">
+      <approved>Navigate to home (/) after successful delete</approved>
+      <rationale>Consistent with "delete takes you to safety" pattern</rationale>
+    </decision>
+  </partyModeDecisions>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>Story 2.10: Edit/Delete Query Actions</section>
+        <snippet>Edit/Delete actions complete query CRUD. React Aria AlertDialog for destructive confirmation. Inline editing for immediate name changes.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics/epic-2-user-controlled-queries-with-keyboard-foundation-story-breakdown.md</path>
+        <title>Epic 2 Story Breakdown</title>
+        <section>Story 2.10: Edit/Delete Query Actions</section>
+        <snippet>Edit/Delete query actions. Original design used modals and sidebar hover states. Party mode revised to inline editing and query page actions.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>System Architecture</title>
+        <section>UI Component Patterns (React Aria Components)</section>
+        <snippet>React Aria AlertDialog for destructive actions. TextField with auto-focus. Button variants: destructive (red), icon buttons.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/2-8-5-save-as-query-entry-points.md</path>
+        <title>Story 2.8.5 - Save as Query Entry Points</title>
+        <section>CreateQueryModal Pattern</section>
+        <snippet>validateQueryName() function validates 1-100 chars, required field. Error handling with role="alert". Duplicate detection via unique constraint.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>src/app/queries/[id]/page.tsx</path>
+        <kind>page</kind>
+        <symbol>QueryPage</symbol>
+        <lines>1-145</lines>
+        <reason>EXISTING: Query detail page with name, keywords display, EventTable. MODIFY: Add inline name editing (pencil/check icons), delete button, state management.</reason>
+      </file>
+      <file>
+        <path>src/components/layout/Header.tsx</path>
+        <kind>component</kind>
+        <symbol>Header</symbol>
+        <reason>MODIFY: Add query detection from URL pathname, fetch currentQuery via api.queries.getById, pass to SearchBar as prop.</reason>
+      </file>
+      <file>
+        <path>src/components/search/SearchBar.tsx</path>
+        <kind>component</kind>
+        <symbol>SearchBar</symbol>
+        <reason>MODIFY: Add currentQuery prop, sync keywords on query change, implement context-aware button logic (Save vs Update vs hidden).</reason>
+      </file>
+      <file>
+        <path>src/components/queries/CreateQueryModal.tsx</path>
+        <kind>component</kind>
+        <symbol>validateQueryName</symbol>
+        <lines>69-81</lines>
+        <reason>REUSE: Validation function for inline name editing. Checks required, max 100 chars.</reason>
+      </file>
+      <file>
+        <path>src/server/api/routers/queries.ts</path>
+        <kind>router</kind>
+        <symbol>queries.update</symbol>
+        <reason>EXISTING: Backend mutation with authorization, duplicate detection. Used for both rename and filter updates.</reason>
+      </file>
+      <file>
+        <path>src/server/api/routers/queries.ts</path>
+        <kind>router</kind>
+        <symbol>queries.delete</symbol>
+        <reason>EXISTING: Backend mutation with authorization. Returns success or throws TRPCError.</reason>
+      </file>
+      <file>
+        <path>src/server/api/routers/queries.ts</path>
+        <kind>router</kind>
+        <symbol>queries.getById</symbol>
+        <reason>EXISTING: Fetch single query by ID. Used by Header to detect current query context.</reason>
+      </file>
+    </code>
+    <dependencies>
+      <node>
+        <package name="react-aria-components" version="^1.13.0">AlertDialog, TextField, Button for inline edit and delete confirmation</package>
+        <package name="@tanstack/react-query" version="^5.69.0">useMutation, useUtils for cache invalidation</package>
+        <package name="@trpc/react-query" version="^11.0.0">api.queries mutations and queries</package>
+        <package name="next/navigation" version="^16.0.4">usePathname for URL detection, useRouter for navigation after delete</package>
+        <package name="@heroicons/react" version="latest">PencilIcon, CheckIcon, TrashIcon for action buttons</package>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Query page ALREADY EXISTS at src/app/queries/[id]/page.tsx - Story 2.10 ADDS edit/delete features to existing page</constraint>
+    <constraint type="architecture">NO EditQueryModal component - use inline editing pattern instead</constraint>
+    <constraint type="architecture">NO keyboard shortcuts in this story - deferred to holistic shortcuts system</constraint>
+    <constraint type="architecture">SearchBar must detect query context via URL pathname matching</constraint>
+    <constraint type="ui">Inline edit pattern: pencil icon → TextField → checkmark icon (standard pattern)</constraint>
+    <constraint type="ui">Delete uses React Aria AlertDialog with destructive button variant (red)</constraint>
+    <constraint type="searchbar">Button states: (1) On query page + no changes = hidden, (2) On query page + changes = "Update Query", (3) Not on query page = "Save as Query"</constraint>
+    <constraint type="searchbar">Auto-populate keywords when navigating to query page (sync effect)</constraint>
+    <constraint type="navigation">After successful delete, navigate to home (/) using router.push</constraint>
+    <constraint type="validation">Reuse validateQueryName() from CreateQueryModal for inline edit validation</constraint>
+    <constraint type="authorization">Backend mutations already enforce userId ownership - no frontend changes needed</constraint>
+    <constraint type="error-handling">Display specific error messages: duplicate name, forbidden, generic fallback</constraint>
+    <constraint type="optimization">Use React Query cache invalidation for optimistic updates</constraint>
+    <constraint type="testing">ADR-006: Manual testing only, no unit tests for MVP</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>api.queries.update</name>
+      <kind>tRPC mutation</kind>
+      <signature>
+        update: protectedProcedure
+          .input(z.object({
+            id: z.string(),
+            name: z.string().min(1).max(100).optional(),
+            filters: QueryFiltersSchema.optional(),
+          }))
+          .mutation(async ({ ctx, input }) => { ... })
+      </signature>
+      <path>src/server/api/routers/queries.ts</path>
+      <notes>Used for BOTH rename (name only) and filter update (filters only). Authorization check: userId ownership. Duplicate name detection returns CONFLICT error.</notes>
+    </interface>
+    <interface>
+      <name>api.queries.delete</name>
+      <kind>tRPC mutation</kind>
+      <signature>
+        delete: protectedProcedure
+          .input(z.object({ id: z.string() }))
+          .mutation(async ({ ctx, input }) => { ... })
+      </signature>
+      <path>src/server/api/routers/queries.ts</path>
+      <notes>Authorization check: userId ownership. Returns { success: true } or throws TRPCError (FORBIDDEN, NOT_FOUND).</notes>
+    </interface>
+    <interface>
+      <name>api.queries.getById</name>
+      <kind>tRPC query</kind>
+      <signature>
+        getById: protectedProcedure
+          .input(z.object({ id: z.string() }))
+          .query(async ({ ctx, input }) => { ... })
+      </signature>
+      <path>src/server/api/routers/queries.ts</path>
+      <notes>Fetch single query with name, filters, count. Used by query page AND Header to detect current query context.</notes>
+    </interface>
+    <interface>
+      <name>SearchBar Props (Updated)</name>
+      <kind>TypeScript interface</kind>
+      <signature>
+        interface SearchBarProps {
+          keywords: string[];
+          onSave: () => void;
+          currentQuery?: UserQuery; // NEW - enables context awareness
+        }
+      </signature>
+      <path>src/components/search/SearchBar.tsx</path>
+      <notes>currentQuery prop NEW in Story 2.10. When provided, SearchBar syncs keywords and changes button behavior.</notes>
+    </interface>
+    <interface>
+      <name>DeleteDialog Props</name>
+      <kind>TypeScript interface</kind>
+      <signature>
+        interface DeleteDialogProps {
+          isOpen: boolean;
+          onClose: () => void;
+          queryName: string;
+          onConfirm: () => void;
+        }
+      </signature>
+      <path>src/app/queries/[id]/components/DeleteDialog.tsx (to be created)</path>
+      <notes>React Aria AlertDialog component for delete confirmation. Shows query name in message.</notes>
+    </interface>
+    <interface>
+      <name>validateQueryName</name>
+      <kind>Function</kind>
+      <signature>(name: string) => string | null</signature>
+      <path>src/components/queries/CreateQueryModal.tsx:69-81</path>
+      <notes>REUSE this validation in inline edit. Returns error message or null. Checks: required, max 100 chars.</notes>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Per ADR-006 (Minimal Testing for MVP): Build, lint, typecheck validation only. Manual testing for all UI interactions. No unit tests required.
+    </standards>
+    <locations>
+      - No automated tests required for this story
+      - Manual testing checklist in story tasks (Task 5)
+    </locations>
+    <ideas>
+      <idea ac="2.10.1-2.10.5">Manual: Click pencil, edit name, click checkmark → verify update. Press Esc → verify cancel.</idea>
+      <idea ac="2.10.6-2.10.10">Manual: Navigate to query → verify SearchBar populated. Add keyword → verify "Update Query" button. Click → verify results refresh.</idea>
+      <idea ac="2.10.11-2.10.14">Manual: Click trash → verify AlertDialog. Confirm → verify navigate to home and sidebar updates.</idea>
+      <idea ac="2.10.15">Manual: Edit to duplicate name → verify specific error message shown.</idea>
+      <idea ac="2.10.16">Manual: Simulate network error → verify user-friendly error toast.</idea>
+      <idea ac="All">Build validation: npm run build (no errors)</idea>
+      <idea ac="All">Type checking: npm run typecheck (no errors)</idea>
+      <idea ac="All">Linting: npm run lint (no errors)</idea>
+    </ideas>
+  </tests>
+
+  <implementationGuidance>
+    <pattern name="Inline Edit">
+      <description>Standard inline editing pattern with icon toggle</description>
+      <code>
+        const [isEditing, setIsEditing] = useState(false);
+        const [editedName, setEditedName] = useState(query.name);
+
+        {isEditing ? (
+          &lt;TextField value={editedName} onChange={setEditedName} autoFocus /&gt;
+          &lt;Button icon={CheckIcon} onPress={handleSave} /&gt;
+        ) : (
+          &lt;h1&gt;{query.name}&lt;/h1&gt;
+          &lt;Button icon={PencilIcon} onPress={() =&gt; setIsEditing(true)} /&gt;
+        )}
+      </code>
+    </pattern>
+    <pattern name="SearchBar Context Detection">
+      <description>Detect query page from URL and fetch current query</description>
+      <code>
+        // In Header.tsx
+        const pathname = usePathname();
+        const queryId = pathname?.match(/^\/queries\/([^\/]+)$/)?.[1];
+
+        const { data: currentQuery } = api.queries.getById.useQuery(
+          { id: queryId! },
+          { enabled: !!queryId }
+        );
+
+        &lt;SearchBar currentQuery={currentQuery} /&gt;
+      </code>
+    </pattern>
+    <pattern name="SearchBar Button Logic">
+      <description>Context-aware button state and label</description>
+      <code>
+        // In SearchBar.tsx
+        const isOnQueryPage = !!currentQuery;
+        const queryKeywords = currentQuery?.filters.keywords ?? [];
+        const hasChanges = !arraysEqual(keywords, queryKeywords);
+
+        const buttonState = isOnQueryPage
+          ? (hasChanges ? 'update' : 'hidden')
+          : (keywords.length &gt; 0 ? 'save' : 'hidden');
+
+        const buttonLabel = buttonState === 'update' ? 'Update Query' : 'Save as Query';
+      </code>
+    </pattern>
+    <pattern name="Delete with Navigation">
+      <description>Delete mutation with home navigation on success</description>
+      <code>
+        const deleteQuery = api.queries.delete.useMutation({
+          onSuccess: () =&gt; {
+            router.push('/');
+            utils.queries.list.invalidate();
+          },
+          onError: (error) =&gt; {
+            // Show error toast
+          }
+        });
+      </code>
+    </pattern>
+  </implementationGuidance>
+</story-context>

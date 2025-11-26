@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { signOut, useSession } from "~/lib/auth-client";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Button } from "~/components/ui/Button";
 import { useShortcuts } from "~/components/keyboard/ShortcutContext";
@@ -11,22 +11,77 @@ import { useSearch } from "~/components/search/SearchContext";
 import { SearchBar } from "~/components/search/SearchBar";
 import { CreateQueryModal } from "~/components/queries/CreateQueryModal";
 import { Menu, MenuTrigger, MenuItem, Popover } from "react-aria-components";
+import { api } from "~/trpc/react";
+import { useToast } from "~/components/ui/Toast/ToastContext";
 
 export function Header() {
   const { data: session } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { setFocusSearch, setClearFocusAndModals, setOpenSaveModal } = useShortcuts();
+  const { showToast } = useToast();
 
   // Story 2.6: Search state from context - now uses keywords array
-  const { keywords, addKeyword, removeKeyword, isSearchLoading } = useSearch();
+  const { keywords, addKeyword, removeKeyword, clearSearch, setKeywords, isSearchLoading } = useSearch();
 
   // Story 2.8.5: Modal state for CreateQueryModal
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Story 2.10: Extract query ID from pathname if on a query page
+  const queryIdMatch = pathname?.match(/^\/queries\/([^/]+)$/);
+  const currentQueryId = queryIdMatch ? queryIdMatch[1] : null;
+
+  // Fetch current query if on a query page
+  const { data: currentQuery } = api.queries.getById.useQuery(
+    { id: currentQueryId! },
+    { enabled: !!currentQueryId }
+  );
+
+  // Story 2.10 (AC 2.10.6): Auto-populate SearchBar with query keywords when on query page
+  // Only sync when query ID changes (navigation), NOT when user edits keywords
+  useEffect(() => {
+    if (currentQuery?.filters) {
+      const queryKeywords = (currentQuery.filters as { keywords: string[] }).keywords || [];
+      setKeywords(queryKeywords);
+    } else if (currentQueryId === null) {
+      // Clear keywords when navigating away from query page
+      clearSearch();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentQuery?.id, currentQueryId]);
+
+  // Story 2.10: Update mutation for updating existing query
+  const utils = api.useUtils();
+  const updateMutation = api.queries.update.useMutation({
+    onSuccess: () => {
+      void utils.queries.getById.invalidate({ id: currentQueryId! });
+      void utils.queries.list.invalidate();
+      showToast("Query updated successfully", "success");
+    },
+    onError: (error) => {
+      // AC 2.10.15: Display user-friendly error message
+      if (error.data?.code === "FORBIDDEN") {
+        showToast("You don't have permission to edit this query", "error");
+      } else {
+        showToast("Failed to update query. Please try again.", "error");
+      }
+    },
+  });
+
   const handleSaveQuery = () => {
     // Story 2.8.5: Open modal instead of prompt()
     setIsModalOpen(true);
+  };
+
+  const handleUpdateQuery = () => {
+    // Story 2.10: Update existing query with new keywords
+    if (currentQueryId && currentQuery && keywords.length > 0) {
+      updateMutation.mutate({
+        id: currentQueryId,
+        filters: { keywords },
+      });
+    }
   };
 
   // Register keyboard shortcut handlers
@@ -78,12 +133,15 @@ export function Header() {
           </Link>
 
           {/* Story 2.6: Global SearchBar with tag pill input */}
+          {/* Story 2.10: Context-aware - passes currentQuery for Update button */}
           <div className="flex flex-1 items-center justify-center px-4">
             <SearchBar
               keywords={keywords}
               onAddKeyword={addKeyword}
               onRemoveKeyword={removeKeyword}
               onSave={handleSaveQuery}
+              onUpdate={handleUpdateQuery}
+              currentQuery={currentQuery ? { id: currentQuery.id, name: currentQuery.name, filters: currentQuery.filters } : null}
               isLoading={isSearchLoading}
               inputRef={searchInputRef}
             />
