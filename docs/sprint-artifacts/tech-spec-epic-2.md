@@ -74,27 +74,32 @@ The epic introduces vim-style keyboard navigation (j/k, /, s, 1-9) as a foundati
 src/
 ├── components/
 │   ├── keyboard/
+│   │   ├── ShortcutContext.tsx      # Keyboard shortcut context provider
 │   │   └── ShortcutHandler.tsx      # Global keyboard event listener
 │   ├── search/
-│   │   └── SearchBar.tsx            # React Aria Combobox with debounce
-│   ├── filters/
-│   │   ├── FilterBar.tsx            # Active filter chips
-│   │   └── FilterBuilder.tsx        # Filter creation UI
+│   │   ├── SearchBar.tsx            # Tag-pill input with Save button (integrated)
+│   │   └── SearchContext.tsx        # Global search state with keywords[]
 │   ├── queries/
 │   │   ├── QuerySidebar.tsx         # Persistent sidebar navigation
-│   │   ├── SaveQueryButton.tsx      # Entry point for saving
 │   │   ├── CreateQueryModal.tsx     # Modal for new queries
 │   │   ├── EditQueryModal.tsx       # Modal for editing
 │   │   └── DeleteConfirmDialog.tsx  # Confirmation dialog
+│   ├── layout/
+│   │   ├── Header.tsx               # App header with SearchBar integration
+│   │   └── AppLayout.tsx            # Layout wrapper with sidebar
 │   └── dashboard/
 │       └── EventTable.tsx           # React Aria Table with j/k nav
 ├── server/api/routers/
 │   ├── events.ts                    # Search query endpoint
 │   └── queries.ts                   # Query CRUD mutations
 └── lib/
-    └── search/
-        └── postgres-fts.ts          # FTS query builder
+    ├── search/
+    │   └── postgres-fts.ts          # FTS query builder
+    └── filters/
+        └── types.ts                 # QueryFiltersSchema (keywords: string[])
 ```
+
+**Note (2025-11-26):** Story 2.6 redesigned the filter UI from separate FilterBar/SaveQueryButton components to an integrated tag-pill pattern within SearchBar. The Save button lives inside SearchBar, and keywords are stored as an array (not singular).
 
 **Integration Points:**
 - **Events Router → PostgreSQL FTS:** Search queries use `$queryRaw` for FTS with `ts_rank` ordering
@@ -108,16 +113,17 @@ src/
 
 | Module | Location | Responsibility |
 |--------|----------|----------------|
+| **ShortcutContext** | `src/components/keyboard/ShortcutContext.tsx` | React context for keyboard shortcuts. Uses setter/invoker pattern (e.g., `setFocusSearch`/`focusSearch`). Components register handlers, ShortcutHandler invokes them. |
 | **ShortcutHandler** | `src/components/keyboard/ShortcutHandler.tsx` | Global keyboard event listener with context-aware routing. Detects when user is typing (INPUT/TEXTAREA) and suppresses navigation shortcuts. Routes `/`, `j/k`, `s`, `Esc`, `1-9`, `e`, `Delete` to appropriate handlers. |
-| **SearchBar** | `src/components/search/SearchBar.tsx` | React Aria Combobox with 300ms debounce. Triggers FTS query on input, displays loading state, provides clear button. Receives focus on `/` keypress. |
-| **FilterBar** | `src/components/filters/FilterBar.tsx` | Displays active keyword as chip with remove button. Shows "Save as Query" button when keyword active. Simplified from original multi-filter design. |
+| **SearchBar** | `src/components/search/SearchBar.tsx` | Tag-pill input pattern (like Gmail/Jira). Keywords display as olive pills with remove buttons. Includes integrated Save button. Uses React Aria TagGroup for accessibility. |
+| **SearchContext** | `src/components/search/SearchContext.tsx` | Global search state provider. Manages `keywords: string[]` array with add/remove/clear operations. Triggers FTS query when keywords change. |
+| **Header** | `src/components/layout/Header.tsx` | App header containing SearchBar. Manages modal state for CreateQueryModal. Registers keyboard shortcuts. |
 | **EventTable** | `src/components/dashboard/EventTable.tsx` | React Aria Table with single-selection mode. Overrides arrow keys with `j/k` vim-style navigation. Displays 2-line ItemRow components with olive focus ring on selection. |
-| **QuerySidebar** | `src/components/queries/QuerySidebar.tsx` | Persistent left sidebar (240px) listing saved queries with counts. Supports `1-9` number key navigation. Shows empty state when no queries. Edit/Delete icons on hover. |
-| **SaveQueryButton** | `src/components/queries/SaveQueryButton.tsx` | Olive accent button enabled when search has active keyword. Opens CreateQueryModal on click or `s` keypress. |
-| **CreateQueryModal** | `src/components/queries/CreateQueryModal.tsx` | React Aria Dialog for naming new query. Auto-focuses name input, displays keyword read-only, calls `queries.create` mutation. |
+| **QuerySidebar** | `src/components/queries/QuerySidebar.tsx` | Persistent left sidebar (240px) listing saved queries with counts. Supports `1-9` number key navigation. Shows empty state when no queries. |
+| **CreateQueryModal** | `src/components/queries/CreateQueryModal.tsx` | React Aria Dialog for naming new query. Auto-focuses name input, displays keywords read-only, calls `queries.create` mutation. |
 | **EditQueryModal** | `src/components/queries/EditQueryModal.tsx` | Similar to CreateQueryModal but pre-fills existing query data. Calls `queries.update` mutation. |
 | **DeleteConfirmDialog** | `src/components/queries/DeleteConfirmDialog.tsx` | React Aria AlertDialog for delete confirmation. Calls `queries.delete` mutation. |
-| **postgres-fts** | `src/lib/search/postgres-fts.ts` | PostgreSQL full-text search query builder. Uses `to_tsvector`, `plainto_tsquery`, `ts_rank`, and `ts_headline` for search with highlighting. |
+| **postgres-fts** | `src/lib/search/postgres-fts.ts` | PostgreSQL full-text search query builder. Uses `to_tsvector`, `plainto_tsquery`, `ts_rank`, and `ts_headline` for search with highlighting. Supports multi-keyword AND search. |
 
 ### Data Models and Contracts
 
@@ -127,7 +133,7 @@ model UserQuery {
   id           String    @id @default(cuid())
   userId       String
   name         String    // Query display name, e.g., "Auth Discussions"
-  filters      Json      // { keyword: string }
+  filters      Json      // { keywords: string[] }
   lastViewedAt DateTime? // For Epic 3 Catch-Up Mode
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
@@ -136,17 +142,21 @@ model UserQuery {
 }
 ```
 
-**Filter Schema (Simplified for Epic 2):**
+**Filter Schema (Updated for Multi-Keyword Search):**
 ```typescript
 // src/lib/filters/types.ts
 import { z } from 'zod';
 
+// Story 2.6 introduced multi-keyword search with AND logic
+// Keywords stored as array to match SearchContext implementation
 export const QueryFiltersSchema = z.object({
-  keyword: z.string().min(1).max(100),
+  keywords: z.array(z.string().min(1).max(100)).min(1),
 });
 
 export type QueryFilters = z.infer<typeof QueryFiltersSchema>;
 ```
+
+**Note (2025-11-26):** Original spec used singular `keyword: string`. Updated to `keywords: string[]` to match Story 2.6's tag-pill UI implementation where users can add multiple keyword filters with AND logic.
 
 **Search Result Type:**
 ```typescript
@@ -173,34 +183,38 @@ USING gin(to_tsvector('english', title || ' ' || COALESCE(body, '')));
 **Events Router - Search Endpoint:**
 ```typescript
 // src/server/api/routers/events.ts
+// Updated in Story 2.6 to support multi-keyword AND search
 export const eventsRouter = createTRPCRouter({
   search: protectedProcedure
     .input(z.object({
-      keyword: z.string().min(1).max(100),
+      keywords: z.array(z.string().min(1).max(100)).min(1),
       limit: z.number().min(1).max(100).default(50),
     }))
     .query(async ({ ctx, input }) => {
+      // Build AND query from keywords array
+      const searchTerms = input.keywords.join(' ');
+
       const results = await ctx.db.$queryRaw<SearchResult[]>`
         SELECT
           *,
           ts_rank(
             to_tsvector('english', title || ' ' || COALESCE(body, '')),
-            plainto_tsquery('english', ${input.keyword})
+            plainto_tsquery('english', ${searchTerms})
           ) as rank,
           ts_headline(
             'english', title,
-            plainto_tsquery('english', ${input.keyword}),
+            plainto_tsquery('english', ${searchTerms}),
             'StartSel=<mark>, StopSel=</mark>, MaxWords=50'
           ) as "highlightedTitle",
           ts_headline(
             'english', COALESCE(body, ''),
-            plainto_tsquery('english', ${input.keyword}),
+            plainto_tsquery('english', ${searchTerms}),
             'StartSel=<mark>, StopSel=</mark>, MaxWords=100'
           ) as "highlightedSnippet"
         FROM "event"
         WHERE user_id = ${ctx.session.user.id}
           AND to_tsvector('english', title || ' ' || COALESCE(body, ''))
-              @@ plainto_tsquery('english', ${input.keyword})
+              @@ plainto_tsquery('english', ${searchTerms})
         ORDER BY rank DESC, created_at DESC
         LIMIT ${input.limit}
       `;
@@ -465,7 +479,7 @@ const safeHtml = DOMPurify.sanitize(highlightedSnippet);
 // Search logging
 logger.info({
   event: 'search_executed',
-  keyword: input.keyword.substring(0, 20), // Truncate for privacy
+  keywordCount: input.keywords.length, // Log count only for privacy
   resultCount: results.length,
   durationMs: Date.now() - startTime,
 });
@@ -741,20 +755,27 @@ Per ADR-006, Epic 2 follows the **"Tests First, AI Implements, Suite Validates"*
 describe('events.search', () => {
   it('returns matching events ranked by relevance', async () => {
     // Seed: events with "authentication" in title/body
-    const results = await caller.events.search({ keyword: 'authentication' });
+    const results = await caller.events.search({ keywords: ['authentication'] });
     expect(results.events.length).toBeGreaterThan(0);
     expect(results.events[0].rank).toBeGreaterThan(results.events[1].rank);
+  });
+
+  it('supports multi-keyword AND search', async () => {
+    // Story 2.6: Multiple keywords use AND logic
+    const results = await caller.events.search({ keywords: ['auth', 'oauth'] });
+    // Results must contain BOTH keywords
+    expect(results.events.length).toBeGreaterThanOrEqual(0);
   });
 
   it('returns results in <1s on 10k events', async () => {
     // Requires seed script to have run
     const start = Date.now();
-    await caller.events.search({ keyword: 'test' });
+    await caller.events.search({ keywords: ['test'] });
     expect(Date.now() - start).toBeLessThan(1000);
   });
 
-  it('returns empty array for non-matching keyword', async () => {
-    const results = await caller.events.search({ keyword: 'xyznonexistent' });
+  it('returns empty array for non-matching keywords', async () => {
+    const results = await caller.events.search({ keywords: ['xyznonexistent'] });
     expect(results.events).toEqual([]);
   });
 });

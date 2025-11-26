@@ -1,0 +1,262 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>2.8.5</storyId>
+    <title>Save as Query Entry Points</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-11-26</generatedAt>
+    <generator>BMAD Story Context Workflow (Party Mode Update)</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-8-5-save-as-query-entry-points.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user exploring events through search</asA>
+    <iWant>to save my current search keywords via a proper modal dialog</iWant>
+    <soThat>I can easily persist useful search patterns as saved queries for future use</soThat>
+    <tasks>
+      <task id="1" title="Create CreateQueryModal Component">
+        <subtasks>
+          <subtask>Create src/components/queries/CreateQueryModal.tsx component</subtask>
+          <subtask>Use React Aria Dialog, Modal, ModalOverlay components</subtask>
+          <subtask>Props: isOpen: boolean, onClose: () => void, keywords: string[]</subtask>
+          <subtask>Include query name text input with auto-focus on open</subtask>
+          <subtask>Display keywords as read-only tag pills (reuse olive pill styling)</subtask>
+          <subtask>Add Save and Cancel buttons (olive accent bg-[#9DAA5F] for Save)</subtask>
+          <subtask>Call api.queries.create.useMutation() on Save</subtask>
+          <subtask>On success: close modal, invalidate queries.list, show success feedback</subtask>
+          <subtask>On error: display error message in modal</subtask>
+          <subtask>Modal closes on Cancel click or Esc key</subtask>
+        </subtasks>
+      </task>
+      <task id="2" title="Replace prompt() with Modal in Header.tsx">
+        <subtasks>
+          <subtask>Add isModalOpen state to Header component</subtask>
+          <subtask>Replace handleSaveQuery prompt() logic with setIsModalOpen(true)</subtask>
+          <subtask>Render CreateQueryModal with isOpen and onClose props</subtask>
+          <subtask>Pass keywords from SearchContext to modal</subtask>
+          <subtask>Remove existing createQuery mutation from Header (moved to modal)</subtask>
+          <subtask>Verify existing SearchBar Save button still works</subtask>
+        </subtasks>
+      </task>
+      <task id="3" title="Add s Keyboard Shortcut">
+        <subtasks>
+          <subtask>Add setOpenSaveModal setter and openSaveModal invoker to ShortcutContext.tsx</subtask>
+          <subtask>Add openSaveModalRef useRef in ShortcutProvider</subtask>
+          <subtask>Add s key case to ShortcutHandler.tsx switch statement</subtask>
+          <subtask>Handler calls openSaveModal()</subtask>
+          <subtask>In Header.tsx, register handler with keywords.length > 0 check</subtask>
+          <subtask>Handler should no-op if no keywords active</subtask>
+        </subtasks>
+      </task>
+      <task id="4" title="Testing and Validation">
+        <subtasks>
+          <subtask>Run npm run build to verify no compilation errors</subtask>
+          <subtask>Run npm run lint to verify no linting errors</subtask>
+          <subtask>Run npm run typecheck to verify no type errors</subtask>
+          <subtask>Manual test: Add keywords, verify Save button enabled</subtask>
+          <subtask>Manual test: Clear keywords, verify Save button disabled</subtask>
+          <subtask>Manual test: Click Save, verify modal opens with keywords</subtask>
+          <subtask>Manual test: Enter name, click Save, verify query in sidebar</subtask>
+          <subtask>Manual test: Press s with keywords, verify modal opens</subtask>
+          <subtask>Manual test: Press s while typing, verify nothing happens</subtask>
+          <subtask>Manual test: Press s without keywords, verify nothing happens</subtask>
+          <subtask>Manual test: Press Esc in modal, verify modal closes</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="2.8.5.1">"Save" button in SearchBar enabled when keywords are active</criterion>
+    <criterion id="2.8.5.2">Button disabled (visually distinct) when no keywords active</criterion>
+    <criterion id="2.8.5.3">Clicking opens CreateQueryModal with keywords pre-filled</criterion>
+    <criterion id="2.8.5.4">s keyboard shortcut triggers save modal (when not typing in input field)</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-2.md" relevance="high">
+        Epic 2 technical specification. Updated 2025-11-26 to reflect Story 2.6 architecture changes (tag-pill pattern, keywords[] array).
+      </doc>
+      <doc path="docs/sprint-artifacts/2-6-filter-ui-logic.md" relevance="critical">
+        Story 2.6 implemented the architecture change: FilterBar.tsx and SaveQueryButton.tsx were DELETED. Save button is now integrated into SearchBar.tsx. Keywords changed from singular string to string[] array.
+      </doc>
+      <doc path="docs/sprint-artifacts/2-7a-create-query-backend.md" relevance="high">
+        Story 2.7a: queries.create mutation accepts { name: string, filters: { keywords: string[] } }
+      </doc>
+      <doc path="docs/sprint-artifacts/2-8-sidebar-navigation.md" relevance="high">
+        Story 2.8: ShortcutContext setter/invoker pattern. Invalidate queries.list after create.
+      </doc>
+    </docs>
+
+    <code>
+      <file path="src/components/search/SearchBar.tsx" relevance="critical">
+        <purpose>Tag-pill input with integrated Save button. Lines 282-299 contain the Save button that calls onSave prop.</purpose>
+        <keyPatterns>
+          - React Aria TagGroup for keyword pills
+          - AriaButton for Save with olive accent styling
+          - data-[disabled]:opacity-50 for disabled state
+          - onSave callback prop triggers save flow
+        </keyPatterns>
+        <note>Save button ALREADY EXISTS here. Story replaces prompt() flow, not the button itself.</note>
+      </file>
+
+      <file path="src/components/layout/Header.tsx" relevance="critical">
+        <purpose>Contains handleSaveQuery() with prompt() at lines 34-43. This is what gets replaced with modal.</purpose>
+        <keyPatterns>
+          - useSearch() for keywords array
+          - api.queries.create.useMutation() - MOVE to modal
+          - Registers setFocusSearch, setClearFocusAndModals with ShortcutContext
+          - SearchBar receives onSave={handleSaveQuery}
+        </keyPatterns>
+        <changes>
+          - Add: useState for isModalOpen
+          - Replace: handleSaveQuery prompt() with setIsModalOpen(true)
+          - Add: CreateQueryModal component render
+          - Add: Register setOpenSaveModal with ShortcutContext
+          - Remove: createQuery mutation (moves to modal)
+        </changes>
+      </file>
+
+      <file path="src/components/search/SearchContext.tsx" relevance="high">
+        <purpose>Global search state with keywords: string[] array</purpose>
+        <interfaceSignature>
+interface SearchContextValue {
+  keywords: string[];
+  addKeyword: (keyword: string) => void;
+  removeKeyword: (keyword: string) => void;
+  clearSearch: () => void;
+  isSearchActive: boolean;
+  // ...
+}
+        </interfaceSignature>
+      </file>
+
+      <file path="src/server/api/routers/queries.ts" relevance="high">
+        <purpose>tRPC router with queries.create mutation</purpose>
+        <interfaceSignature>
+queries.create: {
+  name: string,
+  filters: { keywords: string[] }
+} => UserQuery
+        </interfaceSignature>
+        <note>Use api.queries.create.useMutation() in modal. Invalidate queries.list on success.</note>
+      </file>
+
+      <file path="src/components/keyboard/ShortcutContext.tsx" relevance="high">
+        <purpose>Keyboard shortcut context with setter/invoker pattern</purpose>
+        <keyPatterns>
+          - useRef for handler storage
+          - Setter functions: setFocusSearch, setNavigateToQuery, etc.
+          - Invoker functions: focusSearch(), navigateToQuery(index)
+        </keyPatterns>
+        <changes>
+          - Add: setOpenSaveModal setter
+          - Add: openSaveModal invoker
+          - Add: openSaveModalRef useRef
+        </changes>
+      </file>
+
+      <file path="src/components/keyboard/ShortcutHandler.tsx" relevance="high">
+        <purpose>Global keyboard event listener</purpose>
+        <keyPatterns>
+          - isTypingTarget() check already handles input suppression
+          - Switch statement on event.key
+        </keyPatterns>
+        <changes>
+          - Add case 's': openSaveModal(); break;
+        </changes>
+      </file>
+
+      <file path="src/components/queries/QuerySidebar.tsx" relevance="medium">
+        <purpose>Displays saved queries. Auto-updates when queries.list cache invalidated.</purpose>
+      </file>
+
+      <file path="src/lib/filters/types.ts" relevance="high">
+        <purpose>QueryFiltersSchema for mutation input</purpose>
+        <interfaceSignature>
+export type QueryFilters = { keywords: string[] };
+        </interfaceSignature>
+      </file>
+    </code>
+
+    <dependencies>
+      <dep name="react-aria-components" version="^1.13.0">
+        Provides Dialog, Modal, ModalOverlay, Button, Input, Label, TextField, Heading components.
+        Modal handles focus trap and Esc close automatically.
+      </dep>
+      <dep name="@trpc/react-query" version="^11.0.0">
+        api.queries.create.useMutation() hook.
+        Use utils.queries.list.invalidate() to refresh sidebar after save.
+      </dep>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="arch">FilterBar.tsx and SaveQueryButton.tsx were DELETED in Story 2.6 - do NOT reference or create these</constraint>
+    <constraint type="arch">Use keywords: string[] array (not singular keyword) - matches SearchContext</constraint>
+    <constraint type="tech">Use React Aria Dialog/Modal for accessibility (focus trap, Esc close)</constraint>
+    <constraint type="tech">Modal must auto-focus name input on open</constraint>
+    <constraint type="tech">s shortcut suppressed when typing (isTypingTarget already handles this)</constraint>
+    <constraint type="ui">Olive accent color #9DAA5F for Save button (dark mode)</constraint>
+    <constraint type="perf">Invalidate queries.list after save to update sidebar immediately</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="CreateQueryModal">
+      <props>
+        <prop name="isOpen" type="boolean" required="true">Controls modal visibility</prop>
+        <prop name="onClose" type="() => void" required="true">Callback when modal should close</prop>
+        <prop name="keywords" type="string[]" required="true">Pre-filled keywords to save</prop>
+      </props>
+      <behavior>
+        - Auto-focus name input on open
+        - Display keywords as read-only pills
+        - Call queries.create mutation on Save
+        - Invalidate queries.list on success
+        - Close on Save success, Cancel, or Esc
+      </behavior>
+    </interface>
+
+    <interface name="ShortcutContext (additions)">
+      <methods>
+        <method name="setOpenSaveModal" signature="(handler: () => void) => void">Register modal open handler</method>
+        <method name="openSaveModal" signature="() => void">Invoke registered handler</method>
+      </methods>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Per ADR-006 (Minimal Testing for MVP):
+      - Build validation: npm run build
+      - Lint validation: npm run lint
+      - Type validation: npm run typecheck
+      - Manual UI testing for interactions
+      - No unit tests required for MVP
+    </standards>
+    <ideas>
+      <idea priority="must">Verify Save button enables/disables based on keywords.length</idea>
+      <idea priority="must">Verify s shortcut opens modal when keywords active</idea>
+      <idea priority="must">Verify s shortcut does nothing when typing in input</idea>
+      <idea priority="must">Verify s shortcut does nothing when no keywords</idea>
+      <idea priority="must">Verify modal closes on Esc, Cancel, and Save success</idea>
+      <idea priority="must">Verify saved query appears in sidebar immediately</idea>
+      <idea priority="should">Verify name input auto-focuses on modal open</idea>
+      <idea priority="should">Verify keywords display as read-only pills in modal</idea>
+    </ideas>
+  </tests>
+
+  <partyModeReview date="2025-11-26">
+    <participants>Bob (SM), Winston (Architect), Amelia (Dev), John (PM), Mary (Analyst), Sally (UX)</participants>
+    <findings>
+      <finding type="doc-debt">Story 2.6 deleted FilterBar.tsx and SaveQueryButton.tsx but Story 2.8.5 still referenced them</finding>
+      <finding type="doc-debt">Tech spec used singular keyword: string but codebase uses keywords: string[]</finding>
+      <finding type="scope-reduction">SaveQueryButton component unnecessary - Save button already in SearchBar</finding>
+      <finding type="scope-reduction">Task list reduced from 6 tasks to 4 tasks</finding>
+    </findings>
+    <resolution>
+      Updated Story 2.8.5 tasks, tech-spec-epic-2.md, and this context file to reflect actual architecture.
+    </resolution>
+  </partyModeReview>
+</story-context>
