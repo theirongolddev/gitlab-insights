@@ -8,13 +8,15 @@
 
 ## Executive Summary
 
-This document defines the foundational UI component architecture for GitLab Insights, establishing React Aria Components as the primary UI library and Tailwind CSS design tokens as the styling foundation.
+This document defines the foundational UI component architecture for GitLab Insights, establishing HeroUI (built on React Aria Components) as the primary UI library and Tailwind CSS design tokens as the styling foundation.
 
 **Core Principles:**
-1. **React Aria First** - Use React Aria primitives for all UI elements with semantic meaning
+1. **HeroUI First** - Use HeroUI components for professional, coherent design system
 2. **Design Tokens Only** - Never use hardcoded hex values; always use CSS custom properties
-3. **Accessibility by Default** - WCAG 2.1 Level AA compliance through proper component usage
+3. **Accessibility by Default** - WCAG 2.1 Level AA compliance through React Aria foundation
 4. **Consistency Over Convenience** - Reuse established patterns rather than creating one-offs
+
+**Updated as part of Story 1.5.1 (2025-11-28)** - Migrated from React Aria (unstyled primitives) to HeroUI (styled design system built on React Aria foundation).
 
 ---
 
@@ -161,6 +163,157 @@ className="text-[#9DAA5F] bg-[#2d2e2e]"
 // ✅ AFTER (Epic 3+ standard)
 className="text-olive-light bg-bg-dark"
 ```
+
+---
+
+## 1.5 HeroUI Setup & Configuration
+
+**Added:** Story 1.5.1 (2025-11-28)
+
+HeroUI is a professional design system built on React Aria Components, providing styled, accessible components with custom theming support. It maintains all the accessibility and keyboard navigation benefits of React Aria while adding visual coherence and reducing maintenance burden.
+
+### 1.5.1 Installation
+
+**Dependencies:**
+```bash
+npm install @heroui/react framer-motion
+```
+
+**Current Versions:**
+- `@heroui/react`: ^2.8.5 (supports React 19, Next.js 16)
+- `framer-motion`: ^12.23.24
+
+### 1.5.2 Theme Configuration
+
+HeroUI is configured via `tailwind.config.ts` with custom olive theme colors using HSL format:
+
+```typescript
+import type { Config } from "tailwindcss";
+import { heroui } from "@heroui/react";
+
+const config: Config = {
+  content: [
+    "./src/**/*.{js,ts,jsx,tsx,mdx}",
+    "./node_modules/@heroui/react/dist/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {},
+  },
+  darkMode: "class",
+  plugins: [
+    heroui({
+      themes: {
+        light: {
+          colors: {
+            primary: {
+              DEFAULT: "hsl(68, 49%, 28%)", // #5e6b24 - Olive
+              foreground: "#FFFFFF",
+            },
+            focus: "hsl(68, 49%, 28%)",
+          },
+        },
+        dark: {
+          colors: {
+            primary: {
+              DEFAULT: "hsl(68, 36%, 52%)", // #9DAA5F - Olive Light
+              foreground: "#000000",
+            },
+            focus: "hsl(68, 36%, 52%)",
+          },
+        },
+      },
+    }),
+  ],
+};
+
+export default config;
+```
+
+### 1.5.3 HSL Color Values
+
+Custom olive theme uses HSL color format for easier theming and color manipulation:
+
+| Mode | Color | HSL Value | Hex Equivalent |
+|------|-------|-----------|----------------|
+| Light | Primary | `hsl(68, 49%, 28%)` | #5e6b24 |
+| Light | Foreground | `#FFFFFF` | White |
+| Dark | Primary | `hsl(68, 36%, 52%)` | #9DAA5F |
+| Dark | Foreground | `#000000` | Black |
+
+### 1.5.4 Basic Usage
+
+**HeroUIProvider (Required):**
+
+```tsx
+import { HeroUIProvider } from "@heroui/react";
+
+export default function RootLayout({ children }: { children: React.Node }) {
+  return (
+    <HeroUIProvider>
+      {children}
+    </HeroUIProvider>
+  );
+}
+```
+
+**Button Component Example:**
+
+```tsx
+import { Button } from "@heroui/react";
+
+// Primary button with olive theme
+<Button color="primary" variant="solid">
+  Save Query
+</Button>
+
+// Other variants
+<Button color="primary" variant="bordered">Bordered</Button>
+<Button color="primary" variant="light">Light</Button>
+<Button color="primary" variant="flat">Flat</Button>
+<Button color="primary" variant="ghost">Ghost</Button>
+
+// Button sizes
+<Button size="sm">Small</Button>
+<Button size="md">Medium</Button>
+<Button size="lg">Large</Button>
+
+// Button states
+<Button isDisabled>Disabled</Button>
+<Button isLoading>Loading</Button>
+```
+
+### 1.5.5 Migration Strategy (React Aria → HeroUI)
+
+**Pattern:**
+
+```tsx
+// BEFORE (React Aria - unstyled)
+import { Button } from 'react-aria-components';
+
+<Button className="px-4 py-2 bg-olive text-white hover:bg-olive-hover rounded-md">
+  Click Me
+</Button>
+
+// AFTER (HeroUI - styled)
+import { Button } from '@heroui/react';
+
+<Button color="primary">
+  Click Me
+</Button>
+```
+
+**Benefits:**
+- Less custom styling code (HeroUI handles visual design)
+- Consistent design system across all components
+- Maintains React Aria accessibility and keyboard navigation
+- Professional polish out of the box
+
+**Migration Status:**
+- Story 1.5.1: ✅ HeroUI installed and configured
+- Story 1.5.2: 🔄 Hex → HSL color migration (pending)
+- Story 1.5.3: 🔄 Epic 1 component migration (pending)
+- Story 1.5.4: 🔄 Epic 2 component migration (pending)
+- Story 1.5.5: 🔄 Testing & validation (pending)
 
 ---
 

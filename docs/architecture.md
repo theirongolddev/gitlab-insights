@@ -998,11 +998,38 @@ const toggleSplitPane = () => {
 **Consequences:** No external dependencies for email, users must open app to see updates, email digest deferred to post-MVP
 **Status:** Accepted
 
-### ADR-008: React Aria Components for Keyboard-First UX
-**Decision:** Use React Aria Components (Adobe) instead of shadcn/ui or other component libraries
-**Rationale:** Keyboard-first UX is core product identity requiring vim-style navigation (j/k, d, o, m, r, s, c). React Aria provides industry-leading keyboard navigation and focus management out of the box. Unstyled primitives enable custom olive accent color (#5e6b24) and complete design control while maintaining WCAG AA+ accessibility.
-**Consequences:** More initial styling work (worth it for keyboard quality), no pre-made components (build custom on React Aria foundation), exceptional accessibility and keyboard navigation as product differentiator
-**Status:** Accepted
+### ADR-008: HeroUI for Professional Design System (Revised 2025-11-28)
+
+**Decision:** Use HeroUI (built on React Aria Components) instead of bare React Aria or other component libraries
+
+**Rationale:**
+- **UI Coherence Issue:** Epic 1-2 implementation with unstyled React Aria Components resulted in inconsistent styling, poor visual coherence, and high maintenance burden for custom styling
+- **Professional Design System:** HeroUI provides a complete, polished design system while maintaining React Aria's accessibility and keyboard navigation foundation
+- **Custom Theming:** Supports custom olive/moss green theme colors (hsl(68, 49%, 28%) light, hsl(68, 36%, 52%) dark) via Tailwind CSS integration
+- **Keyboard Navigation Preserved:** HeroUI is built on React Aria Components, so all keyboard navigation and focus management benefits remain intact
+- **Reduced Maintenance:** Less custom styling code, standardized component API, consistent design patterns
+
+**Consequences:**
+- **Pros:** Coherent UI out of the box, professional visual polish, easier maintenance, faster component development
+- **Cons:** Larger bundle size (~100-200KB), less granular styling control than bare React Aria
+- **Migration:** Epic 1.5 dedicated to migrating Epic 1-2 components from React Aria (unstyled) to HeroUI (styled)
+
+**Status:** Accepted (revised from original React Aria decision)
+
+**Amendment History:**
+- **Original (ADR-008):** React Aria Components for Keyboard-First UX
+  - Rationale: Industry-leading keyboard navigation, unstyled primitives for custom design, WCAG AA+ accessibility
+  - Status: Accepted during Epic 1-2 planning
+- **Revision (2025-11-28, Story 1.5.1):** HeroUI for Professional Design System
+  - Trigger: UI coherence issues discovered during Epic 1-2 implementation
+  - Change: React Aria → HeroUI (HeroUI builds on React Aria, so this is an evolution not replacement)
+  - Implementation: Epic 1.5 (Stories 1.5.1-1.5.5) migrates all components to HeroUI
+
+**Technical Details:**
+- Package: `@heroui/react` v2.8.5 (supports React 19, Next.js 16)
+- Theme: Custom olive colors via `tailwind.config.ts` using HeroUI plugin
+- Accessibility: Maintains React Aria WCAG 2.1 Level AA compliance
+- Keyboard: Vim-style navigation (j/k, etc.) preserved via custom keyboard handlers on HeroUI components
 
 ### ADR-009: Dark Mode Only for MVP
 **Decision:** Ship dark mode only for MVP, defer light mode to post-MVP
