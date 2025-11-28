@@ -71,10 +71,21 @@ development_status:
       - src/styles/globals.css (design tokens completed)
       - docs/architecture.md (Quality-First principle added)
 
-  # Epic 3: Catch-Up Mode & Background Sync
+  # Epic 1.5: HeroUI Migration & HSL Color System (INSERTED 2025-11-28)
+  # Migrate all Epic 1-2 UI components from React Aria to HeroUI + convert hex to HSL colors
+  # Documentation integrated into each story (no separate doc story)
+  epic-1-5: backlog
+  1-5-1-heroui-setup-custom-olive-theme: backlog
+  1-5-2-hex-to-hsl-color-migration: backlog
+  1-5-3-epic-1-component-migration: backlog
+  1-5-4-epic-2-component-migration: backlog
+  1-5-5-testing-validation-polish: backlog
+  epic-1-5-retrospective: optional
+
+  # Epic 3: Catch-Up Mode & Background Sync (PAUSED - Resume after Epic 1.5)
   epic-3: backlog
   3-1-catch-up-mode-backend-new-since-last-visit-logic: done
-  3-2-catch-up-mode-view-with-toggle: backlog
+  3-2-catch-up-mode-view-with-toggle: backlog  # Returned from drafted → backlog (2025-11-28)
   3-3-mark-query-as-reviewed: backlog
   3-4-sidebar-new-item-badges: backlog
   3-5-inngest-background-polling-job: backlog
