@@ -1,0 +1,238 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1.5</epicId>
+    <storyId>1.5.1</storyId>
+    <title>HeroUI Setup & Custom Olive Theme Configuration</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-28</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/1-5-1-heroui-setup-custom-olive-theme.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer implementing Epic 1-2 component migrations</asA>
+    <iWant>HeroUI installed with a custom olive/moss green theme configured</iWant>
+    <soThat>I have a professional design system foundation that maintains our brand colors and supports both light/dark modes</soThat>
+    <tasks>
+- Task 1: Install HeroUI Dependencies (AC: 1.5.1.1)
+  - 1.1 Check current project dependencies in package.json
+  - 1.2 Check HeroUI documentation for latest stable version compatibility with React 19 and Next.js 16
+  - 1.3 Run: npm install @heroui/react @heroui/theme
+  - 1.4 Verify installation in package.json (both packages listed in dependencies)
+  - 1.5 Run: npm install to ensure lock file updated
+  - 1.6 Check for peer dependency warnings (resolve if present)
+
+- Task 2: Configure HeroUI Plugin in Tailwind Config (AC: 1.5.1.2, 1.5.1.3)
+  - 2.1 Open tailwind.config.js (or tailwind.config.ts if TypeScript)
+  - 2.2 Import HeroUI plugin: const { heroui } = require("@heroui/react");
+  - 2.3 Add heroui() to plugins array
+  - 2.4 Configure custom olive theme with light/dark variants:
+    - Light mode primary: hsl(68, 49%, 28%) (#5e6b24)
+    - Dark mode primary: hsl(68, 36%, 52%) (#9DAA5F)
+    - Focus color matches primary for each mode
+  - 2.5 Set foreground colors (white for light mode olive, black for dark mode olive)
+  - 2.6 Reference Epic 1.5 docs for complete theme configuration example (lines 199-229)
+  - 2.7 Verify syntax and save file
+
+- Task 3: Update Vite Configuration for Tailwind v4 (AC: 1.5.1.4)
+  - 3.1 Check current Tailwind CSS version in package.json
+  - 3.2 Review vite.config.ts for Tailwind plugin configuration
+  - 3.3 If Tailwind v4: Verify vite config includes Tailwind plugin correctly
+  - 3.4 If Tailwind v3: Add migration notes to Dev Notes (defer v4 upgrade if not critical)
+  - 3.5 Ensure PostCSS configured properly for HeroUI
+  - 3.6 Note: HeroUI works with both Tailwind v3 and v4
+
+- Task 4: Create Test Component to Verify Theme (AC: 1.5.1.5)
+  - 4.1 Create test page: src/app/test-heroui-theme/page.tsx
+  - 4.2 Import HeroUI Button: import { Button } from "@heroui/react";
+  - 4.3 Add HeroUIProvider wrapper (required for HeroUI components)
+  - 4.4 Create test buttons with different variants (primary, secondary, default)
+  - 4.5 Add theme toggle button to switch between light/dark modes
+  - 4.6 Run dev server: npm run dev
+  - 4.7 Navigate to /test-heroui-theme in browser
+  - 4.8 Verify olive primary color renders correctly in both modes
+  - 4.9 Verify button interactions work (hover, focus, press states)
+  - 4.10 Take screenshots for documentation (optional)
+  - 4.11 Note: Test page will be deleted after Epic 1.5 completion
+
+- Task 5: Update ui-component-architecture.md (AC: 1.5.1.6)
+  - 5.1 Open docs/ui-component-architecture.md
+  - 5.2 Update Section 1 (Executive Summary) to reflect HeroUI as primary UI library
+  - 5.3 Add new section: "1.5 HeroUI Setup & Configuration"
+  - 5.4 Document installation steps (npm install commands)
+  - 5.5 Document theme configuration (tailwind.config.js example)
+  - 5.6 Document HSL color values for olive theme (light/dark modes)
+  - 5.7 Add code examples for basic HeroUI component usage
+  - 5.8 Update migration strategy section (React Aria → HeroUI patterns)
+  - 5.9 Add note: "Updated as part of Story 1.5.1 (2025-11-28)"
+
+- Task 6: Revise ADR-008 in architecture.md (AC: 1.5.1.7)
+  - 6.1 Open docs/architecture.md
+  - 6.2 Locate ADR-008 (currently about React Aria Components)
+  - 6.3 Revise title: "ADR-008: HeroUI for Professional Design System"
+  - 6.4 Update Decision section: HeroUI instead of React Aria
+  - 6.5 Update Rationale: Professional design system built on React Aria foundation
+  - 6.6 Document why changed: UI coherence issues from unstyled primitives
+  - 6.7 Update Consequences: Pros (coherent UI, easier maintenance) and Cons (larger bundle)
+  - 6.8 Add amendment history: "Revised 2025-11-28 in Story 1.5.1"
+  - 6.9 Note: React Aria still foundation (HeroUI built on it)
+  - 6.10 Keep original ADR-008 context in amendment history for traceability
+
+- Task 7: Build and TypeScript Validation (AC: 1.5.1.8, 1.5.1.9)
+  - 7.1 Run: npm run typecheck to verify no TypeScript errors
+  - 7.2 Fix any type errors related to HeroUI imports
+  - 7.3 Run: npm run build to verify production build succeeds
+  - 7.4 Check build output for warnings or errors
+  - 7.5 Verify build size is reasonable (HeroUI adds ~100-200KB)
+  - 7.6 Test production build locally if possible: npm run start
+</tasks>
+  </story>
+
+  <acceptanceCriteria>
+| AC ID | Criterion |
+|-------|-----------|
+| 1.5.1.1 | HeroUI packages (@heroui/react, @heroui/theme) installed in package.json with compatible versions |
+| 1.5.1.2 | tailwind.config.js includes HeroUI plugin configuration with custom olive theme using HSL color format |
+| 1.5.1.3 | Custom olive theme includes both light mode (hsl(68, 49%, 28%)) and dark mode (hsl(68, 36%, 52%)) primary colors |
+| 1.5.1.4 | vite.config.ts updated for Tailwind v4 compatibility (if changes required) |
+| 1.5.1.5 | Simple test component renders successfully with HeroUI Button showing olive theme in both light and dark modes |
+| 1.5.1.6 | docs/ui-component-architecture.md Section 1 updated to document HeroUI setup and theme configuration |
+| 1.5.1.7 | docs/architecture.md ADR-008 revised to document HeroUI decision (replacing React Aria decision) |
+| 1.5.1.8 | npm run build succeeds with no errors |
+| 1.5.1.9 | npm run typecheck passes with no TypeScript errors |
+</acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epics/epic-1-5-heroui-migration.md</path>
+        <title>Epic 1.5: HeroUI Migration &amp; HSL Color System</title>
+        <section>Technical Approach - HeroUI Integration</section>
+        <snippet>Contains custom olive theme configuration example using HeroUI plugin for tailwind.config.js. Light mode: hsl(68, 49%, 28%), Dark mode: hsl(68, 36%, 52%). Story 1.5.1 establishes the foundation by installing HeroUI and configuring this theme.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture - ADR-008</title>
+        <section>ADR-008: React Aria Components for Keyboard-First UX</section>
+        <snippet>Current decision documents React Aria Components selection. Story 1.5.1 will revise ADR-008 to reflect HeroUI decision (HeroUI is built on React Aria foundation, so this is an evolution not replacement).</snippet>
+      </doc>
+      <doc>
+        <path>docs/ui-component-architecture.md</path>
+        <title>UI Component Architecture</title>
+        <section>Section 1: Design Token System</section>
+        <snippet>Establishes design token standards and React Aria usage patterns. Story 1.5.1 needs to update Section 1 to document HeroUI as primary UI library while maintaining design token principles. Currently documents olive accent colors in hex format (Story 1.5.2 will convert to HSL).</snippet>
+      </doc>
+      <doc>
+        <path>docs/ux-design-specification.md</path>
+        <title>UX Design Specification</title>
+        <section>Section 1.1: Design System Choice</section>
+        <snippet>Documents React Aria Components as the design system foundation. HeroUI builds on this foundation, so the core architectural decision remains valid. Story 1.5.1 should reference this when documenting HeroUI integration.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>package.json</path>
+        <kind>dependency manifest</kind>
+        <symbol>dependencies</symbol>
+        <lines>20-41</lines>
+        <reason>Current dependencies show React Aria Components (react-aria-components v1.13.0) already installed. HeroUI packages (@heroui/react, @heroui/theme) need to be added. Also shows Tailwind v4.0.15 is installed.</reason>
+      </artifact>
+      <artifact>
+        <path>src/styles/globals.css</path>
+        <kind>stylesheet</kind>
+        <symbol>@theme directive</symbol>
+        <lines>1-87</lines>
+        <reason>Tailwind v4 @theme directive with color definitions. Currently uses hex values for olive colors (#5e6b24, #9DAA5F). Story 1.5.1 will add HeroUI plugin configuration (note: Story 1.5.2 will convert hex to HSL). Design tokens already established.</reason>
+      </artifact>
+      <artifact>
+        <path>src/components/ui/Button.tsx</path>
+        <kind>component</kind>
+        <symbol>Button</symbol>
+        <lines>1-57</lines>
+        <reason>Existing Button wrapper component uses React Aria Button with hardcoded hex values (violates design token standard). Demonstrates current pattern of wrapping React Aria primitives. HeroUI will provide styled Button that follows same wrapping pattern.</reason>
+      </artifact>
+      <artifact>
+        <path>postcss.config.js</path>
+        <kind>configuration</kind>
+        <symbol>postcss config</symbol>
+        <lines>1-7</lines>
+        <reason>PostCSS configured with @tailwindcss/postcss plugin for Tailwind v4. No changes needed for HeroUI (works with existing setup).</reason>
+      </artifact>
+      <artifact>
+        <path>next.config.js</path>
+        <kind>configuration</kind>
+        <symbol>Next.js config</symbol>
+        <lines>1-23</lines>
+        <reason>Basic Next.js configuration. Verify no Tailwind v4 compatibility issues (Task 3). HeroUI works with Next.js 16.</reason>
+      </artifact>
+      <artifact>
+        <path>src/app/test-catch-up/page.tsx</path>
+        <kind>test page</kind>
+        <symbol>test page pattern</symbol>
+        <lines>N/A</lines>
+        <reason>Existing test page pattern to follow for Task 4 (create test-heroui-theme page). Demonstrates how to create manual validation pages.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <ecosystem name="node">
+        <package name="react" version="^19.2.0" />
+        <package name="react-dom" version="^19.2.0" />
+        <package name="next" version="^16.0.4" />
+        <package name="tailwindcss" version="^4.0.15" />
+        <package name="@tailwindcss/postcss" version="^4.0.15" />
+        <package name="postcss" version="^8.5.3" />
+        <package name="react-aria-components" version="^1.13.0" />
+        <package name="@react-aria/table" version="^3.17.8" />
+        <package name="@react-stately/table" version="^3.15.1" />
+      </ecosystem>
+      <note>HeroUI packages need to be installed: @heroui/react and @heroui/theme. Check HeroUI docs for React 19 and Next.js 16 compatibility (Task 1.2).</note>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Tailwind v4 configuration uses @theme directive in globals.css (no tailwind.config.js file)</constraint>
+    <constraint>HeroUI plugin configuration must be compatible with Tailwind v4 inline @theme approach</constraint>
+    <constraint>Custom olive theme colors must use HSL format: Light mode hsl(68, 49%, 28%), Dark mode hsl(68, 36%, 52%)</constraint>
+    <constraint>Maintain React Aria foundation (HeroUI is built on React Aria, so existing components remain compatible)</constraint>
+    <constraint>Test page pattern: Create at src/app/test-heroui-theme/page.tsx following existing test page examples</constraint>
+    <constraint>HeroUI must be compatible with React 19.2.0 and Next.js 16.0.4 (verify in Task 1.2)</constraint>
+    <constraint>All buttons must continue using Button wrapper component pattern (src/components/ui/Button.tsx)</constraint>
+    <constraint>Design tokens only - NO hardcoded hex values (existing Button.tsx violates this, but new HeroUI code must comply)</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>HeroUIProvider</name>
+      <kind>React Context Provider</kind>
+      <signature>Required wrapper for HeroUI components - must be added to app layout or test page</signature>
+      <path>@heroui/react</path>
+    </interface>
+    <interface>
+      <name>Button (HeroUI)</name>
+      <kind>React Component</kind>
+      <signature>import { Button } from "@heroui/react"; - Styled button component with variants</signature>
+      <path>@heroui/react</path>
+    </interface>
+    <interface>
+      <name>heroui() plugin</name>
+      <kind>Tailwind Plugin</kind>
+      <signature>const {heroui} = require("@heroui/react"); - Configures custom theme in Tailwind</signature>
+      <path>@heroui/react</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Per ADR-006 (Minimal Testing for MVP), this story requires TypeScript compilation (npm run typecheck) and production build validation (npm run build). Manual testing via test page is required for visual validation (AC 1.5.1.5). No unit tests or integration tests required for MVP.</standards>
+    <locations>src/app/test-heroui-theme/ - Test page for manual theme validation</locations>
+    <ideas>
+      <idea ac="1.5.1.1">Verify @heroui/react and @heroui/theme appear in package.json dependencies after npm install</idea>
+      <idea ac="1.5.1.2">Check globals.css contains heroui plugin configuration with custom olive theme (if Tailwind v4 @theme approach requires it)</idea>
+      <idea ac="1.5.1.3">Test page renders buttons in both light and dark modes showing correct olive colors: Light hsl(68, 49%, 28%), Dark hsl(68, 36%, 52%)</idea>
+      <idea ac="1.5.1.4">Build succeeds with no Vite/Tailwind v4 compatibility errors</idea>
+      <idea ac="1.5.1.5">Manual visual test: Navigate to /test-heroui-theme, verify olive primary button renders, toggle light/dark mode works, interactions (hover, focus, press) display correctly</idea>
+      <idea ac="1.5.1.6">Verify ui-component-architecture.md Section 1 mentions HeroUI as primary UI library</idea>
+      <idea ac="1.5.1.7">Verify architecture.md ADR-008 title changed to "HeroUI for Professional Design System" with rationale</idea>
+      <idea ac="1.5.1.8, 1.5.1.9">Run npm run build and npm run typecheck with no errors</idea>
+    </ideas>
+  </tests>
+</story-context>

@@ -25,6 +25,7 @@
   - [Epics Summary](./epics-summary.md)
   - [Epic 1: Walking Skeleton](./epic-1-walking-skeleton.md)
   - [Epic 2: User-Controlled Queries](./epic-2-user-controlled-queries.md)
+  - [Epic 1.5: HeroUI Migration & HSL Color System](./epic-1-5-heroui-migration.md)
   - [Epic 3: Catch-Up Mode & Background Sync](./epic-3-catch-up-mode-background-sync.md)
   - [Epic 4: Split View & Detail Navigation](./epic-4-split-view-detail-navigation.md)
   - [Epic 5: Keyboard Foundation](./epic-5-keyboard-foundation.md)

@@ -75,7 +75,7 @@ development_status:
   # Migrate all Epic 1-2 UI components from React Aria to HeroUI + convert hex to HSL colors
   # Documentation integrated into each story (no separate doc story)
   epic-1-5: backlog
-  1-5-1-heroui-setup-custom-olive-theme: backlog
+  1-5-1-heroui-setup-custom-olive-theme: ready-for-dev
   1-5-2-hex-to-hsl-color-migration: backlog
   1-5-3-epic-1-component-migration: backlog
   1-5-4-epic-2-component-migration: backlog
