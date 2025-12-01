@@ -1,0 +1,260 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1.5</epicId>
+    <storyId>4</storyId>
+    <title>Epic 2 Component Migration</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-01</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/1-5-4-epic-2-component-migration.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer implementing the HeroUI migration</asA>
+    <iWant>all Epic 2 UI components migrated from React Aria (unstyled) to HeroUI (styled)</iWant>
+    <soThat>Epic 2 components have coherent design, reduced maintenance burden, and utilize the unified HSL color system established in Story 1.5.2</soThat>
+    <tasks>
+- Task 1: Migrate Story 2.2 React Aria Table with Vim-Style Navigation (AC: 1, 10, 11)
+- Task 2: Migrate Story 2.4 Search Bar UI (AC: 2, 12)
+- Task 3: Migrate Story 2.6 Filter UI Logic (AC: 3, 13)
+- Task 4: Migrate Story 2.8 Sidebar Navigation (AC: 4, 14)
+- Task 5: Migrate Story 2.9 Create Query Modal (AC: 5, 15)
+- Task 6: Migrate Story 2.10 Edit/Delete Query Actions (AC: 6, 16)
+- Task 7: Global Component Audit (AC: 7, 8, 9)
+- Task 8: Functional Regression Testing (AC: 12-16, 20)
+- Task 9: Vim Keyboard Shortcuts Testing (AC: 10, 11, 17)
+- Task 10: Visual Regression Testing (AC: 19)
+- Task 11: Accessibility Testing (AC: 18)
+- Task 12: Build and TypeScript Validation (AC: 21, 22)
+- Task 13: Documentation Updates (AC: 23, 24)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. Story 2.2 (React Aria Table with vim-style navigation) migrated to HeroUI
+2. Story 2.4 (Search bar UI) migrated to HeroUI
+3. Story 2.6 (Filter UI logic) migrated to HeroUI
+4. Story 2.8 (Sidebar navigation) migrated to HeroUI
+5. Story 2.9 (Create query modal) migrated to HeroUI
+6. Story 2.10 (Edit/delete query actions) migrated to HeroUI
+7. All hardcoded hex values in Epic 2 components replaced with HeroUI color props or HSL design tokens
+8. All buttons use HeroUI Button component (not raw button or unstyled React Aria Button)
+9. All form inputs use HeroUI form components (Input, TextField, Checkbox, Select)
+10. Vim-style keyboard shortcuts preserved (j/k navigation, / for search, etc.)
+11. Table keyboard navigation works with HeroUI Table (arrow keys, Enter, Tab)
+12. Search bar functionality works end-to-end (type → search → results)
+13. Filter UI works end-to-end (create filter → apply → results)
+14. Sidebar navigation works (click query → load results, keyboard shortcuts 1-9)
+15. Create query modal works (open modal → fill form → save → persist)
+16. Edit/delete query actions work (edit query → save changes, delete query → confirm → remove)
+17. Keyboard navigation preserved (Tab, Enter, Space for all interactive elements)
+18. Accessibility maintained (WCAG 2.1 Level AA - screen reader labels, focus indicators)
+19. No visual regressions from Epic 2 original implementation
+20. No functional regressions (all Epic 2 user flows work identically)
+21. npm run build succeeds with no errors
+22. npm run typecheck passes with no TypeScript errors
+23. Migration notes added to Epic 2 story files (2.2, 2.4, 2.6, 2.8, 2.9, 2.10)
+24. docs/ui-component-architecture.md updated with Epic 2 component migration patterns
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <!-- Epic 1.5: HeroUI Migration Context -->
+      <doc path="docs/epics/epic-1-5-heroui-migration.md" title="Epic 1.5: HeroUI Migration &amp; HSL Color System" section="Complete Epic">
+        This epic migrates all Epic 1-2 UI components from React Aria (unstyled) to HeroUI (styled design system built on React Aria). Story 1.5.4 specifically migrates Epic 2 components including Table (vim nav), Search, Filters, Sidebar, and Modals.
+      </doc>
+
+      <!-- UI Component Architecture - HeroUI Setup -->
+      <doc path="docs/ui-component-architecture.md" title="UI Component Architecture" section="1.5 HeroUI Setup &amp; Configuration">
+        HeroUI installation complete (@heroui/react v2.8.5). Custom olive theme configured in tailwind.config.ts using HSL colors: light mode hsl(68, 49%, 28%), dark mode hsl(68, 36%, 52%). ThemeProvider configured in providers.tsx (outermost wrapper). Dark mode toggle implemented in Story 1.5.6.
+      </doc>
+
+      <!-- HSL Color System -->
+      <doc path="docs/ui-component-architecture.md" title="UI Component Architecture" section="1.5.3.1 Complete Hex → HSL Conversion Table">
+        All design tokens migrated from hex to HSL format. Olive/moss accent: hsl(68, 49%, 28%) light, hsl(68, 36%, 52%) dark. Gray scale, semantic colors, event badges all converted. All 163 dark: Tailwind classes verified working.
+      </doc>
+
+      <!-- Story 1.5.3 Learnings (Epic 1 Migration Pattern) -->
+      <doc path="docs/sprint-artifacts/1-5-3-epic-1-component-migration.md" title="Story 1.5.3: Epic 1 Component Migration" section="Dev Notes - Learnings">
+        Epic 1 successfully migrated to HeroUI. Key patterns: Button migration uses color="primary", Form components use HeroUI Input/TextField, Modal uses HeroUI Modal structure. All hardcoded hex replaced with HeroUI props or HSL tokens. Build validation required (npm run build + typecheck). Comprehensive testing documented.
+      </doc>
+
+      <!-- Architecture ADR-008 HeroUI Decision -->
+      <doc path="docs/architecture.md" title="Architecture" section="ADR-008: HeroUI for Professional Design System">
+        HeroUI chosen to replace unstyled React Aria Components. Built on React Aria foundation (preserves accessibility + keyboard nav). Custom olive theme via Tailwind integration. Reduces maintenance burden, provides coherent UI. Epic 1.5 migrates all components. Theme system uses React Context API with localStorage persistence.
+      </doc>
+
+      <!-- PRD Dark Mode Enhancement -->
+      <doc path="docs/prd.md" title="Product Requirements Document" section="FR-101: Dark Mode Support">
+        Post-MVP enhancement now implemented in Epic 1.5. Auto-detect system preference, manual toggle in Header, persist user choice, no FOUC. Improves accessibility for light-sensitive users. Story 1.5.6 completed implementation.
+      </doc>
+    </docs>
+    <code>
+      <!-- Epic 2 Components - Story 2.2: Table with Vim Navigation -->
+      <file path="src/components/dashboard/EventTable.tsx" kind="component" symbol="EventTable" lines="1-217" reason="React Aria Table with vim-style j/k navigation. Must migrate to HeroUI Table while preserving custom keyboard handlers and focus management.">
+        Uses React Aria Table, TableHeader, TableBody, Row, Cell. Implements vim navigation (j/k, Ctrl+d/u) via ShortcutContext. Olive focus ring on selected row. Integration with ItemRow component.
+      </file>
+
+      <!-- Epic 2 Components - Story 2.4: Search Bar UI -->
+      <file path="src/components/search/SearchBar.tsx" kind="component" symbol="SearchBar" lines="1-328" reason="Tag-based search UI with React Aria TagGroup. Must migrate to HeroUI Input/TagGroup components while preserving keyboard navigation (Enter, Backspace, Arrow keys).">
+        Uses React Aria TagGroup, TagList, Tag, Button. Implements tag pill input pattern with keyword management. Hardcoded hex colors (#9DAA5F, #5e6b24) need replacement with HeroUI color props or HSL tokens.
+      </file>
+
+      <!-- Epic 2 Components - Story 2.8: Sidebar Navigation -->
+      <file path="src/components/queries/QuerySidebar.tsx" kind="component" symbol="QuerySidebar" lines="1-166" reason="Sidebar displaying saved queries with 1-9 keyboard shortcuts. Must migrate to HeroUI navigation components while preserving shortcut integration.">
+        Uses custom Sidebar and NavList components. Integrates with ShortcutContext for number key navigation (1-9). Empty state, loading skeleton, and query list with counts.
+      </file>
+
+      <!-- Epic 2 Components - Story 2.9: Create Query Modal -->
+      <file path="src/components/queries/CreateQueryModal.tsx" kind="component" symbol="CreateQueryModal" lines="1-324" reason="Modal for saving search keywords as named query. Must migrate to HeroUI Modal structure with form components.">
+        Uses React Aria Dialog, Modal, ModalOverlay, TextField, Input, Button. Form validation, error handling, auto-focus on name input. Hardcoded hex colors for focus rings and tag pills.
+      </file>
+
+      <!-- Supporting Components - ItemRow (Epic 1, used by Epic 2) -->
+      <file path="src/components/dashboard/ItemRow.tsx" kind="component" symbol="ItemRow" reason="2-line row component used by EventTable. Already uses design tokens, may need HeroUI Text component for typography.">
+        Used by EventTable for rendering individual rows. Should verify compatibility with HeroUI Table after migration.
+      </file>
+
+      <!-- Supporting Components - Keyboard Context -->
+      <file path="src/components/keyboard/ShortcutContext.tsx" kind="context" symbol="ShortcutContext" reason="Global keyboard shortcut state management. Critical for vim navigation and sidebar shortcuts. Must remain compatible with HeroUI components.">
+        Provides shortcut handlers for j/k navigation, 1-9 query jumps, Ctrl+d/u page jumps. Focus Router Pattern used by EventTable and QuerySidebar.
+      </file>
+
+      <!-- Supporting Components - Custom Sidebar/NavList -->
+      <file path="src/components/ui/Sidebar.tsx" kind="component" reason="Custom sidebar component. Evaluate if HeroUI provides equivalent or if custom implementation should be retained with HeroUI styling.">
+        Structural component for QuerySidebar. May need styling updates for HeroUI consistency.
+      </file>
+      <file path="src/components/ui/NavList.tsx" kind="component" reason="Navigation list components used in QuerySidebar. May need migration to HeroUI Link or Listbox components.">
+        NavList, NavItem, NavItemCount, NavItemShortcut components. Used for query navigation with keyboard shortcuts.
+      </file>
+    </code>
+    <dependencies>
+      <node>
+        <package name="@heroui/react" version="2.8.5">Styled component library built on React Aria. Primary UI library for migration. Supports custom olive theme.</package>
+        <package name="framer-motion" version="12.23.24">Animation library required by HeroUI for transitions and interactions.</package>
+        <package name="react-aria-components" version="current">Foundation for HeroUI components. Existing Epic 2 components use this directly, will be replaced with HeroUI wrappers.</package>
+        <package name="tailwindcss" version="current">Utility-first CSS framework. HeroUI integrates via Tailwind plugin for theme configuration.</package>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <!-- Migration Pattern Constraints from Story 1.5.3 -->
+    <constraint type="migration-approach">Migrate component-by-component: Story 2.2 (Table) → 2.4 (Search) → 2.6 (Filters, integrated in SearchBar) → 2.8 (Sidebar) → 2.9 (Modal) → 2.10 (Edit/Delete). Test and commit after each component migration for early issue detection and easier rollback.</constraint>
+
+    <!-- HeroUI Component Usage -->
+    <constraint type="component-library">All interactive components MUST use HeroUI equivalents: Button → HeroUI Button (color="primary" for main actions), Input → HeroUI Input, Modal → HeroUI Modal/ModalContent/ModalHeader/ModalBody/ModalFooter, Table → HeroUI Table/TableHeader/TableBody/Row/Cell.</constraint>
+
+    <!-- Color System Constraints -->
+    <constraint type="styling">NO hardcoded hex values allowed. Replace ALL hex colors with: (1) HeroUI color props (color="primary" for buttons/inputs), (2) Tailwind design token classes (bg-olive, text-olive-light), (3) Direct HSL values only if HeroUI doesn't support the use case (rare).</constraint>
+
+    <!-- Keyboard Navigation Preservation -->
+    <constraint type="accessibility">Vim-style keyboard shortcuts (j/k navigation, / for search, 1-9 for queries, Ctrl+d/u) MUST be preserved. HeroUI components support custom onKeyDown handlers - use these to integrate with ShortcutContext. Tab navigation must still work for accessibility.</constraint>
+
+    <!-- Build Validation Required -->
+    <constraint type="quality-gates">Before marking story complete: (1) npm run typecheck must pass with 0 errors, (2) npm run build must succeed with no errors/warnings. TypeScript compilation is a hard requirement.</constraint>
+
+    <!-- Functional Parity Required -->
+    <constraint type="regression-prevention">All Epic 2 user flows must work identically after migration: table nav, search, filters, sidebar, modals. Zero functional regressions acceptable. Visual improvements expected (HeroUI styling), but behavior must remain unchanged.</constraint>
+
+    <!-- Accessibility Compliance -->
+    <constraint type="wcag-compliance">WCAG 2.1 Level AA compliance must be maintained. HeroUI provides this out of the box, but custom vim shortcuts must not break: (1) Screen readers must announce table rows/buttons/inputs, (2) Focus indicators visible (olive ring from HeroUI theme), (3) All interactive elements accessible via Tab.</constraint>
+
+    <!-- Documentation Requirements -->
+    <constraint type="documentation">Must update: (1) Story files (2.2, 2.4, 2.6, 2.8, 2.9, 2.10) with migration notes and file:line references, (2) docs/ui-component-architecture.md with Epic 2 migration patterns (especially vim-style keyboard integration with HeroUI Table), (3) Add "Epic 2 Migration Complete" note with date.</constraint>
+  </constraints>
+
+  <interfaces>
+    <!-- HeroUI Theme Configuration Interface -->
+    <interface name="HeroUI Theme Config" kind="configuration" path="tailwind.config.ts" lines="20-75">
+      HeroUI plugin configuration with custom olive theme. Light mode: primary=hsl(68,49%,28%), foreground=#FFFFFF. Dark mode: primary=hsl(68,36%,52%), foreground=#000000. Focus rings use same primary colors.
+    </interface>
+
+    <!-- ShortcutContext API for Keyboard Navigation -->
+    <interface name="ShortcutContext" kind="React Context API" path="src/components/keyboard/ShortcutContext.tsx">
+      Provides setMoveSelectionDown, setMoveSelectionUp, setJumpHalfPageDown, setJumpHalfPageUp for EventTable vim navigation. Provides setNavigateToQuery for 1-9 sidebar shortcuts. Focus Router Pattern - components register handlers, context manages global keyboard events.
+    </interface>
+
+    <!-- HeroUI Button Props -->
+    <interface name="Button Props" kind="component-api">
+      HeroUI Button API: color="primary"|"default"|"secondary", variant="solid"|"bordered"|"light"|"flat"|"ghost", size="sm"|"md"|"lg", isDisabled, isLoading, onPress (not onClick - React Aria pattern).
+    </interface>
+
+    <!-- HeroUI Table Props -->
+    <interface name="Table Props" kind="component-api">
+      HeroUI Table API: selectionMode="single"|"multiple"|"none", selectedKeys, onSelectionChange, onKeyDown (for custom vim navigation). Rows use data-selected and data-focused attributes for styling.
+    </interface>
+
+    <!-- HeroUI Modal Props -->
+    <interface name="Modal Props" kind="component-api">
+      HeroUI Modal structure: ModalOverlay (backdrop, isDismissable), Modal (content container), ModalContent, ModalHeader, ModalBody, ModalFooter. Dialog component provides close() function. Auto-focus and focus trap built-in.
+    </interface>
+
+    <!-- HeroUI Input/TextField Props -->
+    <interface name="Input Props" kind="component-api">
+      HeroUI Input within TextField: autoFocus, isRequired, isInvalid, value, onChange, onBlur. TextField wraps Input with Label and error message support. Focus rings auto-apply using theme colors.
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Per ADR-006 (Minimal Testing for MVP):
+      - Required: TypeScript compilation (npm run typecheck)
+      - Required: Production build validation (npm run build)
+      - Required: Functional regression testing (manual - all Epic 2 user flows)
+      - Required: Vim keyboard shortcuts testing (j/k, /, 1-9)
+      - Required: Visual regression testing (screenshot comparison - before/after migration)
+      - Required: Accessibility testing (focus indicators, screen reader labels, Tab navigation)
+      - Not Required: Unit tests, integration tests for MVP (add only if debugging same bug twice)
+    </standards>
+
+    <locations>
+      Manual testing workflow (no automated tests for migration):
+      - src/components/dashboard/EventTable.tsx - Test vim navigation (j/k, Ctrl+d/u), focus ring, selection
+      - src/components/search/SearchBar.tsx - Test tag input (Enter, Backspace, Arrow keys), keyword management
+      - src/components/queries/QuerySidebar.tsx - Test 1-9 shortcuts, query navigation, empty state
+      - src/components/queries/CreateQueryModal.tsx - Test modal open/close, form validation, save flow
+      - Test all flows in both light and dark modes
+      - Test keyboard-only navigation (no mouse) through all Epic 2 components
+    </locations>
+
+    <ideas>
+      <!-- Functional Regression Tests (AC 12-16, 20) -->
+      <test id="FRT-1" maps-to="AC-11, AC-12">
+        Table Navigation Flow: Load dashboard with events → Press j key → Verify selection moves down → Press k key → Verify selection moves up → Press Ctrl+d → Verify 10 rows jump down → Press Ctrl+u → Verify 10 rows jump up → Verify olive focus ring visible on selected row.
+      </test>
+
+      <test id="FRT-2" maps-to="AC-12, AC-13">
+        Search Flow: Focus search input (/ key) → Type "auth" → Press Enter → Verify tag pill appears with "auth" → Type "oauth" → Press Enter → Verify second tag appears → Verify both keywords filter results → Press Backspace on empty input → Verify last tag removed.
+      </test>
+
+      <test id="FRT-3" maps-to="AC-14">
+        Sidebar Navigation: Press 1 key → Verify first query loads → Press 2 key → Verify second query loads → Click sidebar query → Verify navigation works → Verify active query has olive highlight.
+      </test>
+
+      <test id="FRT-4" maps-to="AC-15">
+        Create Query Modal: Search for keywords → Click "Save" button (or press s key) → Verify modal opens → Verify keywords pre-filled → Type query name → Press Enter → Verify query saved → Verify sidebar updated.
+      </test>
+
+      <!-- Vim Keyboard Shortcuts Tests (AC 10, 11, 17) -->
+      <test id="VKS-1" maps-to="AC-10, AC-11">
+        Vim Shortcuts Work: j/k moves table selection (up/down) → / focuses search input → Enter in search commits tag → Backspace removes tag → Arrow keys navigate tags → 1-9 jump to sidebar queries → Ctrl+d/u half-page jumps → Esc closes modal/clears focus.
+      </test>
+
+      <!-- Visual Regression Tests (AC 19) -->
+      <test id="VRT-1" maps-to="AC-19">
+        Visual Consistency: Compare screenshots before/after migration → Table rows (2-line layout, olive focus ring) → Search bar (tag pills, olive colors) → Sidebar (query list, active state) → Modal (form layout, buttons) → Verify olive accent colors render correctly → Verify no visual regressions (minor improvements expected).
+      </test>
+
+      <!-- Accessibility Tests (AC 18) -->
+      <test id="A11Y-1" maps-to="AC-18">
+        Keyboard Navigation: Tab through all Epic 2 components (table, search, sidebar, modal) → Verify all interactive elements focusable → Verify focus indicators visible (olive ring) → Verify Enter/Space activates buttons → Verify Esc closes modal → Test screen reader labels (Button, Input, Select have accessible names).
+      </test>
+
+      <!-- Build Validation Tests (AC 21, 22) -->
+      <test id="BUILD-1" maps-to="AC-21, AC-22">
+        Build Validation: Run `npm run typecheck` → Verify 0 TypeScript errors → Run `npm run build` → Verify production build succeeds → Verify no warnings in build output → Verify all Epic 2 pages included in build.
+      </test>
+    </ideas>
+  </tests>
+</story-context>
