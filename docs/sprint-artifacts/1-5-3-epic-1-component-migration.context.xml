@@ -1,0 +1,950 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1.5</epicId>
+    <storyId>3</storyId>
+    <title>Epic 1 Component Migration</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-01</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/1-5-3-epic-1-component-migration.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer implementing the HeroUI migration</asA>
+    <iWant>all Epic 1 UI components migrated from React Aria (unstyled) to HeroUI (styled)</iWant>
+    <soThat>Epic 1 components have coherent design, reduced maintenance burden, and utilize the unified HSL color system established in Story 1.5.2</soThat>
+    <tasks>
+- [ ] Task 1: Migrate Story 1.3 Authentication Components (AC: 1.5.3.1, 1.5.3.9)
+  - [ ] 1.1 Locate authentication components (sign-in page, auth buttons)
+  - [ ] 1.2 Identify current implementation (React Aria Button, custom styling)
+  - [ ] 1.3 Replace with HeroUI Button components
+  - [ ] 1.4 Update button variants: "Sign in with GitLab" → `color="primary"`
+  - [ ] 1.5 Remove hardcoded hex colors, use HeroUI theme props
+  - [ ] 1.6 Test GitLab OAuth flow: click button → redirect → callback → dashboard
+  - [ ] 1.7 Verify visual appearance matches Epic 1 design intent
+
+- [ ] Task 2: Migrate Story 1.4 Project Selection Onboarding (AC: 1.5.3.2, 1.5.3.10)
+  - [ ] 2.1 Locate onboarding page components (project checkbox list, Continue button)
+  - [ ] 2.2 Replace checkbox implementation with HeroUI `CheckboxGroup` and `Checkbox`
+  - [ ] 2.3 Replace Continue button with HeroUI `Button` component (`color="primary"`)
+  - [ ] 2.4 Remove hardcoded hex colors from checkbox styles
+  - [ ] 2.5 Test onboarding flow: select projects → click Continue → dashboard
+  - [ ] 2.6 Verify project selection persists correctly
+  - [ ] 2.7 Test keyboard navigation: Tab through checkboxes, Space to toggle, Enter on Continue button
+
+- [ ] Task 3: Migrate Story 1.6 Table View Components (AC: 1.5.3.3, 1.5.3.11)
+  - [ ] 3.1 Locate ItemRow component and table structure
+  - [ ] 3.2 Evaluate HeroUI `Table` component for 2-line row pattern
+  - [ ] 3.3 Migrate table structure to HeroUI `Table`, `TableHeader`, `TableBody`, `TableRow`, `TableCell`
+  - [ ] 3.4 Update ItemRow styling to use HeroUI classes and design tokens
+  - [ ] 3.5 Replace hardcoded olive hex values with HeroUI `color="primary"` or HSL tokens
+  - [ ] 3.6 Verify 2-line row layout (52px height, badge + title + snippet)
+  - [ ] 3.7 Test table rendering: items display correctly, olive accents visible
+  - [ ] 3.8 Verify "NEW" badge styling (olive background from HeroUI theme)
+
+- [ ] Task 4: Migrate Story 1.7 App Layout Components (AC: 1.5.3.4)
+  - [ ] 4.1 Locate app layout components (navigation, dashboard structure)
+  - [ ] 4.2 Identify navigation elements (sidebar, nav links)
+  - [ ] 4.3 Migrate navigation links to HeroUI `Link` or `Button` components as appropriate
+  - [ ] 4.4 Update layout styling to use HeroUI spacing and color utilities
+  - [ ] 4.5 Remove hardcoded hex colors from layout components
+  - [ ] 4.6 Verify dashboard structure renders correctly
+  - [ ] 4.7 Test navigation: clicking links navigates to correct pages
+
+- [ ] Task 5: Migrate Story 1.8 Settings Components (AC: 1.5.3.5, 1.5.3.12)
+  - [ ] 5.1 Locate settings page components (project management checkboxes, Save button)
+  - [ ] 5.2 Replace checkboxes with HeroUI `CheckboxGroup` and `Checkbox`
+  - [ ] 5.3 Replace Save button with HeroUI `Button` component (`color="primary"`)
+  - [ ] 5.4 Remove hardcoded hex colors from settings page
+  - [ ] 5.5 Test settings flow: change project selection → click Save → verify persistence
+  - [ ] 5.6 Test keyboard navigation on settings page
+
+- [ ] Task 6: Global Component Audit (AC: 1.5.3.6, 1.5.3.7, 1.5.3.8)
+  - [ ] 6.1 Search codebase for hardcoded hex values in Epic 1 component files
+  - [ ] 6.2 Replace all hex values with HeroUI color props or HSL design tokens
+  - [ ] 6.3 Audit all buttons: ensure all use HeroUI `Button` component
+  - [ ] 6.4 Audit all form inputs: ensure all use HeroUI form components
+  - [ ] 6.5 Verify no raw `<button>` or `<input type="checkbox">` elements remain
+
+- [ ] Task 7: Functional Regression Testing (AC: 1.5.3.9-1.5.3.12, 1.5.3.16)
+  - [ ] 7.1 Test authentication flow: sign in → GitLab OAuth → callback → dashboard
+  - [ ] 7.2 Test onboarding flow: first-time user → project selection → Continue → dashboard
+  - [ ] 7.3 Test dashboard table: items display correctly with 2-line rows
+  - [ ] 7.4 Test settings page: modify projects → Save → verify persistence
+  - [ ] 7.5 Test navigation: dashboard ↔ settings navigation works
+  - [ ] 7.6 Document any functional issues found (should be none)
+
+- [ ] Task 8: Visual Regression Testing (AC: 1.5.3.15)
+  - [ ] 8.1 Take screenshots of Epic 1 pages before migration (if available)
+  - [ ] 8.2 Take screenshots of Epic 1 pages after HeroUI migration
+  - [ ] 8.3 Compare visual appearance: buttons, forms, table, layout
+  - [ ] 8.4 Verify olive accent colors render correctly (buttons, NEW badges, focus rings)
+  - [ ] 8.5 Verify gray backgrounds and borders (table rows, form inputs)
+  - [ ] 8.6 Document any visual differences (minor improvements expected, no regressions)
+
+- [ ] Task 9: Accessibility Testing (AC: 1.5.3.13, 1.5.3.14)
+  - [ ] 9.1 Test keyboard navigation on authentication page (Tab, Enter)
+  - [ ] 9.2 Test keyboard navigation on onboarding page (Tab, Space, Enter)
+  - [ ] 9.3 Test keyboard navigation on dashboard table (Tab, arrow keys if applicable)
+  - [ ] 9.4 Test keyboard navigation on settings page (Tab, Space, Enter)
+  - [ ] 9.5 Verify focus indicators visible (olive focus ring from HeroUI theme)
+  - [ ] 9.6 Test screen reader labels (Button, Checkbox have accessible names)
+  - [ ] 9.7 Verify WCAG 2.1 Level AA compliance maintained (HeroUI provides this)
+
+- [ ] Task 10: Build and TypeScript Validation (AC: 1.5.3.17, 1.5.3.18)
+  - [ ] 10.1 Run: `npm run typecheck` to verify no TypeScript errors
+  - [ ] 10.2 Run: `npm run build` to verify production build succeeds
+  - [ ] 10.3 Check build output for warnings or errors
+  - [ ] 10.4 Verify all Epic 1 pages included in build output
+  - [ ] 10.5 Production build validation complete
+
+- [ ] Task 11: Documentation Updates (AC: 1.5.3.19, 1.5.3.20)
+  - [ ] 11.1 Add migration notes to Story 1.3 file (`docs/sprint-artifacts/1-3-*.md`)
+  - [ ] 11.2 Add migration notes to Story 1.4 file (`docs/sprint-artifacts/1-4-*.md`)
+  - [ ] 11.3 Add migration notes to Story 1.6 file (`docs/sprint-artifacts/1-6-*.md`)
+  - [ ] 11.4 Add migration notes to Story 1.7 file (`docs/sprint-artifacts/1-7-*.md`)
+  - [ ] 11.5 Add migration notes to Story 1.8 file (`docs/sprint-artifacts/1-8-*.md`)
+  - [ ] 11.6 Update `docs/ui-component-architecture.md` Section 1.5 with Epic 1 migration patterns
+  - [ ] 11.7 Document common migration patterns (Button, Checkbox, Table)
+  - [ ] 11.8 Add "Epic 1 Migration Complete" note with date
+</tasks>
+  </story>
+
+  <acceptanceCriteria>
+| AC ID | Criterion |
+|-------|-----------|
+| 1.5.3.1 | Story 1.3 authentication components migrated to HeroUI (sign-in page, auth buttons) |
+| 1.5.3.2 | Story 1.4 project selection components migrated to HeroUI (checkbox list, Continue button) |
+| 1.5.3.3 | Story 1.6 table view components migrated to HeroUI (ItemRow, Table structure) |
+| 1.5.3.4 | Story 1.7 app layout components migrated to HeroUI (navigation, dashboard structure) |
+| 1.5.3.5 | Story 1.8 settings components migrated to HeroUI (settings page, project checkboxes) |
+| 1.5.3.6 | All hardcoded hex values in Epic 1 components replaced with HeroUI color props or HSL design tokens |
+| 1.5.3.7 | All buttons use HeroUI `Button` component (not raw `<button>` or unstyled React Aria `Button`) |
+| 1.5.3.8 | All form inputs use HeroUI form components (Checkbox, CheckboxGroup) |
+| 1.5.3.9 | Authentication flow works end-to-end (GitLab OAuth sign-in → dashboard) |
+| 1.5.3.10 | Project selection onboarding works (select projects → Continue → dashboard) |
+| 1.5.3.11 | Dashboard table view displays items correctly (2-line rows, olive accent colors) |
+| 1.5.3.12 | Settings page project management works (add/remove projects, save) |
+| 1.5.3.13 | Keyboard navigation preserved (Tab, Enter, Space for interactive elements) |
+| 1.5.3.14 | Accessibility maintained (WCAG 2.1 Level AA - screen reader labels, focus indicators) |
+| 1.5.3.15 | No visual regressions from Epic 1 original implementation (compare screenshots) |
+| 1.5.3.16 | No functional regressions (all Epic 1 user flows work identically) |
+| 1.5.3.17 | `npm run build` succeeds with no errors |
+| 1.5.3.18 | `npm run typecheck` passes with no TypeScript errors |
+| 1.5.3.19 | Migration notes added to Epic 1 story files (1.3, 1.4, 1.6, 1.7, 1.8) |
+| 1.5.3.20 | `docs/ui-component-architecture.md` updated with Epic 1 component migration patterns |
+</acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <document id="prd" relevance="medium" priority="3">
+        <title>Product Requirements Document</title>
+        <path>docs/prd.md</path>
+        <summary>
+          GitLab Insights PRD - Attention-efficient discovery platform converting GitLab's pull-based search into push-based ambient awareness.
+          Key for understanding product vision, target users (mid-senior engineers, tech leads), and design philosophy (feed reader for code discussions).
+        </summary>
+        <keyInsights>
+          - Dark mode only in MVP (Section 2.2)
+          - Polling-based architecture (5-15 min sync) with manual refresh button
+          - Target users: mid-senior engineers avoiding duplicate work
+          - Design philosophy: dense scanning, progressive disclosure, keyboard-first
+        </keyInsights>
+        <relevantSections>
+          - Section 2.2: Dark Mode Decision
+          - Section 5: User Flows
+        </relevantSections>
+      </document>
+
+      <document id="ux-spec" relevance="high" priority="1">
+        <title>UX Design Specification</title>
+        <path>docs/ux-design-specification.md</path>
+        <summary>
+          Complete UX design for GitLab Insights including design system choice (React Aria Components → HeroUI migration), color system (olive/moss green accent), component patterns, and user journey flows.
+          Critical for understanding visual design language, component usage, and interaction patterns.
+        </summary>
+        <keyInsights>
+          - Section 1.1: Design System Choice - React Aria Components (now HeroUI)
+          - Section 3.1: Color System - Olive/moss green accent (#5e6b24 light, #9DAA5F dark, migrated to HSL)
+          - Section 6: Component Library - React Aria → HeroUI component patterns
+          - 2-line dense table rows (52px height)
+          - Button variants: Primary (olive), Secondary (gray), Ghost (text only)
+        </keyInsights>
+        <relevantSections>
+          - Section 1.1: Design System Choice
+          - Section 3.1: Color System
+          - Section 6: Component Library
+          - Section 7: UX Pattern Decisions (Button hierarchy, feedback, navigation)
+        </relevantSections>
+      </document>
+
+      <document id="ui-component-architecture" relevance="critical" priority="1">
+        <title>UI Component Architecture</title>
+        <path>docs/ui-component-architecture.md</path>
+        <summary>
+          UPDATED 2025-11-28: Established HeroUI as primary UI library (built on React Aria Components foundation).
+          Section 1.5 documents HeroUI installation, custom olive theme configuration (HSL-based), and migration strategy.
+          Section 1.5.3.1 documents complete hex→HSL conversion table (Story 1.5.2).
+          This is the SINGLE SOURCE OF TRUTH for component usage patterns and HeroUI migration approach.
+        </summary>
+        <keyInsights>
+          - HeroUI installed: `@heroui/react`, `framer-motion`
+          - Custom olive theme: HSL-based (hsl(68, 49%, 28%) light, hsl(68, 36%, 52%) dark)
+          - Migration pattern: React Aria Button → HeroUI Button with `color="primary"`
+          - Design tokens: All colors converted from hex → HSL (Story 1.5.2 complete)
+          - Always use HeroUI components for buttons, forms, tables
+          - Section 5: Migration Strategy (opportunistic refactoring, when touched for Epic 3+)
+        </keyInsights>
+        <relevantSections>
+          - Section 1.5: HeroUI Setup & Configuration (complete reference)
+          - Section 1.5.3.1: Complete Hex → HSL Conversion Table
+          - Section 2: React Aria Component Standards (foundation preserved by HeroUI)
+          - Section 3: Component Usage Rules (Button patterns, form inputs, modals)
+          - Section 5: Migration Strategy (Priority 1-3 components)
+          - Section 6: Examples - Before & After (Button, Heading, Form Input migration)
+        </relevantSections>
+      </document>
+
+      <document id="architecture" relevance="medium" priority="2">
+        <title>System Architecture</title>
+        <path>docs/architecture.md</path>
+        <summary>
+          Technical architecture for GitLab Insights including ADR-008 (HeroUI decision revised 2025-11-28).
+          Documents polling-based sync, database schema, API structure, and deployment strategy.
+        </summary>
+        <keyInsights>
+          - ADR-008: HeroUI chosen over React Aria (unstyled) for UI coherence
+          - Frontend: Next.js 16, React 19, TypeScript, Tailwind CSS v4, HeroUI
+          - State: Zustand + React Query
+          - Polling: 5-15 min background sync (cron job)
+        </keyInsights>
+        <relevantSections>
+          - ADR-008: HeroUI Migration Decision
+          - Frontend Tech Stack
+        </relevantSections>
+      </document>
+
+      <document id="epic-1-5" relevance="critical" priority="1">
+        <title>Epic 1.5: HeroUI Migration & HSL Color System</title>
+        <path>docs/sprint-artifacts/epic-1-5-heroui-migration.md</path>
+        <summary>
+          Parent Epic for this story. Describes the complete HeroUI migration across Epic 1-2 components and hex→HSL color conversion.
+          Story 1.5.1 (HeroUI setup) and 1.5.2 (hex→HSL conversion) are COMPLETE. This story (1.5.3) migrates Epic 1 components.
+        </summary>
+        <keyInsights>
+          - Story 1.5.1 ✅ COMPLETE: HeroUI installed, custom olive theme configured
+          - Story 1.5.2 ✅ COMPLETE: All colors converted hex → HSL
+          - Story 1.5.3 (THIS STORY): Migrate Epic 1 components (Stories 1.3, 1.4, 1.6, 1.7, 1.8)
+          - Story 1.5.4: Migrate Epic 2 components (next)
+          - Story 1.5.5: Testing, validation, polish (final)
+          - Objective: UI coherence, reduced maintenance, HSL color system
+          - Migration pattern: React Aria → HeroUI (preserve keyboard nav, accessibility)
+        </keyInsights>
+        <relevantSections>
+          - Overview: Trigger and solution
+          - Story Breakdown: 1.5.1-1.5.5 sequence
+          - Technical Approach: HeroUI integration, HSL conversion, migration pattern
+          - Keyboard Navigation Preservation (critical)
+        </relevantSections>
+      </document>
+
+      <document id="sprint-change-proposal" relevance="medium" priority="3">
+        <title>Sprint Change Proposal: HeroUI Migration</title>
+        <path>docs/sprint-change-proposal-heroui-migration-2025-11-28.md</path>
+        <summary>
+          Documents the decision to pause Epic 3 and insert Epic 1.5 (HeroUI migration) due to UI coherence issues.
+          Provides context for why this migration is happening and the expected benefits.
+        </summary>
+        <keyInsights>
+          - Trigger: UI coherence issues during Epic 1-2 (React Aria unstyled approach)
+          - Solution: Migrate to HeroUI (styled design system on React Aria foundation)
+          - Timeline impact: +2-3 weeks, but improves velocity for Epic 3-7
+          - Benefits: Professional design system, reduced custom styling, maintainable colors
+        </keyInsights>
+      </document>
+    </docs>
+    <code>
+      <component id="auth-components" relevance="critical" priority="1">
+        <title>Story 1.3: Authentication Components</title>
+        <pattern>src/app/(auth)/**/*.tsx</pattern>
+        <description>
+          Authentication page components: sign-in page, GitLab OAuth button, authentication flow.
+          NEED TO MIGRATE: Replace React Aria Button with HeroUI Button, use `color="primary"` for "Sign in with GitLab" button.
+        </description>
+        <files>
+          - src/app/(auth)/sign-in/page.tsx
+          - Any auth-related components or buttons
+        </files>
+        <migrationNotes>
+          BEFORE: React Aria Button with custom styling (hex colors)
+          AFTER: HeroUI Button with `color="primary"` (uses custom olive theme)
+        </migrationNotes>
+      </component>
+
+      <component id="onboarding-components" relevance="critical" priority="1">
+        <title>Story 1.4: Project Selection Onboarding</title>
+        <pattern>src/app/onboarding/**/*.tsx OR src/components/onboarding/**/*.tsx</pattern>
+        <description>
+          First-time user onboarding: project selection with checkboxes, Continue button.
+          NEED TO MIGRATE: Replace checkbox implementation with HeroUI CheckboxGroup/Checkbox, Replace Continue button with HeroUI Button.
+        </description>
+        <files>
+          - Onboarding page component
+          - Project selection checkbox list
+          - Continue button
+        </files>
+        <migrationNotes>
+          BEFORE: Raw checkbox or React Aria Checkbox with custom styling
+          AFTER: HeroUI CheckboxGroup + Checkbox components
+          BEFORE: React Aria Button with hex colors
+          AFTER: HeroUI Button `color="primary"`
+        </migrationNotes>
+      </component>
+
+      <component id="table-components" relevance="critical" priority="1">
+        <title>Story 1.6: Table View Components</title>
+        <pattern>src/components/dashboard/**/*.tsx, src/components/table/**/*.tsx</pattern>
+        <description>
+          Dashboard table view: ItemRow component (2-line rows), Table structure, NEW badges.
+          NEED TO MIGRATE: Convert table to HeroUI Table, TableHeader, TableBody, TableRow, TableCell. Update ItemRow styling with HeroUI classes.
+        </description>
+        <files>
+          - src/components/dashboard/ItemRow.tsx (likely)
+          - src/components/dashboard/ItemTable.tsx (or similar)
+          - Table layout components
+        </files>
+        <migrationNotes>
+          BEFORE: React Aria Table with custom styling (hex colors for accents)
+          AFTER: HeroUI Table components with HSL design tokens
+          Preserve: 2-line row layout (52px height)
+          Update: Olive accent colors use HeroUI `color="primary"` or HSL tokens
+        </migrationNotes>
+      </component>
+
+      <component id="layout-components" relevance="high" priority="2">
+        <title>Story 1.7: App Layout Components</title>
+        <pattern>src/app/layout.tsx, src/components/layout/**/*.tsx</pattern>
+        <description>
+          Main app layout: navigation, sidebar, dashboard structure.
+          NEED TO MIGRATE: Navigation links → HeroUI Link or Button, Remove hex colors from layout styling.
+        </description>
+        <files>
+          - src/app/layout.tsx
+          - src/components/layout/Navigation.tsx (if exists)
+          - Dashboard layout components
+        </files>
+        <migrationNotes>
+          BEFORE: Custom navigation links with hex colors
+          AFTER: HeroUI Link or Button components with theme colors
+        </migrationNotes>
+      </component>
+
+      <component id="settings-components" relevance="high" priority="2">
+        <title>Story 1.8: Settings Components</title>
+        <pattern>src/app/settings/**/*.tsx, src/components/settings/**/*.tsx</pattern>
+        <description>
+          Settings page: project management, checkbox list for adding/removing projects, Save button.
+          NEED TO MIGRATE: HeroUI CheckboxGroup/Checkbox, HeroUI Button for Save.
+        </description>
+        <files>
+          - src/app/settings/page.tsx
+          - Settings form components
+          - Save button
+        </files>
+        <migrationNotes>
+          BEFORE: React Aria form components with custom styling
+          AFTER: HeroUI form components (CheckboxGroup, Checkbox, Button)
+        </migrationNotes>
+      </component>
+
+      <component id="globals-css" relevance="critical" priority="1">
+        <title>Global CSS Styles (HSL Color System)</title>
+        <pattern>src/styles/globals.css</pattern>
+        <description>
+          UPDATED by Story 1.5.2: All color definitions converted from hex → HSL.
+          This file contains all design tokens (olive accent, grays, semantic colors).
+          Reference for HSL values when updating component styling.
+        </description>
+        <files>
+          - src/styles/globals.css
+        </files>
+        <keyTokens>
+          - --color-olive: hsl(68, 49%, 28%) [light mode]
+          - --color-olive-light: hsl(68, 36%, 52%) [dark mode]
+          - --color-olive-hover: hsl(68, 49%, 23%) [light hover]
+          - --color-olive-hover-light: hsl(68, 36%, 58%) [dark hover]
+          - --color-gray-* scale (50-900) in HSL
+          - Semantic colors: success, warning, error, info (all HSL)
+        </keyTokens>
+      </component>
+
+      <component id="tailwind-config" relevance="critical" priority="1">
+        <title>Tailwind Configuration (HeroUI Theme)</title>
+        <pattern>tailwind.config.ts</pattern>
+        <description>
+          UPDATED by Story 1.5.1: HeroUI plugin configured with custom olive theme (HSL-based).
+          Defines primary color for light/dark modes, focus color.
+          Reference for understanding how HeroUI `color="primary"` maps to olive accent.
+        </description>
+        <files>
+          - tailwind.config.ts
+        </files>
+        <keyConfig>
+          heroui({
+            themes: {
+              light: { colors: { primary: { DEFAULT: "hsl(68, 49%, 28%)" } } }
+              dark: { colors: { primary: { DEFAULT: "hsl(68, 36%, 52%)" } } }
+            }
+          })
+        </keyConfig>
+      </component>
+    </code>
+    <dependencies>
+      <dependency id="heroui-react" type="package" critical="true">
+        <name>@heroui/react</name>
+        <version>^2.8.5</version>
+        <purpose>Primary UI component library (styled components on React Aria foundation)</purpose>
+        <status>INSTALLED (Story 1.5.1)</status>
+      </dependency>
+
+      <dependency id="framer-motion" type="package" critical="true">
+        <name>framer-motion</name>
+        <version>^12.23.24</version>
+        <purpose>Required peer dependency for HeroUI animations</purpose>
+        <status>INSTALLED (Story 1.5.1)</status>
+      </dependency>
+
+      <dependency id="story-1-5-1" type="story" critical="true">
+        <name>Story 1.5.1: HeroUI Setup & Configuration</name>
+        <status>✅ COMPLETE</status>
+        <deliverables>
+          - HeroUI installed and configured
+          - Custom olive theme working in light/dark modes
+          - Tailwind v4 configuration updated
+          - ADR-008 revised in architecture.md
+        </deliverables>
+      </dependency>
+
+      <dependency id="story-1-5-2" type="story" critical="true">
+        <name>Story 1.5.2: Hex → HSL Color System Migration</name>
+        <status>✅ COMPLETE</status>
+        <deliverables>
+          - All colors in src/styles/globals.css converted hex → HSL
+          - Visual rendering identical to original hex values
+          - Complete conversion table documented in ui-component-architecture.md Section 1.5.3.1
+        </deliverables>
+      </dependency>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="no-functional-regression" severity="critical">
+      <title>No Functional Regressions</title>
+      <description>
+        All Epic 1 functionality must work identically after migration.
+        Authentication flow, project selection, table view, navigation, settings must all work exactly as before.
+      </description>
+      <validation>
+        - Run manual testing of all Epic 1 user flows
+        - Compare behavior before/after migration
+        - No loss of features or capabilities
+      </validation>
+    </constraint>
+
+    <constraint id="preserve-keyboard-nav" severity="critical">
+      <title>Preserve Keyboard Navigation</title>
+      <description>
+        Tab navigation, Enter/Space for buttons, keyboard accessibility must be maintained.
+        HeroUI built on React Aria, so keyboard support should be preserved automatically.
+      </description>
+      <validation>
+        - Test Tab order through all pages
+        - Test Enter/Space activation on buttons
+        - Verify focus indicators visible (olive ring)
+      </validation>
+    </constraint>
+
+    <constraint id="accessibility-maintained" severity="high">
+      <title>WCAG 2.1 Level AA Accessibility Maintained</title>
+      <description>
+        HeroUI provides WCAG AA compliance out of the box.
+        Must verify accessible labels, focus indicators, color contrast maintained.
+      </description>
+      <validation>
+        - Screen reader testing (labels present)
+        - Keyboard-only navigation works
+        - Focus indicators visible
+      </validation>
+    </constraint>
+
+    <constraint id="no-visual-regression" severity="high">
+      <title>No Visual Regressions</title>
+      <description>
+        Visual appearance should be equivalent or improved after HeroUI migration.
+        Olive accent colors, gray backgrounds, 2-line rows should look the same or better.
+      </description>
+      <validation>
+        - Compare screenshots before/after
+        - Verify olive colors render correctly
+        - Check table row height (52px)
+        - Verify NEW badge styling
+      </validation>
+    </constraint>
+
+    <constraint id="build-success" severity="critical">
+      <title>Build Must Succeed</title>
+      <description>
+        `npm run build` must complete with no errors.
+        `npm run typecheck` must pass with no TypeScript errors.
+      </description>
+      <validation>
+        - Run `npm run build`
+        - Run `npm run typecheck`
+        - No errors in output
+      </validation>
+    </constraint>
+
+    <constraint id="scope-epic-1-only" severity="high">
+      <title>Scope: Epic 1 Components Only</title>
+      <description>
+        This story ONLY migrates Epic 1 components (Stories 1.3, 1.4, 1.6, 1.7, 1.8).
+        Do NOT migrate Epic 2 components (Story 1.5.4 handles Epic 2).
+        Do NOT refactor or redesign - only migrate existing implementation to HeroUI.
+      </description>
+      <validation>
+        - Epic 1 components use HeroUI
+        - Epic 2 components unchanged (still React Aria for now)
+        - No scope creep
+      </validation>
+    </constraint>
+
+    <constraint id="hsl-colors-only" severity="medium">
+      <title>Use HSL Colors (No New Hex Values)</title>
+      <description>
+        Story 1.5.2 converted all colors to HSL.
+        Do NOT introduce new hardcoded hex values.
+        Use HeroUI theme props (`color="primary"`) or HSL design tokens from globals.css.
+      </description>
+      <validation>
+        - Search Epic 1 files for hex color patterns (#[0-9a-fA-F]{3,6})
+        - Verify no new hex values added
+        - All colors use HeroUI theme or HSL tokens
+      </validation>
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface id="heroui-button" type="component" usage="frequent">
+      <name>HeroUI Button</name>
+      <import>import { Button } from '@heroui/react';</import>
+      <description>
+        Primary button component. Replaces React Aria Button throughout Epic 1.
+      </description>
+      <commonProps>
+        - color: "primary" | "default" | "secondary" | "success" | "warning" | "danger"
+        - variant: "solid" | "bordered" | "light" | "flat" | "ghost"
+        - size: "sm" | "md" | "lg"
+        - isDisabled: boolean
+        - onPress: (e) => void
+      </commonProps>
+      <examples>
+        <example>
+          {/* Primary button with olive theme */}
+          <Button color="primary" onPress={handleClick}>
+            Sign in with GitLab
+          </Button>
+        </example>
+        <example>
+          {/* Secondary button */}
+          <Button color="default" variant="bordered" onPress={handleCancel}>
+            Cancel
+          </Button>
+        </example>
+      </examples>
+      <migrationPattern>
+        BEFORE: <Button className="px-4 py-2 bg-olive text-white">Click</Button>
+        AFTER: <Button color="primary">Click</Button>
+      </migrationPattern>
+    </interface>
+
+    <interface id="heroui-checkbox" type="component" usage="frequent">
+      <name>HeroUI Checkbox & CheckboxGroup</name>
+      <import>import { Checkbox, CheckboxGroup } from '@heroui/react';</import>
+      <description>
+        Form checkbox components. Use CheckboxGroup for multiple related checkboxes (project selection).
+      </description>
+      <commonProps>
+        CheckboxGroup:
+        - label: string (group label)
+        - value: string[] (selected values)
+        - onChange: (value: string[]) => void
+
+        Checkbox:
+        - value: string (unique identifier)
+        - isSelected: boolean (controlled)
+        - onChange: (isSelected: boolean) => void
+      </commonProps>
+      <examples>
+        <example>
+          {/* Project selection checkbox list */}
+          <CheckboxGroup
+            label="Select Projects"
+            value={selectedProjects}
+            onChange={setSelectedProjects}
+          >
+            <Checkbox value="project-1">Project 1</Checkbox>
+            <Checkbox value="project-2">Project 2</Checkbox>
+          </CheckboxGroup>
+        </example>
+      </examples>
+      <migrationPattern>
+        BEFORE: Custom checkbox implementation or React Aria Checkbox
+        AFTER: HeroUI CheckboxGroup + Checkbox components
+      </migrationPattern>
+    </interface>
+
+    <interface id="heroui-table" type="component" usage="critical">
+      <name>HeroUI Table</name>
+      <import>import { Table, TableHeader, TableBody, TableColumn, TableRow, TableCell } from '@heroui/react';</import>
+      <description>
+        Table component for dashboard item view. Must preserve 2-line row layout (52px height).
+      </description>
+      <commonProps>
+        Table:
+        - aria-label: string (accessibility)
+        - selectionMode: "none" | "single" | "multiple"
+
+        TableRow:
+        - key: string (unique row identifier)
+      </commonProps>
+      <examples>
+        <example>
+          {/* Basic table structure */}
+          <Table aria-label="GitLab items">
+            <TableHeader>
+              <TableColumn>Item</TableColumn>
+            </TableHeader>
+            <TableBody>
+              <TableRow key="1">
+                <TableCell>
+                  {/* 2-line ItemRow content */}
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </example>
+      </examples>
+      <migrationPattern>
+        BEFORE: React Aria Table with custom styling
+        AFTER: HeroUI Table components, preserve 2-line row layout
+      </migrationPattern>
+    </interface>
+
+    <interface id="heroui-link" type="component" usage="occasional">
+      <name>HeroUI Link</name>
+      <import>import { Link } from '@heroui/react';</import>
+      <description>
+        Navigation link component. Use for internal app navigation in layout.
+      </description>
+      <commonProps>
+        - href: string
+        - color: "foreground" | "primary" | "secondary" | "success" | "warning" | "danger"
+        - isExternal: boolean (opens in new tab)
+      </commonProps>
+      <examples>
+        <example>
+          {/* Navigation link */}
+          <Link href="/dashboard" color="foreground">
+            Dashboard
+          </Link>
+        </example>
+      </examples>
+    </interface>
+
+    <interface id="hsl-design-tokens" type="css-tokens" usage="frequent">
+      <name>HSL Design Tokens (globals.css)</name>
+      <description>
+        CSS custom properties for colors (converted hex → HSL in Story 1.5.2).
+        Use these when HeroUI theme props are insufficient.
+      </description>
+      <tokenCategories>
+        Olive Accent:
+        - --color-olive: hsl(68, 49%, 28%)
+        - --color-olive-light: hsl(68, 36%, 52%)
+        - --color-olive-hover: hsl(68, 49%, 23%)
+        - --color-olive-hover-light: hsl(68, 36%, 58%)
+
+        Gray Scale:
+        - --color-gray-50 through --color-gray-900 (all HSL)
+
+        Semantic:
+        - --color-success / --color-success-dark (HSL)
+        - --color-warning / --color-warning-dark (HSL)
+        - --color-error / --color-error-dark (HSL)
+        - --color-info / --color-info-dark (HSL)
+      </tokenCategories>
+      <usage>
+        Prefer HeroUI `color="primary"` for buttons.
+        Use HSL tokens for custom styling where needed (backgrounds, borders, badges).
+      </usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      <standard id="functional-testing" priority="critical">
+        <name>Functional Regression Testing</name>
+        <description>
+          Manual testing of all Epic 1 user flows to verify no functional regressions after HeroUI migration.
+        </description>
+        <testFlows>
+          1. Authentication Flow:
+             - Navigate to sign-in page
+             - Click "Sign in with GitLab" button (HeroUI Button)
+             - GitLab OAuth redirect → callback → dashboard
+             - Verify authentication successful
+
+          2. Onboarding Flow (first-time user):
+             - Sign in (no projects selected)
+             - See project selection page
+             - Check/uncheck projects (HeroUI Checkbox)
+             - Click "Continue" button (HeroUI Button)
+             - Navigate to dashboard
+             - Verify selected projects saved
+
+          3. Dashboard Table View:
+             - See table with items (HeroUI Table)
+             - Verify 2-line rows (52px height)
+             - Verify badges (issue/MR/comment types)
+             - Verify NEW badge styling (olive background)
+             - Verify item data displays correctly
+
+          4. Settings Page:
+             - Navigate to Settings
+             - See project checkbox list (HeroUI CheckboxGroup)
+             - Modify project selection
+             - Click "Save" button (HeroUI Button)
+             - Verify persistence (refresh page, selection retained)
+
+          5. Navigation:
+             - Dashboard ↔ Settings navigation (HeroUI Link or Button)
+             - Verify nav links work
+        </testFlows>
+      </standard>
+
+      <standard id="keyboard-nav-testing" priority="critical">
+        <name>Keyboard Navigation Testing</name>
+        <description>
+          Verify Tab navigation, focus indicators, Enter/Space activation preserved after HeroUI migration.
+        </description>
+        <testSteps>
+          1. Authentication Page:
+             - Tab to "Sign in with GitLab" button
+             - Verify focus indicator visible (olive ring)
+             - Press Enter or Space
+             - Verify button activates
+
+          2. Onboarding Page:
+             - Tab through project checkboxes
+             - Verify focus indicators on each checkbox
+             - Press Space to toggle checkbox
+             - Tab to "Continue" button
+             - Press Enter to submit
+
+          3. Dashboard Table:
+             - Tab through table rows (if applicable)
+             - Verify focus indicators on focusable elements
+
+          4. Settings Page:
+             - Tab through checkboxes
+             - Space to toggle
+             - Tab to Save button
+             - Enter to save
+        </testSteps>
+      </standard>
+
+      <standard id="visual-regression-testing" priority="high">
+        <name>Visual Regression Testing</name>
+        <description>
+          Compare visual appearance before/after HeroUI migration.
+          Verify olive colors, gray backgrounds, 2-line rows look correct.
+        </description>
+        <checkpoints>
+          1. Button Styling:
+             - Primary button: olive background (hsl(68, 49%, 28%) light or hsl(68, 36%, 52%) dark)
+             - Button hover states work
+             - Focus indicators visible (olive ring)
+
+          2. Checkbox Styling:
+             - Checkbox checked state: olive accent
+             - Checkbox labels readable
+             - CheckboxGroup layout clean
+
+          3. Table View:
+             - 2-line row layout preserved (52px height)
+             - Badge colors correct (purple issue, blue MR, gray comment)
+             - NEW badge: olive background
+             - Row hover states work
+
+          4. Overall Layout:
+             - Navigation styling clean
+             - Dashboard structure intact
+             - Settings page layout correct
+        </checkpoints>
+      </standard>
+
+      <standard id="accessibility-testing" priority="high">
+        <name>Accessibility Testing (WCAG 2.1 AA)</name>
+        <description>
+          Verify HeroUI components maintain WCAG 2.1 Level AA compliance.
+        </description>
+        <checks>
+          1. Screen Reader Labels:
+             - Button has accessible name ("Sign in with GitLab")
+             - Checkbox has label
+             - Table has aria-label
+
+          2. Focus Indicators:
+             - All interactive elements show focus indicator
+             - Focus indicator meets 3:1 contrast minimum
+             - Olive focus ring visible on buttons, checkboxes, links
+
+          3. Color Contrast:
+             - Button text on olive background: verify contrast ratio
+             - Table text readable
+             - Badge text readable
+
+          4. Keyboard-Only Navigation:
+             - All functionality accessible via keyboard
+             - No keyboard traps
+             - Tab order logical
+        </checks>
+      </standard>
+
+      <standard id="build-validation" priority="critical">
+        <name>Build & TypeScript Validation</name>
+        <description>
+          Verify production build succeeds and TypeScript compiles without errors.
+        </description>
+        <commands>
+          npm run typecheck  # Must pass with 0 errors
+          npm run build      # Must complete successfully
+        </commands>
+        <validation>
+          - TypeScript: 0 errors
+          - Build: Successful
+          - No warnings about HeroUI imports
+          - Production bundle includes all Epic 1 pages
+        </validation>
+      </standard>
+    </standards>
+
+    <locations>
+      <location id="test-pages" relevance="high">
+        <description>Manual testing locations (browser-based)</description>
+        <pages>
+          - http://localhost:3000/sign-in (authentication)
+          - http://localhost:3000/onboarding (project selection)
+          - http://localhost:3000/dashboard (table view)
+          - http://localhost:3000/settings (settings page)
+        </pages>
+        <note>Run `npm run dev` to start dev server for manual testing</note>
+      </location>
+
+      <location id="component-files" relevance="high">
+        <description>Epic 1 component file locations for code review</description>
+        <patterns>
+          - src/app/(auth)/**/*.tsx (Story 1.3)
+          - src/app/onboarding/**/*.tsx OR src/components/onboarding/**/*.tsx (Story 1.4)
+          - src/components/dashboard/**/*.tsx (Story 1.6)
+          - src/app/layout.tsx, src/components/layout/**/*.tsx (Story 1.7)
+          - src/app/settings/**/*.tsx (Story 1.8)
+        </patterns>
+      </location>
+
+      <location id="build-commands" relevance="critical">
+        <description>Build validation commands</description>
+        <commands>
+          npm run typecheck  # TypeScript validation
+          npm run build      # Production build
+        </commands>
+      </location>
+    </locations>
+
+    <ideas>
+      <idea id="screenshot-comparison" priority="medium">
+        <title>Before/After Screenshot Comparison</title>
+        <description>
+          Take screenshots of Epic 1 pages before migration (if available from git history or previous testing).
+          Take screenshots after migration.
+          Compare side-by-side to verify no visual regressions.
+        </description>
+        <implementation>
+          - Use browser DevTools screenshot feature
+          - Save to docs/sprint-artifacts/screenshots/epic-1-migration/
+          - Document any differences (should be improvements or identical)
+        </implementation>
+      </idea>
+
+      <idea id="component-audit-script" priority="low">
+        <title>Automated Component Audit Script</title>
+        <description>
+          Write grep/rg script to find hardcoded hex values and raw button/checkbox elements in Epic 1 files.
+          Helps validate AC 1.5.3.6, 1.5.3.7, 1.5.3.8.
+        </description>
+        <implementation>
+          # Find hex colors in Epic 1 files
+          rg '#[0-9a-fA-F]{3,6}' src/app/\(auth\) src/app/onboarding src/components/dashboard src/app/settings src/app/layout.tsx
+
+          # Find raw button elements
+          rg '<button' src/app/\(auth\) src/app/onboarding src/components/dashboard src/app/settings
+
+          # Find raw checkbox inputs
+          rg 'type="checkbox"' src/app/onboarding src/app/settings
+        </implementation>
+      </idea>
+
+      <idea id="migration-checklist" priority="medium">
+        <title>Story-by-Story Migration Checklist</title>
+        <description>
+          Track migration progress for each Epic 1 story with a simple checklist.
+          Ensures systematic coverage of all components.
+        </description>
+        <checklist>
+          Story 1.3 (Auth):
+          - [ ] Locate sign-in page component
+          - [ ] Migrate "Sign in with GitLab" button → HeroUI Button
+          - [ ] Test auth flow
+          - [ ] Add migration note to story file
+
+          Story 1.4 (Onboarding):
+          - [ ] Locate onboarding page
+          - [ ] Migrate checkboxes → HeroUI CheckboxGroup/Checkbox
+          - [ ] Migrate Continue button → HeroUI Button
+          - [ ] Test onboarding flow
+          - [ ] Add migration note to story file
+
+          Story 1.6 (Table):
+          - [ ] Locate ItemRow component
+          - [ ] Migrate table → HeroUI Table components
+          - [ ] Verify 2-line row layout
+          - [ ] Test table rendering
+          - [ ] Add migration note to story file
+
+          Story 1.7 (Layout):
+          - [ ] Locate layout components
+          - [ ] Migrate nav links → HeroUI Link/Button
+          - [ ] Test navigation
+          - [ ] Add migration note to story file
+
+          Story 1.8 (Settings):
+          - [ ] Locate settings page
+          - [ ] Migrate checkboxes → HeroUI CheckboxGroup/Checkbox
+          - [ ] Migrate Save button → HeroUI Button
+          - [ ] Test settings flow
+          - [ ] Add migration note to story file
+        </checklist>
+      </idea>
+    </ideas>
+  </tests>
+</story-context>
