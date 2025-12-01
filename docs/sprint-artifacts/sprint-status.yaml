@@ -76,7 +76,7 @@ development_status:
   # Documentation integrated into each story (no separate doc story)
   epic-1-5: backlog
   1-5-1-heroui-setup-custom-olive-theme: done
-  1-5-2-hex-to-hsl-color-migration: backlog
+  1-5-2-hex-to-hsl-color-migration: done
   1-5-3-epic-1-component-migration: backlog
   1-5-4-epic-2-component-migration: backlog
   1-5-5-testing-validation-polish: backlog

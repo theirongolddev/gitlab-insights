@@ -5,50 +5,50 @@
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 
   /* Olive/Moss Green Accent Colors */
-  --color-olive: #5e6b24;
-  --color-olive-light: #9DAA5F;
-  --color-olive-hover: #4F5A1F;
-  --color-olive-hover-light: #A8B86C;
+  --color-olive: hsl(68, 49%, 28%); /* was #5e6b24 */
+  --color-olive-light: hsl(68, 36%, 52%); /* was #9DAA5F */
+  --color-olive-hover: hsl(68, 49%, 23%); /* was #4F5A1F */
+  --color-olive-hover-light: hsl(68, 36%, 58%); /* was #A8B86C */
 
   /* Base Colors */
-  --color-bg-dark: #2d2e2e;
-  --color-bg-light: #FDFFFC;
+  --color-bg-dark: hsl(0, 2%, 18%); /* was #2d2e2e */
+  --color-bg-light: hsl(120, 100%, 99%); /* was #FDFFFC */
 
   /* Semantic Colors - Success */
-  --color-success: #16A34A;        /* Light mode */
-  --color-success-dark: #22C55E;   /* Dark mode */
+  --color-success: hsl(142, 71%, 37%); /* was #16A34A - Light mode */
+  --color-success-dark: hsl(142, 71%, 45%); /* was #22C55E - Dark mode */
 
   /* Semantic Colors - Warning */
-  --color-warning: #F59E0B;        /* Light mode */
-  --color-warning-dark: #FDE047;   /* Dark mode */
+  --color-warning: hsl(38, 92%, 50%); /* was #F59E0B - Light mode */
+  --color-warning-dark: hsl(54, 97%, 63%); /* was #FDE047 - Dark mode */
 
   /* Semantic Colors - Error */
-  --color-error: #B91C1C;          /* Light mode */
-  --color-error-dark: #DC2626;     /* Dark mode */
+  --color-error: hsl(0, 72%, 42%); /* was #B91C1C - Light mode */
+  --color-error-dark: hsl(0, 72%, 51%); /* was #DC2626 - Dark mode */
 
   /* Semantic Colors - Info */
-  --color-info: #0284C7;           /* Light mode */
-  --color-info-dark: #38BDF8;      /* Dark mode */
+  --color-info: hsl(199, 97%, 39%); /* was #0284C7 - Light mode */
+  --color-info-dark: hsl(199, 92%, 60%); /* was #38BDF8 - Dark mode */
 
   /* Event Type Badge Colors */
-  --color-badge-issue: #8B5CF6;        /* Light mode purple */
-  --color-badge-issue-dark: #A78BFA;   /* Dark mode purple */
-  --color-badge-mr: #0EA5E9;           /* Light mode blue */
-  --color-badge-mr-dark: #38BDF8;      /* Dark mode blue */
-  --color-badge-comment: #64748B;      /* Light mode gray */
-  --color-badge-comment-dark: #94A3B8; /* Dark mode gray */
+  --color-badge-issue: hsl(258, 90%, 66%); /* was #8B5CF6 - Light mode purple */
+  --color-badge-issue-dark: hsl(258, 90%, 76%); /* was #A78BFA - Dark mode purple */
+  --color-badge-mr: hsl(199, 89%, 48%); /* was #0EA5E9 - Light mode blue */
+  --color-badge-mr-dark: hsl(199, 93%, 60%); /* was #38BDF8 - Dark mode blue */
+  --color-badge-comment: hsl(215, 16%, 47%); /* was #64748B - Light mode gray */
+  --color-badge-comment-dark: hsl(214, 17%, 66%); /* was #94A3B8 - Dark mode gray */
 
   /* Neutral Gray Scale */
-  --color-gray-50: #F9FAFB;
-  --color-gray-100: #F3F4F6;
-  --color-gray-200: #E5E7EB;
-  --color-gray-300: #D1D5DB;
-  --color-gray-400: #9CA3AF;
-  --color-gray-500: #6B7280;
-  --color-gray-600: #4B5563;
-  --color-gray-700: #374151;
-  --color-gray-800: #1F2937;
-  --color-gray-900: #111827;
+  --color-gray-50: hsl(210, 20%, 98%); /* was #F9FAFB */
+  --color-gray-100: hsl(220, 14%, 96%); /* was #F3F4F6 */
+  --color-gray-200: hsl(220, 13%, 91%); /* was #E5E7EB */
+  --color-gray-300: hsl(214, 12%, 83%); /* was #D1D5DB */
+  --color-gray-400: hsl(218, 11%, 65%); /* was #9CA3AF */
+  --color-gray-500: hsl(220, 9%, 46%); /* was #6B7280 */
+  --color-gray-600: hsl(215, 16%, 34%); /* was #4B5563 */
+  --color-gray-700: hsl(217, 19%, 27%); /* was #374151 */
+  --color-gray-800: hsl(215, 28%, 17%); /* was #1F2937 */
+  --color-gray-900: hsl(221, 39%, 11%); /* was #111827 */
 
   /* Semantic Tokens (Dark Mode Context) */
   --color-text-primary: var(--color-gray-50);
@@ -92,7 +92,7 @@
  * AC 2.5.4: Inherits text color for contrast on dark background
  */
 mark {
-  background-color: rgba(157, 170, 95, 0.5);
+  background-color: hsl(68 36% 52% / 0.5); /* was rgba(157, 170, 95, 0.5) - olive-light with 50% opacity */
   color: inherit;
   padding: 1px 4px;
   border-radius: 4px; /* rounded-sm equivalent */

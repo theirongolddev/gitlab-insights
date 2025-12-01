@@ -240,6 +240,78 @@ Custom olive theme uses HSL color format for easier theming and color manipulati
 | Dark | Primary | `hsl(68, 36%, 52%)` | #9DAA5F |
 | Dark | Foreground | `#000000` | Black |
 
+### 1.5.3.1 Complete Hex → HSL Conversion Table
+
+**Updated:** Story 1.5.2 (2025-12-01)
+
+All design tokens in `src/styles/globals.css` have been migrated from hex to HSL format. This table documents the complete conversion for reference:
+
+#### Olive/Moss Accent Colors
+
+| Color Name | Hex Value | HSL Value | Usage |
+|------------|-----------|-----------|-------|
+| `--color-olive` | #5e6b24 | `hsl(68, 49%, 28%)` | Light mode primary accent |
+| `--color-olive-light` | #9DAA5F | `hsl(68, 36%, 52%)` | Dark mode primary accent |
+| `--color-olive-hover` | #4F5A1F | `hsl(68, 49%, 23%)` | Light mode hover state |
+| `--color-olive-hover-light` | #A8B86C | `hsl(68, 36%, 58%)` | Dark mode hover state |
+
+#### Base Colors
+
+| Color Name | Hex Value | HSL Value | Usage |
+|------------|-----------|-----------|-------|
+| `--color-bg-dark` | #2d2e2e | `hsl(0, 2%, 18%)` | Dark background |
+| `--color-bg-light` | #FDFFFC | `hsl(120, 100%, 99%)` | Light background |
+
+#### Semantic Colors
+
+| Color Name | Hex Value | HSL Value | Usage |
+|------------|-----------|-----------|-------|
+| `--color-success` | #16A34A | `hsl(142, 71%, 37%)` | Success state (light mode) |
+| `--color-success-dark` | #22C55E | `hsl(142, 71%, 45%)` | Success state (dark mode) |
+| `--color-warning` | #F59E0B | `hsl(38, 92%, 50%)` | Warning state (light mode) |
+| `--color-warning-dark` | #FDE047 | `hsl(54, 97%, 63%)` | Warning state (dark mode) |
+| `--color-error` | #B91C1C | `hsl(0, 72%, 42%)` | Error state (light mode) |
+| `--color-error-dark` | #DC2626 | `hsl(0, 72%, 51%)` | Error state (dark mode) |
+| `--color-info` | #0284C7 | `hsl(199, 97%, 39%)` | Info state (light mode) |
+| `--color-info-dark` | #38BDF8 | `hsl(199, 92%, 60%)` | Info state (dark mode) |
+
+#### Event Type Badge Colors
+
+| Color Name | Hex Value | HSL Value | Usage |
+|------------|-----------|-----------|-------|
+| `--color-badge-issue` | #8B5CF6 | `hsl(258, 90%, 66%)` | Issue badge (light mode) |
+| `--color-badge-issue-dark` | #A78BFA | `hsl(258, 90%, 76%)` | Issue badge (dark mode) |
+| `--color-badge-mr` | #0EA5E9 | `hsl(199, 89%, 48%)` | MR badge (light mode) |
+| `--color-badge-mr-dark` | #38BDF8 | `hsl(199, 93%, 60%)` | MR badge (dark mode) |
+| `--color-badge-comment` | #64748B | `hsl(215, 16%, 47%)` | Comment badge (light mode) |
+| `--color-badge-comment-dark` | #94A3B8 | `hsl(214, 17%, 66%)` | Comment badge (dark mode) |
+
+#### Neutral Gray Scale
+
+| Color Name | Hex Value | HSL Value | Usage |
+|------------|-----------|-----------|-------|
+| `--color-gray-50` | #F9FAFB | `hsl(210, 20%, 98%)` | Lightest gray |
+| `--color-gray-100` | #F3F4F6 | `hsl(220, 14%, 96%)` | Very light gray |
+| `--color-gray-200` | #E5E7EB | `hsl(220, 13%, 91%)` | Light gray |
+| `--color-gray-300` | #D1D5DB | `hsl(214, 12%, 83%)` | Medium-light gray |
+| `--color-gray-400` | #9CA3AF | `hsl(218, 11%, 65%)` | Medium gray |
+| `--color-gray-500` | #6B7280 | `hsl(220, 9%, 46%)` | Medium-dark gray |
+| `--color-gray-600` | #4B5563 | `hsl(215, 16%, 34%)` | Dark gray |
+| `--color-gray-700` | #374151 | `hsl(217, 19%, 27%)` | Darker gray |
+| `--color-gray-800` | #1F2937 | `hsl(215, 28%, 17%)` | Very dark gray |
+| `--color-gray-900` | #111827 | `hsl(221, 39%, 11%)` | Darkest gray |
+
+**Benefits of HSL Format:**
+- **Easier theme variations**: Adjust lightness/saturation without recalculating hex values
+- **Better maintainability**: Color relationships more intuitive (same hue, different lightness)
+- **Industry standard**: Modern CSS frameworks and design systems use HSL
+- **Tooling support**: Better integration with CSS preprocessors and design tools
+
+**Visual Verification:**
+- All colors verified to render identically to original hex values using browser DevTools color picker
+- Test page `/test-heroui-theme` shows olive colors rendering correctly in both light and dark modes
+- No visual regressions detected
+
 ### 1.5.4 Basic Usage
 
 **HeroUIProvider (Required):**
@@ -309,8 +381,8 @@ import { Button } from '@heroui/react';
 - Professional polish out of the box
 
 **Migration Status:**
-- Story 1.5.1: ✅ HeroUI installed and configured
-- Story 1.5.2: 🔄 Hex → HSL color migration (pending)
+- Story 1.5.1: ✅ HeroUI installed and configured (2025-11-28)
+- Story 1.5.2: ✅ Hex → HSL color migration complete (2025-12-01)
 - Story 1.5.3: 🔄 Epic 1 component migration (pending)
 - Story 1.5.4: 🔄 Epic 2 component migration (pending)
 - Story 1.5.5: 🔄 Testing & validation (pending)

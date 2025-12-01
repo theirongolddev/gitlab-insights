@@ -1,0 +1,231 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1.5</epicId>
+    <storyId>2</storyId>
+    <title>Hex → HSL Color System Migration</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-28</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/1-5-2-hex-to-hsl-color-migration.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer implementing HeroUI component migrations</asA>
+    <iWant>all hex color codes in `globals.css` converted to HSL format</iWant>
+    <soThat>I have a unified, maintainable color system that supports easy theme variations and aligns with the HeroUI theme configuration</soThat>
+    <tasks>
+      <task id="1" desc="Convert Olive/Moss Accent Colors to HSL">
+        <subtask id="1.1">Convert --color-olive: #5e6b24 → hsl(68, 49%, 28%) with inline comment</subtask>
+        <subtask id="1.2">Convert --color-olive-light: #9DAA5F → hsl(68, 36%, 52%) with inline comment</subtask>
+        <subtask id="1.3">Convert --color-olive-hover: #4F5A1F → hsl(68, 49%, 22%) with inline comment</subtask>
+        <subtask id="1.4">Convert --color-olive-hover-light: #A8B86C → hsl(68, 36%, 56%) with inline comment</subtask>
+        <subtask id="1.5">Verify conversions match tailwind.config.ts theme values exactly</subtask>
+        <subtask id="1.6">Add inline comments: /* hsl(68, 49%, 28%) = #5e6b24 */</subtask>
+      </task>
+      <task id="2" desc="Convert Base Colors to HSL">
+        <subtask id="2.1">Convert --color-bg-dark: #2d2e2e → hsl(0, 2%, 18%) with inline comment</subtask>
+        <subtask id="2.2">Convert --color-bg-light: #FDFFFC → hsl(120, 100%, 99%) with inline comment</subtask>
+        <subtask id="2.3">Verify conversions visually identical (DevTools color picker)</subtask>
+      </task>
+      <task id="3" desc="Convert Semantic Colors to HSL">
+        <subtask id="3.1">Success colors: --color-success: #16A34A → hsl(142, 71%, 37%), --color-success-dark: #22C55E → hsl(142, 71%, 45%)</subtask>
+        <subtask id="3.2">Warning colors: --color-warning: #F59E0B → hsl(38, 92%, 50%), --color-warning-dark: #FDE047 → hsl(54, 97%, 63%)</subtask>
+        <subtask id="3.3">Error colors: --color-error: #B91C1C → hsl(0, 72%, 42%), --color-error-dark: #DC2626 → hsl(0, 72%, 51%)</subtask>
+        <subtask id="3.4">Info colors: --color-info: #0284C7 → hsl(199, 97%, 39%), --color-info-dark: #38BDF8 → hsl(199, 97%, 60%)</subtask>
+        <subtask id="3.5">Add inline comments for all conversions</subtask>
+      </task>
+      <task id="4" desc="Convert Event Type Badge Colors to HSL">
+        <subtask id="4.1">Issue badge colors: --color-badge-issue: #8B5CF6 → hsl(258, 90%, 66%), --color-badge-issue-dark: #A78BFA → hsl(258, 90%, 76%)</subtask>
+        <subtask id="4.2">MR badge colors: --color-badge-mr: #0EA5E9 → hsl(199, 89%, 48%), --color-badge-mr-dark: #38BDF8 → hsl(199, 93%, 60%)</subtask>
+        <subtask id="4.3">Comment badge colors: --color-badge-comment: #64748B → hsl(215, 16%, 47%), --color-badge-comment-dark: #94A3B8 → hsl(214, 17%, 66%)</subtask>
+        <subtask id="4.4">Add inline comments for all conversions</subtask>
+      </task>
+      <task id="5" desc="Convert Neutral Gray Scale to HSL">
+        <subtask id="5.1">Convert gray-50 through gray-900 (11 colors total)</subtask>
+        <subtask id="5.2">Maintain consistent saturation values across gray scale</subtask>
+        <subtask id="5.3">Verify gray scale appears neutral (no color tint)</subtask>
+        <subtask id="5.4">Add inline comments for each conversion</subtask>
+      </task>
+      <task id="6" desc="Visual Regression Testing">
+        <subtask id="6.1">Open test page /test-heroui-theme in browser</subtask>
+        <subtask id="6.2">Compare before/after screenshots (if available)</subtask>
+        <subtask id="6.3">Use browser DevTools color picker to verify HSL values render identically to hex</subtask>
+        <subtask id="6.4">Check olive buttons: primary color should look identical</subtask>
+        <subtask id="6.5">Toggle dark mode: verify all colors render correctly</subtask>
+        <subtask id="6.6">Check color swatches: verify visual consistency</subtask>
+        <subtask id="6.7">Document any visual differences (should be none)</subtask>
+      </task>
+      <task id="7" desc="Update ui-component-architecture.md">
+        <subtask id="7.1">Open docs/ui-component-architecture.md</subtask>
+        <subtask id="7.2">Add Hex→HSL conversion table to Section 1.5</subtask>
+        <subtask id="7.3">Format as markdown table with columns: Color Name, Hex, HSL, Usage</subtask>
+        <subtask id="7.4">Include all color categories: olive, base, semantic, badge, gray</subtask>
+        <subtask id="7.5">Add note: "Updated in Story 1.5.2 (2025-11-28)"</subtask>
+      </task>
+      <task id="8" desc="Update ux-design-specification.md">
+        <subtask id="8.1">Open docs/ux-design-specification.md</subtask>
+        <subtask id="8.2">Locate Section 3.1 (Color System)</subtask>
+        <subtask id="8.3">Replace all hex values with HSL values in color definitions</subtask>
+        <subtask id="8.4">Update olive accent color examples to show HSL</subtask>
+        <subtask id="8.5">Update semantic color examples to show HSL</subtask>
+        <subtask id="8.6">Add note: "Updated to HSL format in Story 1.5.2 (2025-11-28)"</subtask>
+      </task>
+      <task id="9" desc="Build and TypeScript Validation">
+        <subtask id="9.1">Run: npm run typecheck to verify no TypeScript errors</subtask>
+        <subtask id="9.2">Run: npm run build to verify production build succeeds</subtask>
+        <subtask id="9.3">Check build output for warnings or errors</subtask>
+        <subtask id="9.4">Verify test page included in build output</subtask>
+        <subtask id="9.5">Production build validation complete</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1.5.2.1">All hex color codes in src/styles/globals.css converted to HSL format with inline comments showing hex equivalents</criterion>
+    <criterion id="1.5.2.2">Olive/moss accent colors converted: #5e6b24 → hsl(68, 49%, 28%), #9DAA5F → hsl(68, 36%, 52%)</criterion>
+    <criterion id="1.5.2.3">Base colors converted: #2d2e2e → hsl(0, 2%, 18%), #FDFFFC → hsl(120, 100%, 99%)</criterion>
+    <criterion id="1.5.2.4">Semantic colors (success, warning, error, info) converted to HSL for both light and dark modes</criterion>
+    <criterion id="1.5.2.5">Event type badge colors (purple, blue, gray) converted to HSL</criterion>
+    <criterion id="1.5.2.6">Neutral gray scale (50-900) converted to HSL with consistent saturation values</criterion>
+    <criterion id="1.5.2.7">Visual rendering identical to pre-migration (browser DevTools color picker verification)</criterion>
+    <criterion id="1.5.2.8">Hex→HSL conversion table added to docs/ui-component-architecture.md Section 1.5</criterion>
+    <criterion id="1.5.2.9">docs/ux-design-specification.md Section 3.1 (Color System) updated to show HSL values</criterion>
+    <criterion id="1.5.2.10">Test page /test-heroui-theme renders identically to Story 1.5.1 (visual regression check)</criterion>
+    <criterion id="1.5.2.11">npm run build succeeds with no errors</criterion>
+    <criterion id="1.5.2.12">npm run typecheck passes with no TypeScript errors</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epics/epic-1-5-heroui-migration.md</path>
+        <title>Epic 1.5: HeroUI Migration &amp; HSL Color System</title>
+        <section>Story 1.5.2: Hex → HSL Color System Migration (lines 95-112)</section>
+        <snippet>Scope: Convert all src/styles/globals.css hex → HSL, update CSS custom properties, verify color rendering identical to hex, add inline comments, document hex→HSL conversion table in ui-component-architecture.md, update ux-design-specification.md Section 3.1 (color system). Deliverables: All colors converted to HSL, visual rendering identical, conversion table documented.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics/epic-1-5-heroui-migration.md</path>
+        <title>Epic 1.5: HeroUI Migration &amp; HSL Color System</title>
+        <section>HSL Color System - Conversion Table (lines 231-248)</section>
+        <snippet>Reference conversion table: Olive #5e6b24 → hsl(68, 49%, 28%), Olive Light #9DAA5F → hsl(68, 36%, 52%), Background Dark #2d2e2e → hsl(0, 2%, 18%), Background Light #FDFFFC → hsl(120, 100%, 99%), Semantic colors: Success #16A34A → hsl(142, 71%, 37%), Warning #F59E0B → hsl(38, 92%, 50%), Error #B91C1C → hsl(0, 72%, 42%), Info #0284C7 → hsl(199, 97%, 39%)</snippet>
+      </doc>
+      <doc>
+        <path>docs/ui-component-architecture.md</path>
+        <title>UI Component Architecture</title>
+        <section>Section 1.1 Color Token Reference (lines 21-100)</section>
+        <snippet>Defines all color tokens in globals.css: Accent Colors (olive/moss green), Semantic Colors (success, warning, error, info), Event Type Badge Colors (issue purple, MR blue, comment gray), Neutral Gray Scale (50-900). **Currently uses hex values - needs conversion to HSL as part of Story 1.5.2.** Section 1.5 needs Hex→HSL conversion table added.</snippet>
+      </doc>
+      <doc>
+        <path>docs/ux-design-specification.md</path>
+        <title>UX Design Specification</title>
+        <section>Section 3.1 (assumed Color System location)</section>
+        <snippet>Contains color system documentation that needs updating from hex to HSL values to align with HeroUI theme configuration and design token migration.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>ADR-008 (HeroUI decision - referenced in epic)</section>
+        <snippet>Architecture Decision Record for HeroUI choice. Story 1.5.1 revised this ADR. Story 1.5.2 does not require changes to architecture.md per Dev Notes.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/1-5-1-heroui-setup-custom-olive-theme.md</path>
+        <title>Story 1.5.1: HeroUI Setup &amp; Custom Olive Theme (completed)</title>
+        <section>Learnings from Previous Story</section>
+        <snippet>Story 1.5.1 established HeroUI foundation with HSL theme config in tailwind.config.ts. Key patterns to reuse: inline comments for conversions, visual validation via test page, DevTools color picker verification, comprehensive documentation updates. HeroUI theme uses exact HSL values: hsl(68, 49%, 28%) and hsl(68, 36%, 52%) for olive colors - must match in globals.css.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>src/styles/globals.css</path>
+        <kind>stylesheet</kind>
+        <symbol>@theme block</symbol>
+        <lines>1-100</lines>
+        <reason>PRIMARY FILE TO MODIFY: Contains all hex color definitions that need conversion to HSL. Lines 8-51 define color tokens currently in hex format (#5e6b24, #9DAA5F, etc.). All hex values must be converted to HSL with inline comments showing original hex equivalents.</reason>
+      </artifact>
+      <artifact>
+        <path>tailwind.config.ts</path>
+        <kind>config</kind>
+        <symbol>heroui theme configuration</symbol>
+        <lines>14-36</lines>
+        <reason>REFERENCE FILE: HeroUI theme already configured with HSL values for olive colors: hsl(68, 49%, 28%) for light mode, hsl(68, 36%, 52%) for dark mode. These exact values must match globals.css conversions for consistency.</reason>
+      </artifact>
+      <artifact>
+        <path>src/app/test-heroui-theme/page.tsx</path>
+        <kind>component</kind>
+        <symbol>TestHeroUITheme component</symbol>
+        <lines>1-151</lines>
+        <reason>VISUAL REGRESSION TESTING: Test page from Story 1.5.1 showing olive theme colors. Use for before/after visual comparison to verify HSL conversion produces identical rendering. Lines 106-130 show color reference swatches with expected HSL values.</reason>
+      </artifact>
+      <artifact>
+        <path>docs/ui-component-architecture.md</path>
+        <kind>documentation</kind>
+        <symbol>Section 1.5 (to add)</symbol>
+        <lines>n/a</lines>
+        <reason>DOCUMENTATION TO UPDATE: Section 1.5 needs Hex→HSL conversion table added per AC 1.5.2.8. Table should include columns: Color Name, Hex, HSL, Usage. Section 1.1 (lines 21-100) currently documents all color tokens in hex - reference for conversion table.</reason>
+      </artifact>
+      <artifact>
+        <path>docs/ux-design-specification.md</path>
+        <kind>documentation</kind>
+        <symbol>Section 3.1 Color System</symbol>
+        <lines>unknown</lines>
+        <reason>DOCUMENTATION TO UPDATE: Replace all hex values with HSL values in color system documentation per AC 1.5.2.9. Update olive accent color examples, semantic color examples to show HSL format.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="@heroui/react" version="^2.8.5">HeroUI design system - theme configuration uses HSL format</package>
+        <package name="tailwindcss" version="^4.0.15">Tailwind CSS v4 - supports HSL in @theme directive</package>
+        <package name="@tailwindcss/postcss" version="^4.0.15">PostCSS plugin for Tailwind v4</package>
+        <package name="framer-motion" version="^12.23.24">Used by HeroUI for animations</package>
+        <package name="next" version="^16.0.4">Next.js framework - no changes needed for color migration</package>
+        <package name="react" version="^19.2.0">React - no changes needed</package>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Visual rendering must be identical to pre-migration (no color shifts) - verify using browser DevTools color picker that HSL renders as expected hex values</constraint>
+    <constraint>Must maintain visual consistency across light and dark modes - test theme toggle on /test-heroui-theme page</constraint>
+    <constraint>HSL conversions for olive colors must match tailwind.config.ts theme values exactly: hsl(68, 49%, 28%) and hsl(68, 36%, 52%)</constraint>
+    <constraint>All hex→HSL conversions must include inline comments showing original hex equivalents for debugging and verification</constraint>
+    <constraint>No changes to component code - this story updates design tokens only (Stories 1.5.3-1.5.4 will update components)</constraint>
+    <constraint>No database changes - styling-only story</constraint>
+    <constraint>No API changes - CSS-only story</constraint>
+    <constraint>Build validation required: npm run build and npm run typecheck must pass with no errors</constraint>
+    <constraint>Per ADR-006: Minimal testing for MVP - TypeScript compilation, production build validation, and visual regression testing required; unit/integration tests not required</constraint>
+  </constraints>
+  <interfaces>
+    <interface>
+      <name>CSS Custom Properties (@theme directive)</name>
+      <kind>design token system</kind>
+      <signature>--color-{name}: hsl(hue, saturation%, lightness%) /* was #XXXXXX */</signature>
+      <path>src/styles/globals.css</path>
+      <notes>Tailwind CSS v4 @theme directive defines CSS custom properties. All color tokens use this interface. Format: HSL functional notation with inline hex comment for reference.</notes>
+    </interface>
+    <interface>
+      <name>HeroUI Theme Colors</name>
+      <kind>theme configuration</kind>
+      <signature>{ light: { colors: { primary: { DEFAULT: "hsl(...)", foreground: "#..." } } }, dark: { ... } }</signature>
+      <path>tailwind.config.ts</path>
+      <notes>HeroUI plugin configuration for custom olive theme. Already uses HSL format. globals.css conversions must align with these values for consistency.</notes>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>Per ADR-006 (Minimal Testing for MVP): TypeScript compilation (npm run typecheck) and production build validation (npm run build) are REQUIRED. Visual regression testing via test page comparison is REQUIRED for color migration stories. Unit tests and integration tests are NOT required for MVP. Browser DevTools color picker verification is REQUIRED to confirm HSL values render identically to original hex values.</standards>
+    <locations>
+      <location>src/app/test-heroui-theme/page.tsx - Visual regression test page for theme validation</location>
+      <location>No unit test files - testing strategy is build validation + visual verification only</location>
+      <location>Browser DevTools - Color picker verification tool for HSL → hex visual equivalence</location>
+    </locations>
+    <ideas>
+      <test ac="1.5.2.7, 1.5.2.10">Visual Regression: Compare /test-heroui-theme page before/after migration. Take screenshots or use DevTools to verify olive buttons, color swatches, and all theme colors render identically in both light and dark modes. No pixel differences expected.</test>
+      <test ac="1.5.2.7">DevTools Color Picker Verification: For each converted color in globals.css, use browser DevTools color picker to click the rendered color and verify the computed HSL value matches the original hex value visually (RGB values should be identical or within 1-2 units due to rounding).</test>
+      <test ac="1.5.2.2">Olive Color Consistency: Verify hsl(68, 49%, 28%) in globals.css renders identically to #5e6b24 using DevTools. Verify hsl(68, 36%, 52%) renders identically to #9DAA5F. These must match tailwind.config.ts theme values exactly.</test>
+      <test ac="1.5.2.4">Semantic Color Verification: Test each semantic color (success, warning, error, info) in both light and dark modes using DevTools color picker. Verify HSL conversions produce visually identical rendering to original hex values.</test>
+      <test ac="1.5.2.5, 1.5.2.6">Badge and Gray Scale Verification: Test event type badge colors (purple, blue, gray) and neutral gray scale (50-900) using DevTools. Verify no color tint introduced, consistent saturation across gray scale.</test>
+      <test ac="1.5.2.11">Production Build: Run npm run build and verify zero errors, zero warnings. Check build output for successful compilation of all pages including test page.</test>
+      <test ac="1.5.2.12">TypeScript Validation: Run npm run typecheck and verify zero TypeScript errors. CSS changes should not affect type checking, but verify no regressions.</test>
+      <test ac="1.5.2.10">Dark Mode Toggle Test: On /test-heroui-theme page, toggle between light and dark modes multiple times. Verify smooth transitions, no flash of unstyled content, colors render correctly in both modes.</test>
+    </ideas>
+  </tests>
+</story-context>

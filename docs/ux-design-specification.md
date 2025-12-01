@@ -380,24 +380,26 @@ Linear's polished aesthetic + HN's information density = **Fast, clean, dense fe
 
 ### 3.1 Color System
 
+**Updated to HSL format:** Story 1.5.2 (2025-12-01)
+
 **Base Colors:**
 
 ```css
 /* Backgrounds & Primary Text */
---bg-dark: #2d2e2e        /* Dark mode background, Light mode text */
---bg-light: #FDFFFC       /* Light mode background, Dark mode text */
+--bg-dark: hsl(0, 2%, 18%)         /* #2d2e2e - Dark mode background, Light mode text */
+--bg-light: hsl(120, 100%, 99%)    /* #FDFFFC - Light mode background, Dark mode text */
 ```
 
 **Accent Color (Olive/Moss Green):**
 
 ```css
 /* Primary accent for active states, new badges, focus indicators */
-Dark mode:  #9DAA5F       /* Lightened olive - visible on dark bg */
-Light mode: #5e6b24       /* Original olive - strong on light bg */
+Dark mode:  hsl(68, 36%, 52%)      /* #9DAA5F - Lightened olive - visible on dark bg */
+Light mode: hsl(68, 49%, 28%)      /* #5e6b24 - Original olive - strong on light bg */
 
 /* Hover states */
-Dark mode hover:  #A8B86C
-Light mode hover: #4F5A1F
+Dark mode hover:  hsl(68, 36%, 58%)   /* #A8B86C */
+Light mode hover: hsl(68, 49%, 23%)   /* #4F5A1F */
 ```
 
 **Usage:** Active query indicators, "New" badges, primary button hovers, keyboard focus rings, link states, active filter chips, manual refresh button, sync indicators.
@@ -406,23 +408,23 @@ Light mode hover: #4F5A1F
 
 ```css
 /* Success (rich, bright green) */
-Dark mode:  #22C55E       /* Bright, vibrant - clearly "success" */
-Light mode: #16A34A       /* Rich, saturated green */
+Dark mode:  hsl(142, 71%, 45%)    /* #22C55E - Bright, vibrant - clearly "success" */
+Light mode: hsl(142, 71%, 37%)    /* #16A34A - Rich, saturated green */
 Usage: API sync successful, query created, item marked as reviewed, manual refresh completed
 
 /* Warning (yellow/amber) */
-Dark mode:  #FDE047       /* Bright yellow */
-Light mode: #F59E0B       /* Amber */
+Dark mode:  hsl(54, 97%, 63%)     /* #FDE047 - Bright yellow */
+Light mode: hsl(38, 92%, 50%)     /* #F59E0B - Amber */
 Usage: Filters too broad (>15 items), API polling issues, rate limit warnings, stale data (last sync >30min)
 
 /* Error (urgent red) */
-Dark mode:  #DC2626       /* Bright, urgent */
-Light mode: #B91C1C       /* Energetic, action-oriented */
+Dark mode:  hsl(0, 72%, 51%)      /* #DC2626 - Bright, urgent */
+Light mode: hsl(0, 72%, 42%)      /* #B91C1C - Energetic, action-oriented */
 Usage: API polling failures, search errors, invalid filters, GitLab connection errors
 
 /* Info (sky blue) */
-Dark mode:  #38BDF8       /* Bright, friendly */
-Light mode: #0284C7       /* Deeper sky blue */
+Dark mode:  hsl(199, 92%, 60%)    /* #38BDF8 - Bright, friendly */
+Light mode: hsl(199, 97%, 39%)    /* #0284C7 - Deeper sky blue */
 Usage: Tips, keyboard shortcuts, onboarding hints
 ```
 
@@ -430,25 +432,25 @@ Usage: Tips, keyboard shortcuts, onboarding hints
 
 ```css
 /* Light Mode */
-gray-50:  #F9FAFB        /* Subtle backgrounds, hover states */
-gray-100: #F3F4F6        /* Very light borders */
-gray-200: #E5E7EB        /* Borders, dividers */
-gray-300: #D1D5DB        /* Disabled states, placeholders */
-gray-400: #9CA3AF        /* Secondary text, icons */
-gray-500: #6B7280        /* Body text - lower contrast */
-gray-700: #374151        /* Headings, emphasis */
-gray-900: #2d2e2e        /* Primary text */
+gray-50:  hsl(210, 20%, 98%)    /* #F9FAFB - Subtle backgrounds, hover states */
+gray-100: hsl(220, 14%, 96%)    /* #F3F4F6 - Very light borders */
+gray-200: hsl(220, 13%, 91%)    /* #E5E7EB - Borders, dividers */
+gray-300: hsl(214, 12%, 83%)    /* #D1D5DB - Disabled states, placeholders */
+gray-400: hsl(218, 11%, 65%)    /* #9CA3AF - Secondary text, icons */
+gray-500: hsl(220, 9%, 46%)     /* #6B7280 - Body text - lower contrast */
+gray-700: hsl(217, 19%, 27%)    /* #374151 - Headings, emphasis */
+gray-900: hsl(0, 2%, 18%)       /* #2d2e2e - Primary text */
 
 /* Dark Mode */
-gray-50:  #FDFFFC        /* Primary text */
-gray-100: #E5E7EB        /* Headings, emphasis */
-gray-200: #D1D5DB        /* Body text */
-gray-300: #9CA3AF        /* Secondary text, icons */
-gray-400: #6B7280        /* Disabled states, placeholders */
-gray-600: #4B5563        /* Borders, dividers */
-gray-700: #374151        /* Subtle backgrounds, hover states */
-gray-800: #1F2937        /* Elevated surfaces, cards */
-gray-900: #111827        /* Layering, slightly lighter than bg */
+gray-50:  hsl(120, 100%, 99%)   /* #FDFFFC - Primary text */
+gray-100: hsl(220, 13%, 91%)    /* #E5E7EB - Headings, emphasis */
+gray-200: hsl(214, 12%, 83%)    /* #D1D5DB - Body text */
+gray-300: hsl(218, 11%, 65%)    /* #9CA3AF - Secondary text, icons */
+gray-400: hsl(220, 9%, 46%)     /* #6B7280 - Disabled states, placeholders */
+gray-600: hsl(215, 16%, 34%)    /* #4B5563 - Borders, dividers */
+gray-700: hsl(217, 19%, 27%)    /* #374151 - Subtle backgrounds, hover states */
+gray-800: hsl(215, 28%, 17%)    /* #1F2937 - Elevated surfaces, cards */
+gray-900: hsl(221, 39%, 11%)    /* #111827 - Layering, slightly lighter than bg */
 ```
 
 **Typography System:**
@@ -496,16 +498,16 @@ Page padding:      16px
 
 ```css
 /* Issues (Purple) */
-Light mode: #8B5CF6
-Dark mode:  #A78BFA
+Light mode: hsl(258, 90%, 66%)    /* #8B5CF6 */
+Dark mode:  hsl(258, 90%, 76%)    /* #A78BFA */
 
 /* Merge Requests (Blue) */
-Light mode: #0EA5E9
-Dark mode:  #38BDF8
+Light mode: hsl(199, 89%, 48%)    /* #0EA5E9 */
+Dark mode:  hsl(199, 93%, 60%)    /* #38BDF8 */
 
 /* Comments (Gray) */
-Light mode: #64748B
-Dark mode:  #94A3B8
+Light mode: hsl(215, 16%, 47%)    /* #64748B */
+Dark mode:  hsl(214, 17%, 66%)    /* #94A3B8 */
 ```
 
 **Usage:** Small icons or dots next to item titles in dense table view. Provides subtle visual differentiation without decoration.
