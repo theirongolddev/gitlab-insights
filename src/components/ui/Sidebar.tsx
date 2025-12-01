@@ -52,7 +52,7 @@ export function Sidebar({
       className={`
         flex h-full w-56 flex-col
         border-r border-gray-200 dark:border-gray-800
-        bg-white dark:bg-[#2d2e2e]
+        bg-white dark:bg-gray-900
         ${className}
       `.trim()}
     >

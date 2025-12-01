@@ -46,6 +46,37 @@ so that **I can maintain and refine my query list over time**.
 | 2.10.15 | Duplicate name error displays user-friendly message: "A query with this name already exists" |
 | 2.10.16 | Failed update/delete operations show user-friendly error messages via toast notifications |
 
+## Dev Notes
+
+### HeroUI Migration (Story 1.5.4 - 2025-12-01)
+
+**Query page edit/delete UI migrated to HeroUI Button and design tokens**
+
+**Migration Details:**
+- Delete dialog buttons migrated to HeroUI Button
+  - Cancel: `color="default"` `variant="flat"`
+  - Delete: `color="danger"` (red destructive action)
+- Inline edit input uses design tokens: `border-olive-light` focus state
+- Edit/save/delete icon buttons use design tokens for hover states
+- Keyword pills use design tokens: `bg-olive-light/15`, `text-olive`
+- Preserved React Aria Dialog for delete confirmation
+
+**Technical Approach:**
+- Hybrid pattern: HeroUI Buttons in dialogs + raw icon buttons with design tokens for inline actions
+- React Aria Dialog provides modal overlay, backdrop, focus management
+- Icon buttons (pencil, check, trash) use SVG with Tailwind classes and design tokens
+- Delete button uses HeroUI `color="danger"` for destructive action styling
+
+**Files Modified:**
+- `src/app/queries/[id]/page.tsx` - Migrated to HeroUI Button in delete dialog, design tokens for inline actions
+
+**Validation:**
+- ✅ TypeScript: No errors
+- ✅ Build: Production build succeeds
+- ✅ Keyboard: All interactions keyboard-accessible
+- ✅ Visual: Olive and red colors render correctly
+- ✅ Accessibility: WCAG 2.1 AA maintained
+
 ## Tasks / Subtasks
 
 - [ ] Task 1: Add Inline Name Editing to Query Page (AC: 2.10.1-2.10.5)

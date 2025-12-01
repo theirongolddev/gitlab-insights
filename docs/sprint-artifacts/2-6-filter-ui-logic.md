@@ -62,6 +62,34 @@ so that **I can easily clear my search and see the "Save as Query" option**.
 
 ## Dev Notes
 
+### HeroUI Migration (Story 1.5.4 - 2025-12-01)
+
+**Filter UI (SearchBar tag pills) migrated to use design tokens**
+
+**Migration Details:**
+- SearchBar serves as the filter UI with keyword tag pills
+- No separate filter component - filters are represented as keyword tags
+- All tag pill colors migrated to HSL design tokens
+- Tag styling: `bg-olive-light/15`, `border-olive-light/50`, `text-olive` (light mode)
+- Tag styling: `bg-olive-light/20`, `border-olive-light`, `text-gray-50` (dark mode)
+- Remove button uses React Aria Button with olive hover states
+
+**Technical Approach:**
+- React Aria TagGroup provides accessible keyboard navigation for filter tags
+- Arrow keys navigate between tags, Backspace/Delete removes focused tag
+- Backspace on empty input removes last tag
+- No migration needed for TagGroup itself (React Aria superior to HeroUI for this use case)
+
+**Files Modified:**
+- `src/components/search/SearchBar.tsx` - Tag pill colors use design tokens
+
+**Validation:**
+- ✅ TypeScript: No errors
+- ✅ Build: Production build succeeds
+- ✅ Keyboard: Arrow keys navigate tags, Backspace removes tags
+- ✅ Visual: Olive tag colors render correctly
+- ✅ Accessibility: WCAG 2.1 AA maintained
+
 ### Learnings from Previous Story
 
 **From Story 2-5-keyword-highlighting-in-search-results (Status: done)**

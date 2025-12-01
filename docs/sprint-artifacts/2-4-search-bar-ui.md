@@ -60,6 +60,33 @@ so that **I can quickly find relevant discussions**.
 
 ## Dev Notes
 
+### HeroUI Migration (Story 1.5.4 - 2025-12-01)
+
+**SearchBar migrated to HeroUI Button and Spinner components**
+
+**Migration Details:**
+- Migrated Save/Update button to HeroUI Button with `color="primary"` and `size="sm"`
+- Migrated loading spinner to HeroUI Spinner with `size="sm"` and `color="primary"`
+- Replaced all hardcoded olive hex values with HSL design tokens (`olive-light`, `olive`)
+- Preserved React Aria TagGroup for keyword tag pills (superior keyboard navigation)
+- Updated all text and background colors to use design tokens
+
+**Technical Approach:**
+- Hybrid pattern: HeroUI Button/Spinner for visual components + React Aria TagGroup for complex tag interactions
+- Context-aware button behavior: Shows "Update Query" when on query page, "Save" when on dashboard
+- Tag pill styling uses design tokens: `bg-olive-light/15`, `border-olive-light/50`, `text-olive`
+- Focus rings use olive theme: `focus:ring-olive-light`
+
+**Files Modified:**
+- `src/components/search/SearchBar.tsx` - Migrated to HeroUI Button and Spinner
+
+**Validation:**
+- ✅ TypeScript: No errors
+- ✅ Build: Production build succeeds
+- ✅ Keyboard: / focuses search, Enter commits tags, arrows navigate tags
+- ✅ Visual: Olive accents render correctly
+- ✅ Accessibility: WCAG 2.1 AA maintained
+
 ### Learnings from Previous Story
 
 **From Story 2-3-postgresql-full-text-search-backend (Status: done)**

@@ -18,7 +18,8 @@ import { api } from "~/trpc/react";
 import { EventTable } from "~/components/dashboard/EventTable";
 import type { DashboardEvent } from "~/components/dashboard/ItemRow";
 import type { QueryFilters } from "~/lib/filters/types";
-import { Dialog, DialogTrigger, Modal, ModalOverlay, Heading, Button } from "react-aria-components";
+import { Dialog, DialogTrigger, Modal, ModalOverlay, Heading, Button as AriaButton } from "react-aria-components";
+import { Button } from "@heroui/react";
 import { useSearch } from "~/components/search/SearchContext";
 import { useToast } from "~/components/ui/Toast/ToastContext";
 
@@ -89,7 +90,7 @@ export default function QueryPage({ params }: QueryPageProps) {
     onSuccess: () => {
       void utils.queries.list.invalidate();
       showToast("Query deleted successfully", "success");
-      router.push("/");
+      router.push("/dashboard");
     },
     onError: (error) => {
       // AC 2.10.16: Display user-friendly error message
@@ -207,7 +208,7 @@ export default function QueryPage({ params }: QueryPageProps) {
             <Dialog className="outline-none">
               {({ close }) => (
                 <>
-                  <Heading className="text-lg font-semibold text-[#2d2e2e] dark:text-[#FDFFFC] mb-4">
+                  <Heading className="text-lg font-semibold text-gray-900 dark:text-gray-50 mb-4">
                     Delete Query?
                   </Heading>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
@@ -216,13 +217,14 @@ export default function QueryPage({ params }: QueryPageProps) {
                   <div className="flex justify-end gap-3">
                     <Button
                       onPress={close}
-                      className="px-4 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                      color="default"
+                      variant="flat"
                     >
                       Cancel
                     </Button>
                     <Button
                       onPress={handleDeleteQuery}
-                      className="px-4 py-2 text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700 transition-colors"
+                      color="danger"
                     >
                       Delete
                     </Button>
@@ -246,12 +248,15 @@ export default function QueryPage({ params }: QueryPageProps) {
                 onChange={(e) => setEditedName(e.target.value)}
                 onKeyDown={handleKeyDown}
                 onBlur={cancelEdit}
-                className="text-xl font-semibold text-[#2d2e2e] dark:text-[#FDFFFC] bg-transparent border-b-2 border-[#9DAA5F] focus:outline-none w-100"
+                className="text-xl font-semibold text-gray-900 dark:text-gray-50 bg-transparent border-b-2 border-olive-light focus:outline-none w-100"
               />
               <button
-                onClick={saveEdit}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  saveEdit();
+                }}
                 disabled={updateMutation.isPending}
-                className="p-1.5 text-[#5e6b24] dark:text-[#9DAA5F] hover:bg-[#9DAA5F]/10 rounded transition-colors disabled:opacity-50 cursor-pointer"
+                className="p-1.5 text-olive dark:text-olive-light hover:bg-olive-light/10 rounded transition-colors disabled:opacity-50 cursor-pointer"
                 aria-label="Save name"
               >
                 <svg
@@ -272,12 +277,12 @@ export default function QueryPage({ params }: QueryPageProps) {
             </>
           ) : (
             <>
-              <h1 className="text-xl font-semibold text-[#2d2e2e] dark:text-[#FDFFFC]">
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">
                 {query.name}
               </h1>
               <button
                 onClick={startEditing}
-                className="p-1 text-gray-400 hover:text-[#5e6b24] dark:hover:text-[#9DAA5F] hover:bg-[#9DAA5F]/10 rounded transition-colors cursor-pointer"
+                className="p-1 text-gray-400 hover:text-olive dark:hover:text-olive-light hover:bg-olive-light/10 rounded transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-olive-light focus-visible:ring-offset-2"
                 aria-label="Edit query name"
               >
                 <svg
@@ -297,7 +302,7 @@ export default function QueryPage({ params }: QueryPageProps) {
               </button>
               <button
                 onClick={() => setIsDeleteDialogOpen(true)}
-                className="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded transition-colors cursor-pointer"
+                className="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-olive-light focus-visible:ring-offset-2"
                 aria-label="Delete query"
               >
                 <svg
@@ -327,7 +332,7 @@ export default function QueryPage({ params }: QueryPageProps) {
             {liveKeywords.map((keyword) => (
               <span
                 key={keyword}
-                className="rounded-full px-2.5 py-0.5 text-xs font-medium bg-[#9DAA5F]/15 text-[#5e6b24] dark:bg-[#9DAA5F]/20 dark:text-[#9DAA5F]"
+                className="rounded-full px-2.5 py-0.5 text-xs font-medium bg-olive-light/15 text-olive dark:bg-olive-light/20 dark:text-olive-light"
               >
                 {keyword}
               </span>

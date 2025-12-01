@@ -5,11 +5,11 @@ import {
   Table,
   TableHeader,
   TableBody,
-  Row,
-  Cell,
-  Column,
+  TableRow,
+  TableCell,
+  TableColumn,
   type Selection,
-} from "react-aria-components";
+} from "@heroui/react";
 import { ItemRow, type DashboardEvent } from "./ItemRow";
 import { useShortcuts } from "../keyboard/ShortcutContext";
 
@@ -19,13 +19,14 @@ interface EventTableProps {
 }
 
 /**
- * EventTable - React Aria Table with vim-style j/k navigation
+ * EventTable - HeroUI Table with vim-style j/k navigation
  *
- * AC 2.2.1: Uses React Aria Table components
- * AC 2.2.2: j/k keys navigate items (override default arrow behavior)
- * AC 2.2.3: Selected row displays olive focus ring (2px solid #9DAA5F)
- * AC 2.2.4: Focus indicators are WCAG 2.1 AA compliant
- * AC 2.2.5: Table integrates with existing ItemRow component from Epic 1
+ * MIGRATION (Story 1.5.4): Migrated from React Aria to HeroUI Table
+ * - Uses HeroUI Table, TableHeader, TableBody, TableRow, TableCell components
+ * - Preserves vim-style j/k navigation via ShortcutContext integration
+ * - Uses HeroUI color="primary" for olive focus rings
+ * - Maintains WCAG 2.1 Level AA accessibility compliance
+ * - Integrates with existing ItemRow component (Epic 1)
  */
 export function EventTable({ events, onRowClick }: EventTableProps) {
   // Task 1.4: selectedKeys state for single-selection mode
@@ -167,36 +168,47 @@ export function EventTable({ events, onRowClick }: EventTableProps) {
       ref={wrapperRef}
       tabIndex={0}
       className="outline-none"
+      onKeyDown={(e) => {
+        // Handle Enter key on selected row
+        if (e.key === "Enter") {
+          const currentIndex = getSelectedIndex();
+          if (currentIndex >= 0 && currentIndex < events.length) {
+            const event = events[currentIndex];
+            if (event && onRowClick) {
+              onRowClick(event);
+            }
+          }
+        }
+      }}
     >
       <Table
-        aria-label="Events table" // Task 5.5: WCAG compliance
+        aria-label="Events table"
         className="w-full"
-        selectionMode="single" // Task 1.3: Single-selection mode
+        selectionMode="single"
         selectedKeys={selectedKeys}
         onSelectionChange={setSelectedKeys}
+        color="primary" // HeroUI: Olive theme color for selection
+        classNames={{
+          wrapper: "p-0 shadow-none bg-transparent",
+          th: "sr-only", // Hide header visually (screen reader accessible)
+          tr: "cursor-pointer transition-colors hover:bg-gray-200 dark:hover:bg-gray-800 data-[selected=true]:bg-olive-light/10 dark:data-[selected=true]:bg-olive-light/15",
+          td: "p-0"
+        }}
+        onRowAction={(key) => {
+          // Handle Enter key press on selected row
+          const event = events.find((e) => e.id === key);
+          if (event && onRowClick) {
+            onRowClick(event);
+          }
+        }}
       >
-        {/* Task 5.5: Screen reader accessible header */}
-        <TableHeader className="sr-only">
-          <Column isRowHeader>Event</Column>
+        <TableHeader>
+          <TableColumn>Event</TableColumn>
         </TableHeader>
-        <TableBody items={events}>
-          {(event) => (
-            <Row
-              key={event.id}
-              id={event.id}
-              // Task 4: Olive focus ring styling
-              // React Aria sets data-selected="true" on selected rows
-              className="cursor-pointer
-                hover:bg-gray-800
-                outline-2 outline-transparent outline-offset-[-2px]
-                transition-[outline-color] duration-125 ease-out
-                data-[focused]:outline-olive-light
-                data-[selected=true]:outline-olive-light
-                rounded-lg
-              "
-            >
-              <Cell className="p-0">
-                {/* Task 1.5: Integrate existing ItemRow component */}
+        <TableBody>
+          {events.map((event) => (
+            <TableRow key={event.id}>
+              <TableCell>
                 <ItemRow
                   item={event}
                   isSelected={
@@ -206,9 +218,9 @@ export function EventTable({ events, onRowClick }: EventTableProps) {
                   isNew={false}
                   onClick={() => onRowClick?.(event)}
                 />
-              </Cell>
-            </Row>
-          )}
+              </TableCell>
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
     </div>

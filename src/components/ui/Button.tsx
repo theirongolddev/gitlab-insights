@@ -14,11 +14,11 @@ export interface ButtonProps extends Omit<AriaButtonProps, "className"> {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    "bg-[#5e6b24] text-white hover:bg-[#4F5A1F] dark:bg-[#5e6b24] dark:text-white dark:hover:bg-[#A8B86C]",
+    "bg-olive text-white hover:bg-olive-dark dark:bg-olive dark:text-white dark:hover:bg-olive-lighter",
   secondary:
-    "bg-gray-200 text-[#2d2e2e] hover:bg-gray-300 dark:bg-gray-800 dark:text-[#FDFFFC] dark:hover:bg-gray-700",
+    "bg-gray-200 text-gray-900 hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-50 dark:hover:bg-gray-700",
   ghost:
-    "bg-transparent text-[#2d2e2e] border border-gray-300 hover:bg-gray-100 dark:text-[#FDFFFC] dark:border-gray-600 dark:hover:bg-gray-800",
+    "bg-transparent text-gray-900 border border-gray-300 hover:bg-gray-100 dark:text-gray-50 dark:border-gray-600 dark:hover:bg-gray-800",
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
@@ -43,7 +43,7 @@ export function Button({
         inline-flex items-center justify-center
         rounded-lg font-medium
         transition-colors
-        focus:outline-none focus:ring-2 focus:ring-[#9DAA5F] focus:ring-offset-2 dark:focus:ring-offset-[#2d2e2e]
+        focus:outline-none focus:ring-2 focus:ring-olive-light focus:ring-offset-2 dark:focus:ring-offset-gray-900
         disabled:opacity-50 disabled:cursor-not-allowed
         ${variantStyles[variant]}
         ${sizeStyles[size]}

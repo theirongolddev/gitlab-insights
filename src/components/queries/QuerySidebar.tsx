@@ -68,7 +68,7 @@ function EmptyState() {
       </p>
       <p className="mt-1 text-xs text-gray-500 dark:text-gray-500">
         Use{" "}
-        <kbd className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-[#5e6b24] dark:bg-gray-700 dark:text-[#9DAA5F]">
+        <kbd className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-olive dark:bg-gray-700 dark:text-olive-light">
           /
         </kbd>{" "}
         to search

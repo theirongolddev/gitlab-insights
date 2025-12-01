@@ -9,6 +9,7 @@ import {
   Label,
   Text,
 } from "react-aria-components";
+import { Button, Spinner } from "@heroui/react";
 
 /**
  * SearchBar Props Interface
@@ -114,7 +115,9 @@ export function SearchBar({
       ) as HTMLElement;
       lastTag?.focus();
     } else if (e.key === "Escape") {
-      // Blur input on Escape
+      // Clear all keywords and blur input on Escape
+      keywords.forEach((keyword) => onRemoveKeyword(keyword));
+      setInputValue("");
       effectiveRef.current?.blur();
     }
   };
@@ -153,9 +156,9 @@ export function SearchBar({
         className="
           flex flex-1 items-center flex-wrap gap-1.5
           min-h-[40px] px-3 py-1.5
-          bg-gray-100 text-[#2d2e2e] dark:bg-gray-800 dark:text-[#FDFFFC]
+          bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-50
           border border-gray-300 dark:border-gray-600 rounded-md
-          focus-within:ring-2 focus-within:ring-[#9DAA5F] focus-within:border-transparent
+          focus-within:ring-2 focus-within:ring-olive-light focus-within:border-transparent
           transition-colors duration-150
         "
         onClick={() => effectiveRef.current?.focus()}
@@ -203,12 +206,12 @@ export function SearchBar({
                     className={`
                       inline-flex items-center gap-1 px-2 py-0.5
                       text-sm font-medium rounded-full cursor-default
-                      bg-[#9DAA5F]/15 border border-[#9DAA5F]/50 dark:bg-[#9DAA5F]/20 dark:border-[#9DAA5F]
-                      text-[#5e6b24] dark:text-[#FDFFFC]
+                      bg-olive-light/15 border border-olive-light/50 dark:bg-olive-light/20 dark:border-olive-light
+                      text-olive dark:text-gray-50
                       outline-none
                       transition-all duration-150
-                      data-[focus-visible]:ring-2 data-[focus-visible]:ring-[#9DAA5F] data-[focus-visible]:ring-offset-1 data-[focus-visible]:ring-offset-white dark:data-[focus-visible]:ring-offset-gray-800
-                      data-[selected]:bg-[#9DAA5F]/30 dark:data-[selected]:bg-[#9DAA5F]/40
+                      data-[focus-visible]:ring-2 data-[focus-visible]:ring-olive-light data-[focus-visible]:ring-offset-1 data-[focus-visible]:ring-offset-white dark:data-[focus-visible]:ring-offset-gray-800
+                      data-[selected]:bg-olive-light/30 dark:data-[selected]:bg-olive-light/40
                     `}
                   >
                     {({ allowsRemoving }) => (
@@ -221,12 +224,12 @@ export function SearchBar({
                             className={`
                               flex items-center justify-center
                               w-4 h-4 rounded-full
-                              text-[#9DAA5F]
+                              text-olive-light
                               transition-colors duration-150
                               outline-none
-                              data-[hovered]:text-[#FDFFFC] data-[hovered]:bg-[rgba(157,170,95,0.3)]
-                              data-[pressed]:bg-[rgba(157,170,95,0.5)]
-                              data-[focus-visible]:ring-2 data-[focus-visible]:ring-[#9DAA5F]
+                              data-[hovered]:text-gray-50 data-[hovered]:bg-olive-light/30
+                              data-[pressed]:bg-olive-light/50
+                              data-[focus-visible]:ring-2 data-[focus-visible]:ring-olive-light
                             `}
                           >
                             <svg
@@ -267,7 +270,7 @@ export function SearchBar({
           placeholder={hasKeywords ? "Add filter..." : "Search events..."}
           className="
             flex-1 min-w-[120px] bg-transparent
-            text-[#2d2e2e] dark:text-[#FDFFFC] placeholder:text-gray-500 dark:placeholder:text-gray-500
+            text-gray-900 dark:text-gray-50 placeholder:text-gray-500 dark:placeholder:text-gray-500
             focus:outline-none
             [&::-webkit-search-cancel-button]:hidden
             [&::-webkit-search-decoration]:hidden
@@ -275,52 +278,26 @@ export function SearchBar({
           aria-label={hasKeywords ? "Add another search filter" : "Search events"}
         />
 
-        {/* Loading Spinner */}
+        {/* Loading Spinner - HeroUI Spinner */}
         {isLoading && (
-          <div className="flex-shrink-0" role="status" aria-label="Searching">
-            <svg
-              className="animate-spin h-4 w-4 text-[#9DAA5F]"
-              fill="none"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              />
-            </svg>
+          <div className="flex-shrink-0">
+            <Spinner size="sm" color="primary" aria-label="Searching" />
           </div>
         )}
       </div>
 
-      {/* Save/Update Button - AC 2.6.3, 2.6.4 | Story 2.10: Context-aware label */}
+      {/* Save/Update Button - HeroUI Button with olive primary color */}
+      {/* AC 2.6.3, 2.6.4 | Story 2.10: Context-aware label */}
       {/* AC 2.10.7: Hidden when on query page with no changes */}
       {shouldShowButton && (
-        <AriaButton
+        <Button
           onPress={handleSave}
-          className={`
-            flex-shrink-0
-            inline-flex items-center justify-center
-            px-3 py-2 text-sm font-medium rounded-lg
-            transition-colors duration-150
-            outline-none
-            bg-[#9DAA5F] text-white
-            data-[hovered]:bg-[#A8B86C]
-            data-[pressed]:bg-[#8A9A4F]
-            data-[focus-visible]:ring-2 data-[focus-visible]:ring-[#9DAA5F] data-[focus-visible]:ring-offset-2 data-[focus-visible]:ring-offset-white dark:data-[focus-visible]:ring-offset-[#2d2e2e]
-          `}
+          color="primary"
+          size="sm"
+          className="flex-shrink-0"
         >
           {isOnQueryPage ? "Update Query" : "Save"}
-        </AriaButton>
+        </Button>
       )}
     </div>
   );

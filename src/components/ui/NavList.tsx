@@ -93,7 +93,7 @@ export function NavItem({
         transition-colors duration-150
         ${
           isActive
-            ? "bg-[#9DAA5F]/10 text-[#5e6b24] font-medium dark:bg-[#9DAA5F]/15 dark:text-[#9DAA5F]"
+            ? "bg-olive-light/10 text-olive font-medium dark:bg-olive-light/15 dark:text-olive-light"
             : isFocused || isHovered
               ? "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100"
               : "text-gray-700 dark:text-gray-400"
@@ -128,7 +128,7 @@ export function NavItemCount({ count, isActive = false }: NavItemCountProps) {
         text-xs tabular-nums
         ${
           isActive
-            ? "text-[#5e6b24]/80 dark:text-[#9DAA5F]/80"
+            ? "text-olive/80 dark:text-olive-light/80"
             : "text-gray-500 dark:text-gray-500"
         }
       `.trim()}
@@ -156,7 +156,7 @@ export function NavItemShortcut({ shortcut, isActive = false }: NavItemShortcutP
         group-hover:inline-block group-data-[focused]:inline-block
         ${
           isActive
-            ? "bg-[#9DAA5F]/20 text-[#5e6b24] dark:bg-[#9DAA5F]/30 dark:text-[#9DAA5F]"
+            ? "bg-olive-light/20 text-olive dark:bg-olive-light/30 dark:text-olive-light"
             : "bg-gray-200/70 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
         }
       `.trim()}

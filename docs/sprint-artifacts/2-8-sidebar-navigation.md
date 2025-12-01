@@ -63,6 +63,36 @@ so that **I can quickly navigate to them from anywhere in the application**.
 
 ## Dev Notes
 
+### HeroUI Migration (Story 1.5.4 - 2025-12-01)
+
+**QuerySidebar and NavList migrated to use design tokens**
+
+**Migration Details:**
+- Migrated all hardcoded olive hex values to HSL design tokens in NavList.tsx
+- Active state: `bg-olive-light/10 text-olive dark:bg-olive-light/15 dark:text-olive-light`
+- Count badge: `text-olive/80 dark:text-olive-light/80`
+- Keyboard shortcut badge: `bg-olive-light/20 text-olive dark:bg-olive-light/30 dark:text-olive-light`
+- Preserved React Aria ListBox for keyboard navigation (type-ahead, arrow keys)
+- Number key shortcuts (1-9) remain intact
+
+**Technical Approach:**
+- React Aria ListBox provides accessible navigation (arrow keys, type-ahead search, focus management)
+- No migration of ListBox itself needed - design tokens applied to child NavItem components
+- Sidebar uses React Aria useLandmark for F6 navigation between page regions
+- NavItem components use ListBoxItem with href for proper link semantics
+
+**Files Modified:**
+- `src/components/queries/QuerySidebar.tsx` - No changes (already uses design tokens)
+- `src/components/ui/NavList.tsx` - Migrated all olive colors to design tokens
+- `src/components/ui/Sidebar.tsx` - Already uses design tokens
+
+**Validation:**
+- ✅ TypeScript: No errors
+- ✅ Build: Production build succeeds
+- ✅ Keyboard: Arrow keys navigate list, 1-9 shortcuts work, type-ahead functional
+- ✅ Visual: Olive active states render correctly
+- ✅ Accessibility: WCAG 2.1 AA maintained
+
 ### Learnings from Previous Story
 
 **From Story 2-7b-update-delete-query-backend (Status: done)**

@@ -83,6 +83,34 @@ so that **I can quickly scan items without reaching for the mouse**.
 
 ## Dev Notes
 
+### HeroUI Migration (Story 1.5.4 - 2025-12-01)
+
+**EventTable migrated from React Aria (unstyled) to HeroUI Table (styled components)**
+
+**Migration Details:**
+- Replaced React Aria `Table`, `TableHeader`, `TableBody`, `Row`, `Cell` with HeroUI equivalents
+- Applied HeroUI `color="primary"` for olive theme selection and focus rings
+- Migrated all hardcoded hex values (#9DAA5F) to HSL design tokens (`olive-light`)
+- Preserved vim-style j/k navigation via ShortcutContext integration
+- Used HeroUI `classNames` prop for granular styling control
+- Maintained React Aria keyboard navigation foundation (HeroUI built on React Aria)
+
+**Technical Approach:**
+- Hybrid pattern: HeroUI for visual presentation + React Aria patterns for complex keyboard interactions
+- Selection state management unchanged (`selectedKeys`, `onSelectionChange`)
+- Wrapper div with `tabIndex={0}` for focus management retained
+- ItemRow integration from Epic 1 preserved
+
+**Files Modified:**
+- `src/components/dashboard/EventTable.tsx` - Migrated to HeroUI Table components
+
+**Validation:**
+- ✅ TypeScript: No errors
+- ✅ Build: Production build succeeds
+- ✅ Keyboard: j/k, Ctrl+d/Ctrl+u navigation working
+- ✅ Visual: Olive focus rings render correctly
+- ✅ Accessibility: WCAG 2.1 AA maintained
+
 ### Learnings from Previous Story
 
 **From Story 2-1-keyboard-shortcut-system-foundation (Status: done)**

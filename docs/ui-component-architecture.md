@@ -1149,12 +1149,413 @@ All components throughout the codebase use `dark:` Tailwind classes that activat
 
 ---
 
+## 9. Epic 2 Migration Patterns
+
+**Added:** 2025-12-01 (Story 1.5.4)
+**Purpose:** Document advanced HeroUI + React Aria hybrid patterns established during Epic 2 component migration
+
+This section captures the sophisticated integration patterns that emerged when migrating Epic 2 components (table with vim navigation, search bar, sidebar, modals) to the HeroUI design system.
+
+### 9.1 Hybrid HeroUI + React Aria Pattern
+
+**Core Principle:** Use HeroUI for visual presentation, preserve React Aria for complex interactions.
+
+**When to use each:**
+
+| Use HeroUI | Use React Aria | Rationale |
+|------------|----------------|-----------|
+| Button, Spinner | TagGroup, ListBox | HeroUI has excellent button/loading states, but React Aria has superior keyboard navigation for collections |
+| Table (visual structure) | Table (selection/keyboard) | HeroUI provides styled table, but integrate React Aria selection patterns for keyboard control |
+| Modal wrapper | Dialog/focus trap | HeroUI gives modal styling, React Aria provides accessibility features |
+
+**Example: SearchBar (src/components/search/SearchBar.tsx)**
+
+```tsx
+import { Button, Spinner } from "@heroui/react";
+import { TagGroup, Tag, Label } from "react-aria-components";
+
+function SearchBar() {
+  return (
+    <div>
+      {/* HeroUI for visual components */}
+      <Button color="primary" size="sm">
+        {isLoading ? <Spinner size="sm" color="primary" /> : "Save"}
+      </Button>
+
+      {/* React Aria for complex keyboard interactions */}
+      <TagGroup>
+        <Label>Keywords</Label>
+        {keywords.map((keyword) => (
+          <Tag key={keyword} textValue={keyword}>
+            {keyword}
+            <Button slot="remove">×</Button>
+          </Tag>
+        ))}
+      </TagGroup>
+    </div>
+  );
+}
+```
+
+**Why this works:**
+- HeroUI Button gives consistent olive theme colors and loading states
+- React Aria TagGroup provides arrow key navigation, Backspace removal, type-ahead
+- Both libraries are built on React Aria foundation, so they integrate seamlessly
+
+### 9.2 Vim Navigation with HeroUI Table
+
+**Challenge:** Integrate custom vim-style keyboard shortcuts (j/k/Ctrl+d/Ctrl+u) with HeroUI Table.
+
+**Solution:** Wrapper div + ShortcutContext + focus management
+
+**Example: EventTable (src/components/dashboard/EventTable.tsx)**
+
+```tsx
+import { Table, TableHeader, TableBody, TableRow, TableCell, TableColumn } from "@heroui/react";
+import { useShortcuts } from "~/components/keyboard/ShortcutContext";
+
+function EventTable({ events }) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [selectedKeys, setSelectedKeys] = useState<Selection>(new Set());
+  const shortcuts = useShortcuts();
+
+  useEffect(() => {
+    // Register vim shortcuts with ShortcutContext
+    shortcuts.registerMoveSelectionDown(() => {
+      if (!wrapperRef.current?.contains(document.activeElement)) {
+        wrapperRef.current?.focus();
+      }
+      // Move selection down logic
+    });
+
+    shortcuts.registerMoveSelectionUp(() => {
+      if (!wrapperRef.current?.contains(document.activeElement)) {
+        wrapperRef.current?.focus();
+      }
+      // Move selection up logic
+    });
+  }, [events]);
+
+  return (
+    <div ref={wrapperRef} tabIndex={0}>
+      <Table
+        selectedKeys={selectedKeys}
+        onSelectionChange={setSelectedKeys}
+        selectionMode="single"
+        color="primary"  // Olive theme
+      >
+        <TableHeader>
+          <TableColumn>Event</TableColumn>
+        </TableHeader>
+        <TableBody>
+          {events.map((event) => (
+            <TableRow key={event.id}>
+              <TableCell>{event.title}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+```
+
+**Key Insights:**
+1. **Wrapper div is focusable** (`tabIndex={0}`) - focus is routed here when j/k pressed
+2. **ShortcutContext registration** - centralizes keyboard handling logic
+3. **Focus management** - shortcuts check if wrapper has focus before moving selection
+4. **HeroUI `color="primary"`** - applies olive theme to selection and focus rings
+
+### 9.3 Context-Aware Button Behavior
+
+**Challenge:** Same SearchBar component shows "Save as Query" on dashboard, "Update Query" on query page.
+
+**Solution:** Detect current route and query state, conditionally render button text.
+
+**Example: SearchBar Context Awareness**
+
+```tsx
+function SearchBar({ currentQuery }: { currentQuery?: UserQuery }) {
+  const [keywords, setKeywords] = useState<string[]>([]);
+
+  // Detect if keywords have changed from saved query
+  const hasChanges = currentQuery &&
+    JSON.stringify(keywords.sort()) !== JSON.stringify(currentQuery.filters.keywords.sort());
+
+  // Determine button state
+  const isOnQueryPage = !!currentQuery;
+  const buttonText = isOnQueryPage && hasChanges ? "Update Query" : "Save as Query";
+  const isButtonVisible = !isOnQueryPage || hasChanges;
+
+  return (
+    <div>
+      {/* Tag pills for keywords */}
+      <TagGroup>
+        {keywords.map((k) => <Tag key={k}>{k}</Tag>)}
+      </TagGroup>
+
+      {/* Context-aware button */}
+      {isButtonVisible && (
+        <Button
+          color="primary"
+          size="sm"
+          onPress={() => {
+            if (currentQuery) {
+              // Update existing query
+              updateQuery.mutate({ id: currentQuery.id, keywords });
+            } else {
+              // Create new query
+              openCreateModal();
+            }
+          }}
+        >
+          {buttonText}
+        </Button>
+      )}
+    </div>
+  );
+}
+```
+
+**Pattern Benefits:**
+- Single component handles both dashboard and query page contexts
+- Button behavior adapts to user intent (create vs update)
+- Hidden when on query page with no changes (no unnecessary UI clutter)
+
+### 9.4 Tag Pill Pattern with Design Tokens
+
+**Challenge:** Keyword tags need consistent olive styling across SearchBar, CreateQueryModal, and query pages.
+
+**Solution:** Standardized tag pill styling using design tokens.
+
+**Tag Pill Style Pattern:**
+
+```tsx
+<Tag className="
+  inline-flex items-center gap-1.5
+  rounded-full px-2.5 py-0.5
+  text-xs font-medium
+  bg-olive-light/15 dark:bg-olive-light/20
+  border border-olive-light/50 dark:border-olive-light
+  text-olive dark:text-olive-light
+  transition-colors duration-150
+">
+  {keyword}
+  <Button
+    slot="remove"
+    className="
+      text-olive/60 dark:text-olive-light/60
+      hover:text-olive dark:hover:text-olive-light
+      hover:bg-olive-light/20 dark:hover:bg-olive-light/30
+    "
+  >
+    ×
+  </Button>
+</Tag>
+```
+
+**Design Token Usage:**
+- **Background**: `bg-olive-light/15` (light mode), `bg-olive-light/20` (dark mode)
+- **Border**: `border-olive-light/50` (light), `border-olive-light` (dark)
+- **Text**: `text-olive` (light), `text-olive-light` (dark)
+- **Remove button hover**: Increases opacity on `olive-light` background
+
+**Why this pattern works:**
+- Consistent visual appearance across all components
+- Supports dark mode automatically via design tokens
+- No hardcoded hex values - maintainable color system
+- React Aria TagGroup provides keyboard navigation (arrows, Backspace, Delete)
+
+### 9.5 Modal Button Patterns
+
+**Challenge:** Modals need consistent button styling for primary actions (Save), secondary actions (Cancel), and destructive actions (Delete).
+
+**Solution:** HeroUI Button variants with standardized patterns.
+
+**Modal Button Pattern:**
+
+```tsx
+import { Button } from "@heroui/react";
+import { Dialog, Modal, ModalOverlay } from "react-aria-components";
+
+function DeleteDialog({ queryName, onConfirm, onClose }) {
+  return (
+    <ModalOverlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+      <Modal className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+        <Dialog>
+          <Heading>Delete Query?</Heading>
+          <p>Are you sure you want to delete "{queryName}"? This action cannot be undone.</p>
+
+          <div className="flex justify-end gap-3 mt-6">
+            {/* Secondary action - flat variant */}
+            <Button
+              onPress={onClose}
+              color="default"
+              variant="flat"
+            >
+              Cancel
+            </Button>
+
+            {/* Destructive action - danger color */}
+            <Button
+              onPress={onConfirm}
+              color="danger"
+            >
+              Delete
+            </Button>
+          </div>
+        </Dialog>
+      </Modal>
+    </ModalOverlay>
+  );
+}
+```
+
+**Button Pattern Reference:**
+
+| Action Type | HeroUI Props | Use Case |
+|-------------|--------------|----------|
+| Primary | `color="primary"` | Save query, Update query, Confirm |
+| Secondary | `color="default"` `variant="flat"` | Cancel, Close, Back |
+| Destructive | `color="danger"` | Delete, Remove, Clear all |
+| Loading | `color="primary"` `isLoading={true}` | During async operations |
+
+**Accessibility Notes:**
+- React Aria Modal provides focus trap (Tab cycles within dialog)
+- Esc key closes modal (built-in React Aria feature)
+- Click outside closes modal (React Aria `isDismissable`)
+- HeroUI Buttons inherit React Aria accessibility features
+
+### 9.6 NavList Keyboard Navigation
+
+**Challenge:** Sidebar queries need keyboard navigation (arrow keys, 1-9 shortcuts, type-ahead) with olive active states.
+
+**Solution:** React Aria ListBox with custom NavItem styling using design tokens.
+
+**Example: NavList (src/components/ui/NavList.tsx)**
+
+```tsx
+import { ListBox, ListBoxItem } from "react-aria-components";
+
+export function NavList<T extends object>({ children, ...props }: NavListProps<T>) {
+  return (
+    <ListBox
+      selectionMode="none"
+      className="outline-none px-2"
+      {...props}
+    >
+      {children}
+    </ListBox>
+  );
+}
+
+export function NavItem({ href, isActive, children, trailing, ...props }: NavItemProps) {
+  return (
+    <ListBoxItem
+      href={href}
+      className={({ isFocused, isHovered }) => `
+        group flex items-center justify-between
+        rounded-md px-3 py-2 text-sm
+        outline-none cursor-pointer
+        transition-colors duration-150
+        ${
+          isActive
+            ? "bg-olive-light/10 text-olive font-medium dark:bg-olive-light/15 dark:text-olive-light"
+            : isFocused || isHovered
+              ? "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100"
+              : "text-gray-700 dark:text-gray-400"
+        }
+      `.trim()}
+      {...props}
+    >
+      <span className="truncate">{children}</span>
+      {trailing && <span className="ml-2 flex shrink-0">{trailing}</span>}
+    </ListBoxItem>
+  );
+}
+```
+
+**Key Features:**
+1. **Arrow key navigation** - React Aria ListBox handles up/down arrow movement
+2. **Type-ahead search** - Typing letters jumps to matching items
+3. **Active state styling** - `isActive` prop applies olive background and text
+4. **Count badges** - `trailing` slot for displaying result counts
+5. **Keyboard shortcuts** - Number keys (1-9) implemented via ShortcutContext
+
+**Why React Aria ListBox over HeroUI?**
+- React Aria ListBox has superior keyboard navigation features
+- Type-ahead search works out of the box
+- Focus management is more predictable
+- HeroUI styling can be applied via `className` prop
+
+### 9.7 Sidebar Landmark Pattern
+
+**Challenge:** Sidebar needs to be a proper navigation landmark for accessibility (F6 navigation).
+
+**Solution:** React Aria `useLandmark` hook with semantic `<aside>` element.
+
+**Example: Sidebar (src/components/ui/Sidebar.tsx)**
+
+```tsx
+import { useLandmark } from "@react-aria/landmark";
+
+export function Sidebar({ "aria-label": ariaLabel, header, children, footer }) {
+  const ref = useRef<HTMLElement>(null);
+  const { landmarkProps } = useLandmark(
+    { role: "navigation", "aria-label": ariaLabel },
+    ref
+  );
+
+  return (
+    <aside
+      ref={ref}
+      {...landmarkProps}
+      className="
+        flex h-full w-56 flex-col
+        border-r border-gray-200 dark:border-gray-800
+        bg-white dark:bg-gray-900
+      "
+    >
+      {header && <div className="shrink-0 px-4 py-3">{header}</div>}
+      <div className="flex-1 overflow-y-auto">{children}</div>
+      {footer && <div className="shrink-0 border-t border-gray-200 px-4 py-3 dark:border-gray-700/50">{footer}</div>}
+    </aside>
+  );
+}
+```
+
+**Accessibility Benefits:**
+- **F6/Shift+F6** - Screen reader users can jump between landmarks
+- **Semantic HTML** - `<aside>` element with `role="navigation"`
+- **Accessible label** - `aria-label` describes sidebar purpose
+- **Keyboard hints footer** - Optional footer for displaying shortcuts
+
+### 9.8 Files Modified Summary
+
+**Epic 2 Migration (Story 1.5.4) - Files Updated:**
+
+| File | Component | Changes |
+|------|-----------|---------|
+| `src/components/dashboard/EventTable.tsx` | Table + vim nav | HeroUI Table, design tokens, ShortcutContext integration |
+| `src/components/search/SearchBar.tsx` | Search + tags | HeroUI Button/Spinner, design tokens for tag pills |
+| `src/components/queries/QuerySidebar.tsx` | Sidebar | Design tokens (no structural changes) |
+| `src/components/queries/CreateQueryModal.tsx` | Create modal | HeroUI Button, design tokens for inputs/tags |
+| `src/app/queries/[id]/page.tsx` | Query detail | HeroUI Button in delete dialog, design tokens for edit UI |
+| `src/components/ui/NavList.tsx` | Nav items | Design tokens for active/hover/focus states |
+| `src/components/ui/Sidebar.tsx` | Sidebar wrapper | Design tokens (already using) |
+| `src/components/ui/Button.tsx` | Global button | Design tokens (already using) |
+
+**Total:** 8 files migrated, zero regressions, all functionality preserved.
+
+---
+
 ## Document History
 
 | Date       | Version | Changes                                     | Author |
 |------------|---------|---------------------------------------------|--------|
 | 2025-11-26 | 1.0     | Initial UI component architecture document  | BMad   |
 | 2025-12-01 | 1.1     | Added Section 8: Theme Management (Story 1.5.6) | BMad |
+| 2025-12-01 | 1.2     | Added Section 9: Epic 2 Migration Patterns (Story 1.5.4) | BMad |
 
 ---
 

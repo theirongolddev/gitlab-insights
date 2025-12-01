@@ -2,7 +2,7 @@
 
 import { useSession } from "~/lib/auth-client";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { RefreshButton } from "~/components/dashboard/RefreshButton";
 import { SyncIndicator } from "~/components/dashboard/SyncIndicator";
 import { type DashboardEvent } from "~/components/dashboard/ItemRow";
@@ -15,13 +15,26 @@ export default function DashboardPage() {
   const router = useRouter();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Redirect to home if not authenticated (must be in useEffect to avoid render-phase updates)
+  useEffect(() => {
+    if (!isPending && !session) {
+      router.push("/");
+    }
+  }, [session, isPending, router]);
+
   // Story 2.6: Search state from global SearchContext
   // Search input lives in Header with tag pills, results displayed here
   const { searchResults, isSearchActive } = useSearch();
 
   const utils = api.useUtils();
 
-  const { data: dashboardData, isLoading: eventsLoading } = api.events.getForDashboard.useQuery({});
+  // Only fetch dashboard data when user is authenticated
+  const { data: dashboardData, isLoading: eventsLoading } = api.events.getForDashboard.useQuery(
+    {},
+    {
+      enabled: !!session && !isPending, // Only run query when session exists
+    }
+  );
 
   // Manual refresh mutation
   const manualRefresh = api.events.manualRefresh.useMutation({
@@ -46,17 +59,13 @@ export default function DashboardPage() {
     window.open(event.gitlabUrl, "_blank", "noopener,noreferrer");
   };
 
-  if (isPending) {
+  // Show loading state while checking auth or redirecting
+  if (isPending || !session) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center bg-bg-light dark:bg-bg-dark">
         <p className="text-xl text-gray-900 dark:text-gray-50">Loading...</p>
       </main>
     );
-  }
-
-  if (!session) {
-    router.push("/");
-    return null;
   }
 
   // Transform API data to DashboardEvent format and combine into single array

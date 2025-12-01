@@ -71,7 +71,8 @@ export function ItemRow({ item, isSelected, isNew, onClick }: ItemRowProps) {
   return (
     <div
       onClick={onClick}
-      className={`min-h-10 px-4 mb-2 rounded-lg
+      className={`min-h-10 px-4 mb-2 rounded-lg transition-colors
+        hover:bg-gray-300 dark:hover:bg-gray-800
         ${isSelected ? "ring-2 ring-olive-light" : ""}`}
     >
       {/* Line 1: Badge + Title + Metadata */}

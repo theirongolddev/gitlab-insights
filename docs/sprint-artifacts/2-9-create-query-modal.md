@@ -42,6 +42,34 @@ All tasks were completed as part of Story 2.8.5 - See [2-8-5-save-as-query-entry
 
 ## Dev Notes
 
+### HeroUI Migration (Story 1.5.4 - 2025-12-01)
+
+**CreateQueryModal migrated to HeroUI Button components**
+
+**Migration Details:**
+- Migrated Cancel button to HeroUI Button: `color="default"` `variant="flat"`
+- Migrated Save button to HeroUI Button: `color="primary"` `isLoading={createQuery.isPending}`
+- Updated all text and input colors to use design tokens
+- Input focus ring uses olive theme: `ring-olive-light`
+- Keyword pills use design tokens: `bg-olive-light/15`, `border-olive-light/50`, `text-olive`
+- Preserved React Aria Modal/Dialog/ModalOverlay for accessibility and keyboard handling
+
+**Technical Approach:**
+- Hybrid pattern: HeroUI Buttons for actions + React Aria Modal/Dialog for structure
+- React Aria provides focus trap, Esc handling, click-outside dismiss
+- HeroUI Buttons provide consistent styling and loading states
+- Validation error states use design tokens: `border-red-500`, `ring-red-500`
+
+**Files Modified:**
+- `src/components/queries/CreateQueryModal.tsx` - Migrated to HeroUI Button
+
+**Validation:**
+- ✅ TypeScript: No errors
+- ✅ Build: Production build succeeds
+- ✅ Keyboard: Tab navigation, Enter submits, Esc closes
+- ✅ Visual: Olive focus rings and button colors render correctly
+- ✅ Accessibility: WCAG 2.1 AA maintained
+
 ### Story Merge Decision
 
 **Date:** 2025-11-26

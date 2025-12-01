@@ -12,6 +12,7 @@ import {
   TextField,
   Button as AriaButton,
 } from "react-aria-components";
+import { Button } from "@heroui/react";
 import { api } from "~/trpc/react";
 
 /**
@@ -188,7 +189,7 @@ export function CreateQueryModal({
             <>
               <Heading
                 slot="title"
-                className="text-xl font-semibold mb-4 text-gray-900 dark:text-[#FDFFFC]"
+                className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-50"
               >
                 Save as Query
               </Heading>
@@ -211,20 +212,23 @@ export function CreateQueryModal({
                     className={`
                       px-3 py-2
                       bg-gray-100 dark:bg-gray-700
-                      text-gray-900 dark:text-[#FDFFFC]
+                      text-gray-900 dark:text-gray-50
                       border rounded-md
                       outline-none
                       placeholder:text-gray-500
                       transition-colors duration-150
                       ${showValidationError
                         ? "border-red-500 dark:border-red-400 focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        : "border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-[#9DAA5F] focus:border-transparent"
+                        : "border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-olive-light focus:border-transparent"
                       }
                     `}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
                         handleSave();
+                      } else if (e.key === "Escape") {
+                        // Allow Esc to bubble to modal for dismissal
+                        handleCancel();
                       }
                     }}
                   />
@@ -248,8 +252,8 @@ export function CreateQueryModal({
                         className="
                           inline-flex items-center gap-1 px-2 py-0.5
                           text-sm font-medium rounded-full
-                          bg-[#9DAA5F]/15 border border-[#9DAA5F]/50 dark:bg-[#9DAA5F]/20 dark:border-[#9DAA5F]
-                          text-[#5e6b24] dark:text-[#FDFFFC]
+                          bg-olive-light/15 border border-olive-light/50 dark:bg-olive-light/20 dark:border-olive-light
+                          text-olive dark:text-gray-50
                         "
                       >
                         {keyword}
@@ -274,44 +278,24 @@ export function CreateQueryModal({
                   </div>
                 )}
 
-                {/* Action Buttons */}
+                {/* Action Buttons - HeroUI Buttons */}
                 <div className="flex justify-end gap-3 pt-2">
-                  <AriaButton
+                  <Button
                     onPress={handleCancel}
-                    className="
-                      px-4 py-2
-                      text-sm font-medium
-                      text-gray-700 dark:text-gray-300
-                      bg-gray-100 dark:bg-gray-700
-                      rounded-lg
-                      outline-none
-                      transition-colors duration-150
-                      data-[hovered]:bg-gray-200 dark:data-[hovered]:bg-gray-600
-                      data-[pressed]:bg-gray-300 dark:data-[pressed]:bg-gray-500
-                      data-[focus-visible]:ring-2 data-[focus-visible]:ring-[#9DAA5F] data-[focus-visible]:ring-offset-2
-                    "
+                    color="default"
+                    variant="flat"
                   >
                     Cancel
-                  </AriaButton>
+                  </Button>
 
-                  <AriaButton
+                  <Button
                     onPress={handleSave}
+                    color="primary"
+                    isLoading={createQuery.isPending}
                     isDisabled={createQuery.isPending}
-                    className="
-                      px-4 py-2
-                      text-sm font-medium
-                      bg-[#9DAA5F] text-white
-                      rounded-lg
-                      outline-none
-                      transition-colors duration-150
-                      data-[hovered]:bg-[#A8B86C]
-                      data-[pressed]:bg-[#8A9A4F]
-                      data-[focus-visible]:ring-2 data-[focus-visible]:ring-[#9DAA5F] data-[focus-visible]:ring-offset-2
-                      data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed
-                    "
                   >
                     {createQuery.isPending ? "Saving..." : "Save Query"}
-                  </AriaButton>
+                  </Button>
                 </div>
               </div>
             </>
