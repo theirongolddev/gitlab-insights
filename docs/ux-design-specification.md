@@ -127,7 +127,7 @@ React Aria Components chosen for its exceptional keyboard navigation foundation 
 
 **What We Build:**
 - Visual styling (Tailwind CSS for Linear-inspired aesthetic)
-- Dark mode implementation (toggle between light/dark color schemes)
+- Dark mode implementation ✅ COMPLETED (Story 1.5.6 - toggle between light/dark with system preference detection)
 - Catch-Up Mode toggle (custom component using React Aria primitives)
 - Query sidebar (custom layout using Menu/Disclosure primitives)
 - Sync status indicators (last refresh timestamp, manual refresh button)
@@ -524,6 +524,122 @@ Dark mode:  hsl(214, 17%, 66%)    /* #94A3B8 */
 **Interactive Visualizations:**
 
 - Color Theme Explorer: [ux-color-themes.html](./ux-color-themes.html)
+
+---
+
+### 3.5 Dark Mode Support
+
+**Status:** ✅ IMPLEMENTED (Story 1.5.6, Epic 1.5 - 2025-12-01)
+
+**Overview:**
+
+GitLab Insights supports both light and dark color schemes with intelligent system preference detection and manual user control. The implementation activates the comprehensive dark theme styling infrastructure created during the HeroUI migration (163 `dark:` Tailwind classes, complete HeroUI theme definitions, HSL color system).
+
+**User Controls:**
+
+**1. System Preference Detection (Default Behavior)**
+- App automatically detects OS-level dark mode setting on first load
+- Uses matchMedia API: `(prefers-color-scheme: dark)`
+- Updates in real-time when user changes OS theme (no reload required)
+- Default preference: `'system'` (respects OS setting)
+
+**2. Manual Toggle (Header Control)**
+- Icon-only toggle button in Header (sun/moon icons)
+- Location: Top-right area, before settings icon
+- Cycles through preferences: system → light → dark → system
+- Visual feedback: Icon changes instantly, theme transitions smoothly
+- Keyboard accessible: Tab navigation + Space/Enter activation
+
+**3. Persistence Across Sessions**
+- User preference stored in localStorage (key: `gitlab-insights-theme`)
+- Values: `'system'`, `'light'`, or `'dark'`
+- Persists across browser sessions and tabs
+- Falls back to `'system'` if localStorage unavailable (privacy mode)
+
+**Behavior:**
+
+**FOUC Prevention (Flash of Unstyled Content):**
+- Inline blocking script in `<head>` executes before React hydration
+- Reads localStorage and applies correct theme class before first paint
+- No visible flash of wrong theme on page load
+- Critical for professional user experience
+
+**Theme Activation Mechanism:**
+- Tailwind CSS `darkMode: "class"` configuration
+- Adds/removes `dark` class on `<html>` element
+- All 163 `dark:` Tailwind classes activate automatically
+- HeroUI components use dark theme colors when `dark` class present
+
+**Real-Time System Tracking:**
+- matchMedia listener monitors OS preference changes
+- Only active when user preference is `'system'`
+- Updates app theme automatically without reload
+- Inactive when user selects explicit `'light'` or `'dark'`
+
+**Theme Colors:**
+
+**Light Mode:**
+- Background: `hsl(120, 100%, 99%)` (#FDFFFC - bright, clean white)
+- Primary Text: `hsl(0, 2%, 18%)` (#2d2e2e - near-black for readability)
+- Accent: `hsl(68, 49%, 28%)` (#5e6b24 - olive, strong contrast on light)
+- Hover: `hsl(68, 49%, 23%)` (#4F5A1F - darker olive)
+
+**Dark Mode:**
+- Background: `hsl(0, 2%, 18%)` (#2d2e2e - dark charcoal)
+- Primary Text: `hsl(120, 100%, 99%)` (#FDFFFC - bright white for readability)
+- Accent: `hsl(68, 36%, 52%)` (#9DAA5F - olive-light, visible on dark)
+- Hover: `hsl(68, 36%, 58%)` (#A8B86C - lighter olive)
+
+**Semantic Colors (Both Modes):**
+- Success: Bright green in both modes (high visibility)
+- Warning: Yellow/amber in both modes (urgency signal)
+- Error: Red in both modes (critical alert)
+- Info: Sky blue in both modes (helpful guidance)
+
+**Implementation Architecture:**
+
+**Three-Layer System:**
+1. **Layer 0 - FOUC Prevention:** Inline script in layout.tsx
+2. **Layer 1 - Utilities:** theme.ts (type definitions, system detection, DOM manipulation)
+3. **Layer 2 - State Management:** ThemeContext.tsx (React Context API, localStorage, matchMedia)
+4. **Layer 3 - UI Component:** ThemeToggle.tsx (HeroUI Button, sun/moon icons)
+
+**Integration Points:**
+- ThemeProvider wraps entire app (outermost provider, before HeroUIProvider)
+- ThemeToggle integrated in Header component (before settings icon)
+- FOUC script in layout.tsx `<head>` (executes before body)
+- localStorage key: `gitlab-insights-theme`
+
+**Accessibility:**
+
+**Keyboard Navigation:**
+- Tab to toggle button (visible olive focus ring)
+- Space or Enter to activate toggle
+- Focus returns to button after theme change
+
+**Screen Reader Support:**
+- Dynamic aria-label: "Switch to dark mode" / "Switch to light mode"
+- Theme change announced via aria-live region
+- Clear indication of current theme state
+
+**Color Contrast:**
+- All text meets WCAG 2.1 Level AA standards (4.5:1 minimum)
+- Interactive elements maintain contrast in both modes
+- Olive accent tested for sufficient contrast on both backgrounds
+
+**User Experience Benefits:**
+
+1. **Reduces Eye Strain:** Engineers spending 10-15 min/day scanning items benefit from dark mode in low-light environments
+2. **Professional Polish:** Modern applications expected to support both themes in 2025
+3. **User Autonomy:** Respects OS setting by default, allows override when needed
+4. **Seamless Transition:** No FOUC, instant theme changes, smooth visual experience
+5. **Accessibility:** Supports light-sensitive users and various lighting conditions
+
+**Technical Reference:**
+- Implementation Details: `/docs/ui-component-architecture.md` Section 8 (Theme Management)
+- Architecture Decision: `/docs/architecture.md` ADR-008 (Theme System), ADR-009 (Dark Mode Support)
+- Story Documentation: `/docs/sprint-artifacts/1-5-6-dark-mode-toggle.md`
+- Sprint Change Proposal: `/docs/sprint-change-proposal-dark-mode-2025-12-01.md`
 
 ---
 

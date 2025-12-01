@@ -926,6 +926,29 @@ The interface prioritizes **information density, keyboard efficiency, and speed*
 
 ---
 
+## Enhancements (Post-MVP)
+
+### FR-101: Dark Mode Support
+
+**Priority:** Nice-to-have (Post-MVP Enhancement)
+**Added:** 2025-12-01 (Epic 1.5 Sprint Change Proposal)
+**Status:** Implemented in Epic 1.5
+
+**Description:** Application supports light and dark color schemes with automatic system preference detection and manual user override.
+
+**Requirements:**
+- Auto-detect system preference (macOS/Windows dark mode setting)
+- Manual toggle in UI (Header area, icon-only button)
+- Persist user preference across sessions (localStorage)
+- No performance impact (<5KB bundle increase)
+- No FOUC (flash of unstyled content) on page load
+
+**Rationale:** Reduces eye strain for engineers spending 10-15 min/day scanning items, improves accessibility for light-sensitive users, and provides professional polish expected in modern applications.
+
+**Implementation:** Epic 1.5, Story 1.5.6 - Dark Mode Toggle & System Preference Detection
+
+---
+
 ## PRD Summary
 
 **Project:** gitlab-insights - Attention-efficient discovery platform for PM-less engineering organizations

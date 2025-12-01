@@ -841,11 +841,320 @@ import { TextField, Label, Input } from 'react-aria-components';
 
 ---
 
+## 8. Theme Management
+
+**Added:** Story 1.5.6 (2025-12-01)
+
+### 8.1 Theme System Architecture
+
+GitLab Insights supports light and dark color schemes with automatic system preference detection and manual user override. The theme system follows the established Context API pattern used throughout the application (SearchContext, ShortcutContext, ToastContext).
+
+**Three-Layer Architecture:**
+
+**Layer 0: FOUC Prevention** (`/src/app/layout.tsx`)
+- Inline blocking script in `<head>` executes before React hydration
+- Reads localStorage and applies `dark` class to `<html>` element
+- Prevents flash of wrong theme on page load
+- Critical: Must execute synchronously before body renders
+
+**Layer 1: Utilities** (`/src/lib/theme.ts`)
+- Type definitions: `ThemeMode` ('light' | 'dark'), `ThemePreference` ('system' | 'light' | 'dark')
+- System detection: `getSystemTheme()` using matchMedia API
+- Theme resolution: `resolveTheme()` maps user preference to effective theme mode
+- DOM application: `applyTheme()` toggles `dark` class on `<html>` element
+
+**Layer 2: State Management** (`/src/contexts/ThemeContext.tsx`)
+- ThemeProvider component using React Context API
+- localStorage persistence (key: `gitlab-insights-theme`)
+- Real-time system preference tracking with matchMedia listener
+- `useTheme()` hook for component access
+
+**Layer 3: UI Component** (`/src/components/theme/ThemeToggle.tsx`)
+- Icon-only HeroUI Button with sun/moon icons
+- Cycles through theme preferences on click
+- Accessible with proper aria-labels
+- Integrated in Header component
+
+### 8.2 Implementation Details
+
+**ThemeContext Pattern:**
+
+```typescript
+// /src/lib/theme.ts - Utility layer
+export type ThemeMode = 'light' | 'dark';
+export type ThemePreference = 'system' | 'light' | 'dark';
+export const THEME_STORAGE_KEY = 'gitlab-insights-theme';
+
+export function getSystemTheme(): ThemeMode {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light';
+}
+
+export function resolveTheme(preference: ThemePreference): ThemeMode {
+  return preference === 'system' ? getSystemTheme() : preference;
+}
+
+export function applyTheme(mode: ThemeMode): void {
+  if (mode === 'dark') {
+    document.documentElement.classList.add('dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+  }
+}
+```
+
+**State Management:**
+
+```typescript
+// /src/contexts/ThemeContext.tsx - State layer
+import { createContext, useContext, useState, useEffect } from 'react';
+import { getSystemTheme, resolveTheme, applyTheme, THEME_STORAGE_KEY } from '@/lib/theme';
+
+interface ThemeContextType {
+  theme: ThemeMode;
+  preference: ThemePreference;
+  setPreference: (pref: ThemePreference) => void;
+  toggleTheme: () => void;
+}
+
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  // Initialize from localStorage or default to 'system'
+  const [preference, setPreferenceState] = useState<ThemePreference>(() => {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY);
+    return (stored as ThemePreference) || 'system';
+  });
+
+  // Resolve current theme based on preference
+  const [theme, setTheme] = useState<ThemeMode>(() => resolveTheme(preference));
+
+  // Apply theme to DOM
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
+
+  // Persist preference to localStorage
+  useEffect(() => {
+    localStorage.setItem(THEME_STORAGE_KEY, preference);
+  }, [preference]);
+
+  // Track system preference changes when preference is 'system'
+  useEffect(() => {
+    if (preference !== 'system') return;
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => setTheme(getSystemTheme());
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [preference]);
+
+  // Update resolved theme when preference changes
+  useEffect(() => {
+    setTheme(resolveTheme(preference));
+  }, [preference]);
+
+  const setPreference = (pref: ThemePreference) => {
+    setPreferenceState(pref);
+  };
+
+  const toggleTheme = () => {
+    // Cycle: system → light → dark → system
+    const next = preference === 'system' ? 'light'
+      : preference === 'light' ? 'dark'
+      : 'system';
+    setPreference(next);
+  };
+
+  return (
+    <ThemeContext.Provider value={{ theme, preference, setPreference, toggleTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+}
+
+export function useTheme() {
+  const context = useContext(ThemeContext);
+  if (!context) throw new Error('useTheme must be used within ThemeProvider');
+  return context;
+}
+```
+
+**UI Component:**
+
+```typescript
+// /src/components/theme/ThemeToggle.tsx - UI layer
+import { Button } from '@heroui/react';
+import { useTheme } from '@/contexts/ThemeContext';
+import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
+
+export function ThemeToggle() {
+  const { theme, toggleTheme } = useTheme();
+
+  return (
+    <Button
+      isIconOnly
+      variant="light"
+      size="sm"
+      onPress={toggleTheme}
+      aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+    >
+      {theme === 'dark' ? (
+        <SunIcon className="h-5 w-5" />
+      ) : (
+        <MoonIcon className="h-5 w-5" />
+      )}
+    </Button>
+  );
+}
+```
+
+**FOUC Prevention:**
+
+```typescript
+// /src/app/layout.tsx - Layer 0
+<head>
+  <script
+    dangerouslySetInnerHTML={{
+      __html: `
+        (function() {
+          try {
+            const stored = localStorage.getItem('gitlab-insights-theme');
+            const preference = stored || 'system';
+
+            let theme = preference;
+            if (preference === 'system') {
+              theme = window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light';
+            }
+
+            if (theme === 'dark') {
+              document.documentElement.classList.add('dark');
+            }
+          } catch (e) {
+            // localStorage might be disabled
+          }
+        })();
+      `,
+    }}
+  />
+</head>
+```
+
+### 8.3 Integration Pattern
+
+**Provider Order (Outermost to Innermost):**
+
+```typescript
+// /src/app/providers.tsx
+export function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <ThemeProvider>           {/* Outermost - must wrap HeroUI */}
+      <HeroUIProvider>
+        <SearchProvider>
+          <ToastProvider>
+            <ShortcutProvider>
+              {children}
+            </ShortcutProvider>
+          </ToastProvider>
+        </SearchProvider>
+      </HeroUIProvider>
+    </ThemeProvider>
+  );
+}
+```
+
+**Why ThemeProvider is Outermost:**
+- Must wrap HeroUIProvider to ensure theme changes affect HeroUI components
+- FOUC script and ThemeProvider read same localStorage key for consistency
+- No dependencies on other providers
+
+**Header Integration:**
+
+```typescript
+// /src/components/layout/Header.tsx
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
+
+export function Header() {
+  return (
+    <header>
+      {/* ... other header content */}
+      <div className="flex items-center gap-2">
+        <ThemeToggle />              {/* Before settings icon */}
+        <SettingsButton />
+      </div>
+    </header>
+  );
+}
+```
+
+### 8.4 File Responsibilities
+
+| File | Layer | Responsibilities |
+|------|-------|------------------|
+| `/src/lib/theme.ts` | Utilities | Type definitions, system detection, theme resolution, DOM manipulation |
+| `/src/contexts/ThemeContext.tsx` | State | ThemeProvider component, useTheme hook, localStorage persistence, matchMedia tracking |
+| `/src/components/theme/ThemeToggle.tsx` | UI | Toggle button component, sun/moon icons, accessibility labels |
+| `/src/app/layout.tsx` | FOUC Prevention | Inline blocking script, pre-hydration theme application |
+| `/src/app/providers.tsx` | Integration | ThemeProvider wrapping (outermost position) |
+| `/src/components/layout/Header.tsx` | Integration | ThemeToggle placement in UI |
+
+### 8.5 Theme Activation
+
+**How Dark Mode Works:**
+
+1. **Tailwind CSS Configuration** (`tailwind.config.ts`):
+   ```typescript
+   export default {
+     darkMode: "class",  // Activates when 'dark' class on <html>
+     // ...
+   }
+   ```
+
+2. **Component Styling Pattern**:
+   ```tsx
+   <div className="bg-bg-light dark:bg-bg-dark text-text-dark dark:text-text-light">
+     {/* Light mode: light bg, dark text */}
+     {/* Dark mode: dark bg, light text */}
+   </div>
+   ```
+
+3. **HeroUI Theme Integration**:
+   - HeroUI components automatically use dark theme colors when `dark` class present
+   - Custom olive theme colors defined for both light and dark modes
+   - See tailwind.config.ts for complete theme configuration
+
+**163 Dark Mode Classes:**
+All components throughout the codebase use `dark:` Tailwind classes that activate when the `dark` class is present on `<html>`. The ThemeContext manages this class via `applyTheme()` function.
+
+### 8.6 Testing Strategy
+
+**Manual Testing Checklist:**
+1. ✅ System preference detection (matches OS setting on first load)
+2. ✅ Manual toggle cycles through themes
+3. ✅ Theme persists across sessions (localStorage)
+4. ✅ Real-time system tracking (OS change updates app without reload)
+5. ✅ No FOUC on page load (inline script prevents flash)
+6. ✅ All `dark:` classes activate correctly
+7. ✅ HeroUI components use dark theme colors
+8. ✅ Keyboard accessibility (Tab + Space/Enter)
+
+**Edge Cases:**
+- localStorage disabled (privacy mode): Theme works per-session, resets on reload
+- Hydration mismatch: FOUC script and ThemeProvider use same key, states match
+- System preference changes: matchMedia listener updates only when preference is 'system'
+
+---
+
 ## Document History
 
 | Date       | Version | Changes                                     | Author |
 |------------|---------|---------------------------------------------|--------|
 | 2025-11-26 | 1.0     | Initial UI component architecture document  | BMad   |
+| 2025-12-01 | 1.1     | Added Section 8: Theme Management (Story 1.5.6) | BMad |
 
 ---
 

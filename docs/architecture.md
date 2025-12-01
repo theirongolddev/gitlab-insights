@@ -1031,12 +1031,49 @@ const toggleSplitPane = () => {
 - Accessibility: Maintains React Aria WCAG 2.1 Level AA compliance
 - Keyboard: Vim-style navigation (j/k, etc.) preserved via custom keyboard handlers on HeroUI components
 
-### ADR-009: Dark Mode Only for MVP
-**Decision:** Ship dark mode only for MVP, defer light mode to post-MVP
-**Rationale:** Target users (engineers) strongly prefer dark mode, especially for code-adjacent tools. Single color mode reduces testing surface, faster MVP delivery. Light mode adds complexity with minimal MVP value (can add post-validation).
-**Consequences:** Faster MVP delivery, reduced CSS complexity, may exclude minority of light mode users (acceptable for beta), light mode deferred to post-MVP
-**Status:** Accepted
-**Colors:** Background #2d2e2e, Primary text #FDFFFC, Accent #9DAA5F (lightened olive for dark bg contrast)
+**Theme System** (Added 2025-12-01, Story 1.5.6):
+- **State Management:** React Context API (ThemeContext) following existing pattern (SearchContext, ShortcutContext, ToastContext)
+- **Persistence:** localStorage key `gitlab-insights-theme` (values: 'system' | 'light' | 'dark')
+- **System Preference Detection:** matchMedia API `(prefers-color-scheme: dark)` with real-time listener
+- **Manual Override:** ThemeToggle component in Header (icon-only HeroUI Button)
+- **FOUC Prevention:** Inline blocking script in `/src/app/layout.tsx` applies theme before React hydration
+- **Implementation Files:**
+  - `/src/lib/theme.ts` - Utility functions and type definitions
+  - `/src/contexts/ThemeContext.tsx` - ThemeProvider component and useTheme() hook
+  - `/src/components/theme/ThemeToggle.tsx` - Toggle button UI component
+  - `/src/app/layout.tsx` - FOUC prevention script
+  - `/src/app/providers.tsx` - ThemeProvider integration (outermost wrapper)
+  - `/src/components/layout/Header.tsx` - ThemeToggle placement
+
+### ADR-009: Dark Mode Support (Revised 2025-12-01)
+**Decision:** Support both light and dark modes with automatic system preference detection and manual user toggle
+
+**Rationale:**
+- Epic 1.5 (HeroUI Migration) created complete light/dark theme definitions in `tailwind.config.ts`
+- All components already styled with `dark:` Tailwind classes (163 instances)
+- Minimal incremental effort (~1-2 days) to add toggle mechanism
+- Improves accessibility for light-sensitive users
+- Provides professional polish expected in modern applications
+- System preference detection respects user OS settings
+
+**Implementation** (Story 1.5.6, Epic 1.5):
+- Default behavior: Auto-detect system preference (light/dark)
+- Manual override: Toggle button in Header
+- Persistence: localStorage for user choice
+- FOUC prevention: Inline script applies theme before hydration
+- See ADR-008 Theme System section for technical details
+
+**Colors:**
+- **Light Mode:** Background hsl(120, 100%, 99%), Primary olive hsl(68, 49%, 28%)
+- **Dark Mode:** Background hsl(0, 2%, 18%), Primary olive-light hsl(68, 36%, 52%)
+
+**Status:** Implemented (Epic 1.5, Story 1.5.6)
+
+**Amendment History:**
+- **Original (Pre-Epic 1.5):** Dark mode only for MVP, defer light mode to post-MVP
+- **Revision (2025-12-01, Story 1.5.6):** Both modes supported with user toggle
+  - Trigger: HeroUI migration created theme infrastructure, completing it with toggle adds minimal effort for high UX value
+  - Change: Dark-only → Light/Dark with toggle and system preference detection
 
 ### ADR-010: Laptop and Desktop Platform (1280px+ minimum)
 **Decision:** Target laptop and desktop web browsers, 1280px minimum width, optimized for 1440px-2560px range

@@ -37,6 +37,12 @@ Migrate all Epic 1-2 UI components from React Aria Components (unstyled primitiv
    - Professional visual polish with HeroUI styling
    - Reduce maintenance burden for styling
 
+4. **Enable Dark Mode Toggle** (Added 2025-12-01)
+   - Implement theme state management with Context API
+   - Add toggle UI in Header with system preference detection
+   - Persist user preference in localStorage
+   - Prevent FOUC (flash of unstyled content)
+
 ### Secondary Objectives
 
 1. **Documentation Updates**
@@ -59,7 +65,7 @@ Epic 1.5 is complete when:
 
 1. ✅ All Epic 1-2 components migrated to HeroUI
 2. ✅ All colors converted from hex → HSL
-3. ✅ Custom olive theme renders correctly (light/dark modes)
+3. ✅ Custom olive theme renders correctly AND users can toggle between light/dark modes with system preference detection
 4. ✅ Keyboard navigation preserved (j/k, vim-style shortcuts)
 5. ✅ Accessibility maintained (WCAG 2.1 Level AA)
 6. ✅ No visual regressions from Epic 1-2
@@ -160,6 +166,34 @@ Epic 1.5 is complete when:
 - Vim shortcuts preserved
 - Epic 2 documentation updated
 - UX spec updated
+
+---
+
+### Story 1.5.6: Dark Mode Toggle & System Preference Detection
+**Effort:** 1-2 days
+**Status:** Backlog
+**Added:** 2025-12-01 (Sprint Change Proposal)
+
+**Scope:**
+- Create theme utilities (`/src/lib/theme.ts`)
+- Create ThemeProvider with Context API (`/src/contexts/ThemeContext.tsx`)
+- Create ThemeToggle component (`/src/components/theme/ThemeToggle.tsx`)
+- Add FOUC prevention script to layout (`/src/app/layout.tsx`)
+- Integrate ThemeProvider in providers (`/src/app/providers.tsx`)
+- Add ThemeToggle to Header (`/src/components/layout/Header.tsx`)
+- System preference detection (matchMedia API)
+- localStorage persistence for user preference
+- Update documentation (architecture.md, ui-component-architecture.md, ux-design-specification.md)
+
+**Deliverables:**
+- Dark mode toggle working in Header
+- System preference auto-detection functioning
+- Theme persistence across sessions
+- No FOUC (flash of unstyled content)
+- All 163 `dark:` classes activate correctly
+- Documentation updated
+
+**Reference:** Sprint Change Proposal `/docs/sprint-change-proposal-dark-mode-2025-12-01.md`
 
 ---
 
