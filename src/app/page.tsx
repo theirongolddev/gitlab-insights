@@ -3,15 +3,16 @@
 import { signIn, signOut, useSession } from "~/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { Button } from "@heroui/react";
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-[#FDFFFC] dark:bg-[#2d2e2e]">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-bg-light dark:bg-bg-dark">
       <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16">
-        <h1 className="text-5xl font-extrabold tracking-tight text-[#2d2e2e] dark:text-[#FDFFFC] sm:text-[5rem]">
-          GitLab <span className="text-[#5e6b24] dark:text-[#9DAA5F]">Insights</span>
+        <h1 className="text-5xl font-extrabold tracking-tight text-gray-900 dark:text-gray-50 sm:text-[5rem]">
+          GitLab <span className="text-olive dark:text-olive-light">Insights</span>
         </h1>
-        <p className="text-xl text-[#2d2e2e] dark:text-[#FDFFFC]">
+        <p className="text-xl text-gray-800 dark:text-gray-100">
           Attention-efficient discovery platform for GitLab
         </p>
         <AuthShowcase />
@@ -33,7 +34,7 @@ function AuthShowcase() {
   if (isPending) {
     return (
       <div className="flex flex-col items-center justify-center gap-4">
-        <p className="text-center text-2xl text-[#2d2e2e] dark:text-[#FDFFFC]">
+        <p className="text-center text-2xl text-gray-800 dark:text-gray-100">
           Loading...
         </p>
       </div>
@@ -53,16 +54,18 @@ function AuthShowcase() {
 
   return (
     <div className="flex flex-col items-center justify-center gap-4">
-      <p className="text-center text-2xl text-[#2d2e2e] dark:text-[#FDFFFC]">
+      <p className="text-center text-2xl text-gray-800 dark:text-gray-100">
         {sessionData && <span>Logged in as {sessionData.user?.name}</span>}
         {!sessionData && <span>Not logged in</span>}
       </p>
-      <button
-        className="rounded-full bg-[#5e6b24] px-10 py-3 font-semibold text-[#FDFFFC] no-underline transition hover:bg-[#4F5A1F] dark:bg-[#9DAA5F] dark:text-[#2d2e2e] dark:hover:bg-[#A8B86C]"
-        onClick={sessionData ? () => void handleSignOut() : () => void handleSignIn()}
+      <Button
+        color="primary"
+        size="lg"
+        className="rounded-full px-10 font-semibold"
+        onPress={sessionData ? () => void handleSignOut() : () => void handleSignIn()}
       >
         {sessionData ? "Sign out" : "Sign in with GitLab"}
-      </button>
+      </Button>
     </div>
   );
 }

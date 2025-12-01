@@ -8,9 +8,9 @@ interface BadgeProps {
 }
 
 const badgeColors: Record<EventType, string> = {
-  issue: "bg-[#8B5CF6] text-white", // Purple
-  merge_request: "bg-[#38BDF8] text-white", // Blue
-  comment: "bg-[#94A3B8] text-white", // Gray
+  issue: "bg-badge-issue dark:bg-badge-issue-dark text-white", // Purple
+  merge_request: "bg-badge-mr dark:bg-badge-mr-dark text-white", // Blue
+  comment: "bg-badge-comment dark:bg-badge-comment-dark text-white", // Gray
 };
 
 const badgeLabels: Record<EventType, string> = {
@@ -23,7 +23,7 @@ export function Badge({ type, isNew }: BadgeProps) {
   return (
     <div className="flex items-center gap-1.5">
       {isNew && (
-        <span className="px-2 py-0.5 text-[11px] font-medium rounded-full bg-[#9DAA5F] text-white">
+        <span className="px-2 py-0.5 text-[11px] font-medium rounded-full bg-olive-light text-white">
           NEW
         </span>
       )}

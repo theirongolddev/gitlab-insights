@@ -22,7 +22,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={geist.className}>
-      <body className="min-h-screen bg-[#FDFFFC] dark:bg-[#2d2e2e]">
+      <body className="min-h-screen bg-bg-light dark:bg-bg-dark">
         <Providers>
           <div className="flex min-h-screen flex-col">
             <Header />

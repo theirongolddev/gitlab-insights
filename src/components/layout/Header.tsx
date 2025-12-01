@@ -5,7 +5,7 @@ import { signOut, useSession } from "~/lib/auth-client";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Button } from "~/components/ui/Button";
+import { Button } from "@heroui/react";
 import { useShortcuts } from "~/components/keyboard/ShortcutContext";
 import { useSearch } from "~/components/search/SearchContext";
 import { SearchBar } from "~/components/search/SearchBar";
@@ -124,11 +124,11 @@ export function Header() {
         keywords={keywords}
       />
 
-      <header className="border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-[#2d2e2e]">
+      <header className="border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-bg-dark">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
           <Link href="/dashboard" className="flex items-center gap-3">
-            <h1 className="text-xl font-bold text-[#2d2e2e] dark:text-[#FDFFFC]">
-              GitLab <span className="text-[#5e6b24] dark:text-[#9DAA5F]">Insights</span>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-50">
+              GitLab <span className="text-olive dark:text-olive-light">Insights</span>
             </h1>
           </Link>
 
@@ -151,7 +151,7 @@ export function Header() {
           {/* Settings link */}
           <Link
             href="/settings"
-            className="rounded-md p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-[#2d2e2e] focus:outline-none focus:ring-2 focus:ring-[#9DAA5F] dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-[#FDFFFC]"
+            className="rounded-md p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-olive-light dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-50"
             title="Settings"
           >
             <svg
@@ -178,9 +178,9 @@ export function Header() {
           {/* User menu dropdown */}
           <MenuTrigger>
             <Button
-              variant="ghost"
+              variant="light"
               size="sm"
-              className="flex items-center gap-2 border-0 px-2"
+              className="flex items-center gap-2 px-2"
             >
               {session.user.image && (
                 <Image
@@ -195,7 +195,7 @@ export function Header() {
                 />
               )}
               <div className="flex flex-col items-start">
-                <span className="text-sm font-medium text-[#2d2e2e] dark:text-[#FDFFFC]">
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
                   {session.user.name}
                 </span>
                 <span className="text-xs text-gray-600 dark:text-gray-400">
@@ -228,7 +228,7 @@ export function Header() {
               >
                 <MenuItem
                   id="settings"
-                  className="flex cursor-pointer items-center gap-2 px-4 py-2 text-sm text-[#2d2e2e] outline-none hover:bg-gray-100 focus:bg-gray-100 dark:text-[#FDFFFC] dark:hover:bg-gray-700 dark:focus:bg-gray-700"
+                  className="flex cursor-pointer items-center gap-2 px-4 py-2 text-sm text-gray-900 outline-none hover:bg-gray-100 focus:bg-gray-100 dark:text-gray-50 dark:hover:bg-gray-700 dark:focus:bg-gray-700"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -249,7 +249,7 @@ export function Header() {
                 </MenuItem>
                 <MenuItem
                   id="signout"
-                  className="flex cursor-pointer items-center gap-2 px-4 py-2 text-sm text-[#2d2e2e] outline-none hover:bg-gray-100 focus:bg-gray-100 dark:text-[#FDFFFC] dark:hover:bg-gray-700 dark:focus:bg-gray-700"
+                  className="flex cursor-pointer items-center gap-2 px-4 py-2 text-sm text-gray-900 outline-none hover:bg-gray-100 focus:bg-gray-100 dark:text-gray-50 dark:hover:bg-gray-700 dark:focus:bg-gray-700"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"

@@ -71,7 +71,7 @@ export function ItemRow({ item, isSelected, isNew, onClick }: ItemRowProps) {
   return (
     <div
       onClick={onClick}
-      className={`min-h-10 px-4 mb-2 rounded-lg 
+      className={`min-h-10 px-4 mb-2 rounded-lg
         ${isSelected ? "ring-2 ring-olive-light" : ""}`}
     >
       {/* Line 1: Badge + Title + Metadata */}
@@ -81,10 +81,10 @@ export function ItemRow({ item, isSelected, isNew, onClick }: ItemRowProps) {
           {item.highlightedTitle ? (
             <HighlightedText
               html={item.highlightedTitle}
-              className="text-sm font-medium text-[#2d2e2e] dark:text-[#FDFFFC] truncate"
+              className="text-sm font-medium text-gray-900 dark:text-gray-50 truncate"
             />
           ) : (
-            <span className="text-sm font-medium text-[#2d2e2e] dark:text-[#FDFFFC] truncate">
+            <span className="text-sm font-medium text-gray-900 dark:text-gray-50 truncate">
               {item.title}
             </span>
           )}

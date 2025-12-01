@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { Button, Checkbox, Input } from "@heroui/react";
 
 export interface GitLabProject {
   id: string;
@@ -114,29 +115,37 @@ export function ProjectSelector({
     <>
       {/* Search input */}
       <div className="mb-4">
-        <input
+        <Input
           type="text"
           placeholder="Search projects..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full rounded-md border border-gray-300 px-4 py-2 text-[#2d2e2e] placeholder-gray-400 focus:border-[#9DAA5F] focus:outline-none focus:ring-2 focus:ring-[#9DAA5F] dark:border-gray-600 dark:bg-gray-700 dark:text-[#FDFFFC] dark:placeholder-gray-500"
+          onValueChange={setSearchQuery}
+          className="w-full"
+          classNames={{
+            input: "text-gray-900 dark:text-gray-50",
+            inputWrapper: "border border-gray-300 dark:border-gray-600"
+          }}
         />
       </div>
 
       {/* Bulk action buttons */}
       <div className="mb-6 flex gap-4">
-        <button
-          onClick={handleSelectAll}
-          className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+        <Button
+          onPress={handleSelectAll}
+          color="default"
+          variant="flat"
+          size="sm"
         >
           Select All
-        </button>
-        <button
-          onClick={handleDeselectAll}
-          className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+        </Button>
+        <Button
+          onPress={handleDeselectAll}
+          color="default"
+          variant="flat"
+          size="sm"
         >
           Deselect All
-        </button>
+        </Button>
       </div>
 
       {/* Project checklist grouped by namespace */}
@@ -153,18 +162,20 @@ export function ProjectSelector({
             {/* Projects in namespace */}
             <div className="p-4 space-y-1">
               {namespaceProjects.map((project) => (
-                <label
+                <div
                   key={project.id}
-                  className="flex cursor-pointer items-start gap-3 rounded-md p-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                  className="flex items-start gap-3 rounded-md p-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50"
                 >
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.has(project.id)}
-                    onChange={() => handleToggleProject(project.id)}
-                    className="mt-0.5 h-4 w-4 cursor-pointer rounded border-gray-300 text-[#9DAA5F] focus:ring-2 focus:ring-[#9DAA5F] focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:focus:ring-offset-gray-800"
+                  <Checkbox
+                    isSelected={selectedIds.has(project.id)}
+                    onValueChange={() => handleToggleProject(project.id)}
+                    color="primary"
+                    classNames={{
+                      wrapper: "mt-0.5"
+                    }}
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-[#2d2e2e] dark:text-[#FDFFFC]">
+                    <div className="font-medium text-gray-900 dark:text-gray-50">
                       {project.name}
                     </div>
                     {project.description && (
@@ -173,7 +184,7 @@ export function ProjectSelector({
                       </div>
                     )}
                   </div>
-                </label>
+                </div>
               ))}
             </div>
           </div>

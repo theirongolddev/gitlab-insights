@@ -48,8 +48,8 @@ export default function DashboardPage() {
 
   if (isPending) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center bg-[#FDFFFC] dark:bg-[#2d2e2e]">
-        <p className="text-xl text-[#2d2e2e] dark:text-[#FDFFFC]">Loading...</p>
+      <main className="flex min-h-screen flex-col items-center justify-center bg-bg-light dark:bg-bg-dark">
+        <p className="text-xl text-gray-900 dark:text-gray-50">Loading...</p>
       </main>
     );
   }
@@ -107,12 +107,12 @@ export default function DashboardPage() {
   const displayEvents = isSearchActive ? searchEventsAsDashboard : allDashboardEvents;
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#FDFFFC] dark:bg-[#2d2e2e]">
+    <div className="flex min-h-screen flex-col bg-bg-light dark:bg-bg-dark">
       {/* Dashboard sub-header with sync indicator and refresh */}
       <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-[#2d2e2e] dark:text-[#FDFFFC]">
+            <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50">
               Dashboard
             </h1>
             <SyncIndicator />

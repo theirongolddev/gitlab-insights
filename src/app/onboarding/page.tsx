@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useMemo } from "react";
 import { api } from "~/trpc/react";
 import { ProjectSelector } from "~/components/projects/ProjectSelector";
+import { Button, Spinner } from "@heroui/react";
 
 export default function OnboardingPage() {
   const { data: session, isPending } = useSession();
@@ -59,8 +60,8 @@ export default function OnboardingPage() {
   // Loading state
   if (isPending) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center bg-[#FDFFFC] dark:bg-[#2d2e2e]">
-        <p className="text-xl text-[#2d2e2e] dark:text-[#FDFFFC]">Loading...</p>
+      <main className="flex min-h-screen flex-col items-center justify-center bg-bg-light dark:bg-bg-dark">
+        <Spinner size="lg" color="primary" />
       </main>
     );
   }
@@ -72,13 +73,13 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#FDFFFC] dark:bg-[#2d2e2e]">
+    <div className="flex min-h-screen flex-col bg-bg-light dark:bg-bg-dark">
       {/* Scrollable content area */}
       <div className="flex-1 overflow-auto px-4 py-16 pb-32">
         <div className="mx-auto max-w-3xl">
           {/* Header */}
           <div className="mb-12 text-center">
-            <h1 className="mb-4 text-4xl font-bold tracking-tight text-[#2d2e2e] dark:text-[#FDFFFC]">
+            <h1 className="mb-4 text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-50">
               Select Projects to Monitor
             </h1>
             <p className="text-lg text-gray-600 dark:text-gray-400">
@@ -89,7 +90,7 @@ export default function OnboardingPage() {
           {/* Loading state for projects */}
           {isLoadingProjects && (
             <div className="text-center">
-              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#9DAA5F] border-r-transparent"></div>
+              <Spinner size="lg" color="primary" />
               <p className="mt-4 text-gray-600 dark:text-gray-400">Loading your projects...</p>
             </div>
           )}
@@ -107,7 +108,7 @@ export default function OnboardingPage() {
           {/* Empty state */}
           {projects && projects.length === 0 && (
             <div className="rounded-lg border border-gray-300 bg-gray-50 p-8 text-center dark:border-gray-700 dark:bg-gray-800">
-              <p className="mb-4 text-lg text-[#2d2e2e] dark:text-[#FDFFFC]">
+              <p className="mb-4 text-lg text-gray-900 dark:text-gray-50">
                 No projects found
               </p>
               <p className="text-gray-600 dark:text-gray-400">
@@ -132,20 +133,23 @@ export default function OnboardingPage() {
         <div className="sticky bottom-0 border-t border-gray-200 bg-white/95 px-4 py-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] backdrop-blur-sm dark:border-gray-700 dark:bg-gray-800/95">
           <div className="mx-auto flex max-w-3xl items-center justify-between gap-4">
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              <span className="font-medium text-[#2d2e2e] dark:text-[#FDFFFC]">{currentSelection.size}</span> of {projects.length} projects selected
+              <span className="font-medium text-gray-900 dark:text-gray-50">{currentSelection.size}</span> of {projects.length} projects selected
               {currentSelection.size === 0 && (
-                <span className="ml-2 text-red-600 dark:text-red-400">
+                <span className="ml-2 text-error dark:text-error-dark">
                   — Select at least one to continue
                 </span>
               )}
             </div>
-            <button
-              onClick={handleContinue}
-              disabled={currentSelection.size === 0 || isSubmitting}
-              className="rounded-md bg-[#9DAA5F] px-6 py-2.5 font-semibold text-white transition-colors hover:bg-[#8a9654] disabled:cursor-not-allowed disabled:opacity-50"
+            <Button
+              color="primary"
+              variant="solid"
+              size="lg"
+              onPress={handleContinue}
+              isDisabled={currentSelection.size === 0 || isSubmitting}
+              isLoading={isSubmitting}
             >
               {isSubmitting ? "Saving..." : "Continue →"}
-            </button>
+            </Button>
           </div>
         </div>
       )}
