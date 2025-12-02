@@ -1,11 +1,12 @@
 # Story 1.5.6: Dark Mode Toggle & System Preference Detection
 
 **Epic:** 1.5 - HeroUI Migration & HSL Color System
-**Status:** Backlog
+**Status:** ready-for-dev
 **Effort:** 1-2 days
 **Priority:** Medium
 **Dependencies:** Story 1.5.3 (Epic 1 Component Migration) must complete
 **Created:** 2025-12-01
+**Context Generated:** 2025-12-02
 
 ---
 
@@ -344,3 +345,19 @@ Story 1.5.6 is complete when:
 - Tailwind Config: `tailwind.config.ts` (light/dark theme definitions)
 - Existing Contexts: `src/contexts/SearchContext.tsx`, `src/contexts/ShortcutContext.tsx`, `src/contexts/ToastContext.tsx`
 - Header Component: `src/components/layout/Header.tsx`
+
+---
+
+## Dev Agent Record
+
+### Context Reference
+
+- docs/sprint-artifacts/1-5-6-dark-mode-toggle.context.xml
+
+### Agent Model Used
+
+{{agent_model_name_version}}
+
+### Debug Log References
+
+### Completion Notes List

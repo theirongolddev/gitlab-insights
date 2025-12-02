@@ -1,0 +1,169 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1.5</epicId>
+    <storyId>6</storyId>
+    <title>Dark Mode Toggle & System Preference Detection</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-02</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/1-5-6-dark-mode-toggle.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user of GitLab Insights</asA>
+    <iWant>toggle between light and dark modes</iWant>
+    <soThat>I can choose the theme that's most comfortable for my eyes and working environment</soThat>
+    <tasks>
+- Task 1: Create theme utilities (`/src/lib/theme.ts`)
+  - 1.1 Define TypeScript types (ThemeMode, ThemePreference)
+  - 1.2 Implement `getSystemTheme()` using matchMedia
+  - 1.3 Implement `resolveTheme()` preference mapping
+  - 1.4 Implement `applyTheme()` DOM class toggling
+  - 1.5 Export `THEME_STORAGE_KEY` constant
+
+- Task 2: Create ThemeProvider (`/src/contexts/ThemeContext.tsx`)
+  - 2.1 Set up ThemeContext with React.createContext
+  - 2.2 Implement ThemeProvider component
+  - 2.3 Add localStorage initialization (default: 'system')
+  - 2.4 Add matchMedia listener for system preference changes
+  - 2.5 Implement useEffect for DOM application
+  - 2.6 Add localStorage persistence on change
+  - 2.7 Create useTheme() hook
+  - 2.8 Export ThemeProvider and useTheme
+
+- Task 3: Create ThemeToggle component (`/src/components/theme/ThemeToggle.tsx`)
+  - 3.1 Import HeroUI Button and useTheme hook
+  - 3.2 Implement toggle button (isIconOnly, variant="light", size="sm")
+  - 3.3 Add sun icon (for dark mode → "click for light")
+  - 3.4 Add moon icon (for light mode → "click for dark")
+  - 3.5 Wire up toggleTheme() on button press
+  - 3.6 Add proper aria-label for accessibility
+
+- Task 4: Add FOUC prevention script (`/src/app/layout.tsx`)
+  - 4.1 Locate `<head>` section in layout
+  - 4.2 Add inline `<script>` with dangerouslySetInnerHTML
+  - 4.3 Implement localStorage read and validation
+  - 4.4 Implement system preference detection (matchMedia)
+  - 4.5 Apply 'dark' class if needed
+  - 4.6 Wrap in try/catch for safety
+
+- Task 5: Integrate ThemeProvider (`/src/app/providers.tsx`)
+  - 5.1 Import ThemeProvider from contexts
+  - 5.2 Wrap existing provider chain (must be outermost)
+  - 5.3 Verify provider order: ThemeProvider → HeroUIProvider → ...
+
+- Task 6: Add ThemeToggle to Header (`/src/components/layout/Header.tsx`)
+  - 6.1 Import ThemeToggle component
+  - 6.2 Insert before settings icon (around line 150)
+  - 6.3 Verify layout and spacing
+
+- Task 7: Testing & Validation
+  - 7.1 Run all manual test cases
+  - 7.2 Run keyboard accessibility tests
+  - 7.3 Run visual regression tests
+  - 7.4 Test edge cases
+  - 7.5 Verify `npm run typecheck` passes
+  - 7.6 Verify `npm run build` succeeds
+  - 7.7 Check bundle size impact (<5KB)
+
+- Task 8: Documentation Updates
+  - 8.1 Update architecture.md (ADR-008)
+  - 8.2 Update ui-component-architecture.md (Theme Management)
+  - 8.3 Update ux-design-specification.md (Sections 1.1 and 3.5)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. ✅ AC 1.5.6.1: App defaults to system preference (light/dark OS setting detected automatically)
+2. ✅ AC 1.5.6.2: Manual toggle in Header works and cycles between light/dark modes
+3. ✅ AC 1.5.6.3: Theme preference persists across sessions (stored in localStorage)
+4. ✅ AC 1.5.6.4: No FOUC on page load (inline script prevents flash of wrong theme)
+5. ✅ AC 1.5.6.5: All existing `dark:` classes (163 instances) activate correctly in dark mode
+6. ✅ AC 1.5.6.6: HeroUI components use dark theme colors (olive-light #9DAA5F / hsl(68, 36%, 52%))
+7. ✅ AC 1.5.6.7: Toggle button is keyboard accessible (Tab navigation + Space/Enter activation)
+8. ✅ AC 1.5.6.8: System preference changes update app automatically (no reload required)
+9. ✅ AC 1.5.6.9: `npm run typecheck` passes with no TypeScript errors
+10. ✅ AC 1.5.6.10: `npm run build` succeeds with no build errors
+11. ✅ AC 1.5.6.11: No React hydration warnings in browser console
+12. ✅ AC 1.5.6.12: Bundle size increase < 5KB (theme code is lightweight)
+13. ✅ AC 1.5.6.13: Toggle button has proper aria-label ("Switch to dark mode" / "Switch to light mode")
+14. ✅ AC 1.5.6.14: Focus ring visible when tabbing to toggle (olive theme color)
+15. ✅ AC 1.5.6.15: Screen reader announces theme change action
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/epics/epic-1-5-heroui-migration.md" title="Epic 1.5: HeroUI Migration & HSL Color System" section="Story 1.5.6" snippet="Implement dark mode toggle mechanism to activate existing dark theme styling infrastructure. Create theme utilities, ThemeProvider with Context API, ThemeToggle component, FOUC prevention script, system preference detection, and localStorage persistence." />
+      <doc path="docs/sprint-artifacts/1-5-4-epic-2-component-migration.md" title="Story 1.5.4: Epic 2 Component Migration" section="Learnings from Previous Story" snippet="HeroUI theme configured with olive colors in both light and dark modes. All components have 163 instances of dark: Tailwind classes ready to activate. ThemeProvider must be outermost wrapper before HeroUIProvider. Context API pattern established with SearchContext, ShortcutContext, ToastContext." />
+      <doc path="docs/ui-component-architecture.md" title="UI Component Architecture" section="1.5 HeroUI Setup & Configuration" snippet="HeroUI configured via tailwind.config.ts with custom olive theme in HSL format. Tailwind darkMode: 'class' activates when dark class on html element. All 163 dark: classes throughout components ready to activate." />
+      <doc path="docs/architecture.md" title="Architecture" section="ADR-008: HeroUI for Professional Design System" snippet="HeroUI provides professional design system built on React Aria foundation. Custom olive theme supports both light and dark modes. Decision made to migrate from unstyled React Aria to HeroUI for visual coherence." />
+      <doc path="docs/architecture.md" title="Architecture" section="ADR-009: Dark Mode Support" snippet="To be updated with implementation details of theme state management, FOUC prevention, and system preference detection." />
+    </docs>
+    <code>
+      <artifact path="src/components/search/SearchContext.tsx" kind="context" symbol="SearchProvider, useSearch" lines="1-139" reason="Example of Context API pattern with Provider component and hook. Shows proper structure: createContext, Provider component, useContext hook with error handling. Pattern to replicate for ThemeContext." />
+      <artifact path="src/components/keyboard/ShortcutContext.tsx" kind="context" symbol="ShortcutProvider, useShortcuts" lines="" reason="Another Context API example showing state management pattern used in project. ThemeContext should follow similar structure." />
+      <artifact path="src/components/ui/Toast/ToastContext.tsx" kind="context" symbol="ToastProvider, useToast" lines="" reason="Third Context API example. Demonstrates consistent pattern across project for context-based state management." />
+      <artifact path="src/app/providers.tsx" kind="provider-integration" symbol="Providers" lines="13-35" reason="Shows provider wrapping order. ThemeProvider must be added as OUTERMOST wrapper (before HeroUIProvider on line 17). Current order: HeroUIProvider → RouterProvider → TRPCReactProvider → ShortcutProvider → SearchProvider → ToastProvider → children." />
+      <artifact path="src/app/layout.tsx" kind="layout" symbol="RootLayout" lines="20-35" reason="Root layout component where FOUC prevention script must be added in head section (line 24). HTML element on line 24 needs dark class toggling. Shows structure with Providers wrapper." />
+      <artifact path="src/components/layout/Header.tsx" kind="component" symbol="Header" lines="1-100" reason="Header component where ThemeToggle must be added. Shows import pattern for HeroUI Button (line 8) and existing controls structure. Toggle should be inserted before settings icon." />
+      <artifact path="tailwind.config.ts" kind="config" symbol="config" lines="1-84" reason="HeroUI theme configuration with custom olive colors for both light and dark modes. Shows darkMode: 'class' on line 12 (activates when dark class on html). Theme colors defined in HSL format for both themes." />
+      <artifact path="src/styles/globals.css" kind="styles" symbol="" lines="" reason="Contains all HSL design tokens. Shows existing dark: class usage pattern throughout project. All 163 dark: classes will activate when html has dark class." />
+    </code>
+    <dependencies>
+      <framework name="Next.js" version="^16.0.4" />
+      <framework name="React" version="^19.2.0" />
+      <library name="@heroui/react" version="^2.8.5" purpose="UI component library with theme system" />
+      <library name="framer-motion" version="^12.23.24" purpose="Required peer dependency for HeroUI" />
+      <library name="react-aria-components" version="^1.13.0" purpose="Accessibility foundation (HeroUI built on top)" />
+      <library name="tailwindcss" version="^4.0.15" purpose="Utility-first CSS framework with darkMode: 'class'" />
+      <library name="@tanstack/react-query" version="^5.69.0" purpose="Data fetching/state management" />
+      <library name="better-auth" version="^1.4.1" purpose="Authentication library" />
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+- ThemeProvider MUST be outermost wrapper in providers.tsx (before HeroUIProvider) to ensure theme is applied before HeroUI components render
+- FOUC prevention script MUST be inline blocking script in head section of layout.tsx to execute before React hydration
+- localStorage key MUST be 'gitlab-insights-theme' to match project naming convention
+- Theme preference values MUST be: 'system' | 'light' | 'dark' (no other values allowed)
+- matchMedia API MUST be used for system preference detection: window.matchMedia('(prefers-color-scheme: dark)')
+- Dark class MUST be applied to document.documentElement (html tag) for Tailwind darkMode: 'class' to work
+- Context API pattern MUST follow existing patterns (SearchContext, ShortcutContext, ToastContext): createContext, Provider component, useHook with error handling
+- ThemeToggle button MUST use HeroUI Button component with isIconOnly, variant="light", size="sm" props
+- Icons MUST be from @heroicons/react/24/outline (SunIcon, MoonIcon)
+- Toggle MUST be keyboard accessible (Tab, Space, Enter) per WCAG 2.1 Level AA
+- aria-label MUST be descriptive and change based on current theme ("Switch to dark mode" / "Switch to light mode")
+- TypeScript MUST compile with 0 errors (npm run typecheck)
+- Production build MUST succeed with no errors (npm run build)
+- No React hydration warnings allowed (FOUC script and ThemeProvider must use same localStorage key and resolution logic)
+- Testing per ADR-006: TypeScript compilation, production build, manual functional testing REQUIRED. Unit tests NOT required for MVP.
+  </constraints>
+
+  <interfaces>
+    <interface name="ThemeMode" kind="TypeScript type" signature="type ThemeMode = 'light' | 'dark'" path="src/lib/theme.ts" />
+    <interface name="ThemePreference" kind="TypeScript type" signature="type ThemePreference = 'system' | 'light' | 'dark'" path="src/lib/theme.ts" />
+    <interface name="ThemeContextType" kind="TypeScript interface" signature="interface ThemeContextType { theme: ThemeMode; preference: ThemePreference; setPreference: (pref: ThemePreference) => void; toggleTheme: () => void; }" path="src/contexts/ThemeContext.tsx" />
+    <interface name="getSystemTheme" kind="function" signature="function getSystemTheme(): ThemeMode" path="src/lib/theme.ts" />
+    <interface name="resolveTheme" kind="function" signature="function resolveTheme(preference: ThemePreference): ThemeMode" path="src/lib/theme.ts" />
+    <interface name="applyTheme" kind="function" signature="function applyTheme(theme: ThemeMode): void" path="src/lib/theme.ts" />
+    <interface name="useTheme" kind="React hook" signature="function useTheme(): ThemeContextType" path="src/contexts/ThemeContext.tsx" />
+  </interfaces>
+
+  <tests>
+    <standards>Per ADR-006 (Minimal Testing for MVP): TypeScript compilation (npm run typecheck) and production build validation (npm run build) are REQUIRED. Manual functional testing REQUIRED for theme toggle, system detection, localStorage persistence, FOUC prevention, and keyboard accessibility. Unit tests and integration tests are NOT required for MVP. Visual verification REQUIRED to ensure all 163 dark: classes activate correctly. Accessibility testing REQUIRED using keyboard-only navigation (Tab, Space, Enter) and proper aria-labels for screen readers.</standards>
+    <locations>No automated test files required for MVP. Manual testing checklist in story file (Test 1-6, Keyboard Accessibility Testing, Visual Regression Testing, Edge Case Testing).</locations>
+    <ideas>
+- AC 1.5.6.1: Test system preference detection (clear localStorage, verify app matches OS dark/light setting)
+- AC 1.5.6.2: Test manual toggle cycles between modes (light → dark → light)
+- AC 1.5.6.3: Test localStorage persistence (set dark mode, reload page, verify dark persists)
+- AC 1.5.6.4: Test FOUC prevention (hard reload with dark mode set, verify no flash of light theme)
+- AC 1.5.6.5: Test all dark: classes activate (spot check key components: Header, SearchBar, Sidebar, EventTable, Modals)
+- AC 1.5.6.6: Test HeroUI components use dark theme (verify olive-light color #9DAA5F on buttons, focus rings)
+- AC 1.5.6.7: Test keyboard accessibility (Tab to toggle, Space/Enter to activate)
+- AC 1.5.6.8: Test real-time system preference tracking (change OS theme while app open, verify app updates without reload)
+- AC 1.5.6.11: Test no hydration warnings (check browser console for hydration errors)
+- Edge case: localStorage disabled (privacy mode) - verify theme works per-session without errors
+- Edge case: Rapid toggle clicking - verify state updates correctly without stuck states
+    </ideas>
+  </tests>
+</story-context>
