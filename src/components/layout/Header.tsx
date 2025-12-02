@@ -13,6 +13,7 @@ import { CreateQueryModal } from "~/components/queries/CreateQueryModal";
 import { Menu, MenuTrigger, MenuItem, Popover } from "react-aria-components";
 import { api } from "~/trpc/react";
 import { useToast } from "~/components/ui/Toast/ToastContext";
+import { ThemeToggle } from "~/components/theme/ThemeToggle";
 
 export function Header() {
   const { data: session } = useSession();
@@ -148,6 +149,9 @@ export function Header() {
           </div>
 
         <div className="flex items-center gap-4">
+          {/* Story 1.5.6: Theme toggle button */}
+          <ThemeToggle />
+
           {/* Settings link */}
           <Link
             href="/settings"

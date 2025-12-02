@@ -9,12 +9,16 @@ import { ShortcutHandler } from "~/components/keyboard/ShortcutHandler";
 import { SearchProvider } from "~/components/search/SearchContext";
 import { ToastProvider } from "~/components/ui/Toast/ToastContext";
 import { ToastContainer } from "~/components/ui/Toast/ToastContainer";
+import { ThemeProviderWithErrorBoundary } from "~/contexts/ThemeContext";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
+  // CRITICAL: ThemeProvider MUST be outermost (before HeroUIProvider) so that
+  // theme class is applied to <html> before HeroUI components render their styles
   return (
-    <HeroUIProvider>
+    <ThemeProviderWithErrorBoundary>
+      <HeroUIProvider>
       <RouterProvider navigate={router.push}>
         <TRPCReactProvider>
           <ShortcutProvider>
@@ -31,5 +35,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
         </TRPCReactProvider>
       </RouterProvider>
     </HeroUIProvider>
+    </ThemeProviderWithErrorBoundary>
   );
 }

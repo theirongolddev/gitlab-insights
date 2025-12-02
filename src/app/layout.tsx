@@ -21,8 +21,41 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={geist.className}>
-      <body className="min-h-screen bg-bg-light dark:bg-bg-dark">
+    <html lang="en" className={geist.className} suppressHydrationWarning>
+      <head>
+        {/* 
+          FOUC Prevention Script - Must execute before React hydration
+          CRITICAL: Storage key 'gitlab-insights-theme' MUST match THEME_STORAGE_KEY in /src/lib/theme.ts
+          If the key changes there, update it here to prevent theme mismatch on page load
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  // Key must match THEME_STORAGE_KEY in /src/lib/theme.ts
+                  const stored = localStorage.getItem('gitlab-insights-theme');
+                  const preference = stored || 'system';
+
+                  let theme = preference;
+                  if (preference === 'system') {
+                    theme = window.matchMedia('(prefers-color-scheme: dark)').matches
+                      ? 'dark'
+                      : 'light';
+                  }
+
+                  if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                  }
+                } catch (e) {
+                  // localStorage might be disabled
+                }
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body className="min-h-screen bg-bg-light dark:bg-bg-dark" suppressHydrationWarning>
         <Providers>
           <div className="flex min-h-screen flex-col">
             <Header />

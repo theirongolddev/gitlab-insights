@@ -2,6 +2,7 @@
 .bmad/
 .cursor/
 .claude/
+.opencode/
 .jj/
 
 # Dependencies
