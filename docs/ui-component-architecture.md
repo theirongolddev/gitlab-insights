@@ -1549,6 +1549,311 @@ export function Sidebar({ "aria-label": ariaLabel, header, children, footer }) {
 
 ---
 
+## 10. Authentication Architecture
+
+**Added:** 2025-12-02 (Post-Story 1.5.4 Critical Bug Fix)
+
+This section documents the systematic authentication architecture implemented to resolve render-phase router update errors and establish proper auth protection patterns.
+
+### 10.1 Problem Statement
+
+**Original Issue:** Client Components performing auth checks during render caused React errors:
+- "Cannot update a component (`Router`) while rendering a different component"
+- Unauthenticated API calls firing before redirects
+- Race conditions between session checks and rendering
+
+**Affected Pages:**
+- `/dashboard` - `DashboardPage.tsx`
+- `/onboarding` - `OnboardingPage.tsx`
+- `/settings` - `SettingsPage.tsx`
+- `/queries/[id]` - `QueryPage.tsx`
+
+### 10.2 Solution: Multi-Layer Auth Protection
+
+**Architecture Pattern:** Server Component + Client Component Split
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ Layer 1: Next.js Middleware (Edge)                     │
+│ - Cookie check: better-auth.session_token               │
+│ - Instant redirect if no session                        │
+│ - Runs before page even loads                           │
+└─────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────┐
+│ Layer 2: Server Component (page.tsx)                   │
+│ - async function with requireAuth()                     │
+│ - Full session validation                               │
+│ - Server-side redirect if invalid                       │
+└─────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────┐
+│ Layer 3: Client Component (*Client.tsx)                │
+│ - No auth checks needed                                 │
+│ - Renders UI and handles interactivity                  │
+│ - tRPC queries run safely (auth already validated)      │
+└─────────────────────────────────────────────────────────┘
+```
+
+### 10.3 Implementation Files
+
+#### Middleware (`src/middleware.ts`)
+
+```typescript
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+
+const SESSION_COOKIE_NAME = "better-auth.session_token";
+const PROTECTED_ROUTES = ["/dashboard", "/queries", "/settings", "/onboarding"];
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  const isProtectedRoute = PROTECTED_ROUTES.some((route) =>
+    pathname.startsWith(route)
+  );
+  const sessionToken = request.cookies.get(SESSION_COOKIE_NAME);
+  const hasSession = !!sessionToken;
+
+  // Redirect unauthenticated users from protected routes
+  if (isProtectedRoute && !hasSession) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
+  // Redirect authenticated users from login page
+  if (pathname === "/" && hasSession) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+  return NextResponse.next();
+}
+```
+
+**Key Features:**
+- Runs at edge before page loads
+- Cookie-based check (fast, no DB query)
+- Protects routes via prefix matching
+- Bidirectional redirects (login ↔ dashboard)
+
+#### Server Auth Utilities (`src/lib/auth-server.ts`)
+
+```typescript
+import { auth } from "~/lib/auth";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+
+export async function getServerSession() {
+  const headersList = await headers();
+
+  try {
+    const session = await auth.api.getSession({ headers: headersList });
+    return session;
+  } catch (error) {
+    console.error("Failed to get server session:", error);
+    return null;
+  }
+}
+
+export async function requireAuth() {
+  const session = await getServerSession();
+
+  if (!session?.user) {
+    redirect("/");
+  }
+
+  return session;
+}
+
+export async function getCurrentUser() {
+  const session = await getServerSession();
+  return session?.user ?? null;
+}
+```
+
+**Key Features:**
+- Server-only utilities (cannot be imported in Client Components)
+- `requireAuth()` - Validates session and redirects if missing
+- `getServerSession()` - Retrieves session for data fetching
+- `getCurrentUser()` - Returns user object or null
+
+#### Server Component Pattern (page.tsx)
+
+**Before (Client Component with auth checks):**
+```typescript
+"use client";
+
+export default function DashboardPage() {
+  const { data: session, isPending } = useSession();
+  const router = useRouter();
+
+  // ❌ Render-phase router update
+  if (!session) {
+    router.push("/");
+    return null;
+  }
+
+  // ❌ tRPC query fires even if unauthenticated
+  const { data } = api.events.getForDashboard.useQuery();
+
+  return <div>Dashboard content...</div>;
+}
+```
+
+**After (Server Component + Client Component split):**
+```typescript
+// src/app/dashboard/page.tsx (Server Component)
+import { requireAuth } from "~/lib/auth-server";
+import { DashboardClient } from "~/components/dashboard/DashboardClient";
+
+export default async function DashboardPage() {
+  await requireAuth(); // ✅ Server-side validation, no render issues
+
+  return <DashboardClient />; // ✅ Client handles UI only
+}
+```
+
+```typescript
+// src/components/dashboard/DashboardClient.tsx (Client Component)
+"use client";
+
+export function DashboardClient() {
+  // ✅ No auth checks needed (server already validated)
+  // ✅ tRPC queries run safely
+  const { data } = api.events.getForDashboard.useQuery({});
+
+  return <div>Dashboard content...</div>;
+}
+```
+
+### 10.4 Component Extraction Pattern
+
+**For each protected page, extract Client Component:**
+
+| Original Page | Server Component | Client Component |
+|--------------|------------------|------------------|
+| `src/app/dashboard/page.tsx` (148 lines) | 8 lines | `src/components/dashboard/DashboardClient.tsx` |
+| `src/app/onboarding/page.tsx` (159 lines) | 8 lines | `src/components/onboarding/OnboardingClient.tsx` |
+| `src/app/settings/page.tsx` (196 lines) | 8 lines | `src/components/settings/SettingsClient.tsx` |
+| `src/app/queries/[id]/page.tsx` (370 lines) | 14 lines | `src/components/queries/QueryDetailClient.tsx` |
+
+**Server Component Responsibilities:**
+- Call `requireAuth()` for validation
+- Pass props to Client Component (e.g., route params)
+- No useState, useEffect, or browser APIs
+
+**Client Component Responsibilities:**
+- All UI rendering and interactivity
+- tRPC queries and mutations
+- Event handlers, form state, modals
+- Browser APIs (localStorage, window, etc.)
+
+### 10.5 Benefits of This Architecture
+
+**Performance:**
+- ✅ Server Components are faster (no JS shipped for auth logic)
+- ✅ Middleware runs at edge (faster than origin server)
+- ✅ Cookie check avoids DB query on every request
+
+**Developer Experience:**
+- ✅ Clear separation of concerns (auth vs UI)
+- ✅ No more render-phase update errors
+- ✅ Simpler Client Components (no auth boilerplate)
+
+**Security:**
+- ✅ Multi-layer protection (middleware + server validation)
+- ✅ No unauthenticated API calls
+- ✅ Session validated before any data fetching
+
+**User Experience:**
+- ✅ Instant redirects (middleware runs before page loads)
+- ✅ No flash of unauthenticated content
+- ✅ Clean logout (no React errors)
+
+### 10.6 Migration Guide
+
+**To convert a protected page to this pattern:**
+
+1. **Create Client Component:**
+   ```bash
+   # Move existing page.tsx logic to new Client Component
+   mv src/app/dashboard/page.tsx src/components/dashboard/DashboardClient.tsx
+   ```
+
+2. **Update Client Component:**
+   ```typescript
+   // Add "use client" directive
+   "use client";
+
+   // Remove auth checks (useSession, router.push)
+   // Remove useEffect for redirects
+   // Keep all UI, state, and tRPC queries
+
+   export function DashboardClient() {
+     // UI code only
+   }
+   ```
+
+3. **Create minimal Server Component page.tsx:**
+   ```typescript
+   import { requireAuth } from "~/lib/auth-server";
+   import { DashboardClient } from "~/components/dashboard/DashboardClient";
+
+   export default async function DashboardPage() {
+     await requireAuth();
+     return <DashboardClient />;
+   }
+   ```
+
+4. **Add route to middleware (if not already protected):**
+   ```typescript
+   const PROTECTED_ROUTES = ["/dashboard", "/queries", "/settings", "/your-route"];
+   ```
+
+5. **Test:**
+   - ✅ Unauthenticated access redirects to "/"
+   - ✅ Authenticated access shows page
+   - ✅ Logout works without errors
+   - ✅ No render-phase router update warnings
+
+### 10.7 Files Modified
+
+**Created:**
+- `src/middleware.ts` (33 lines)
+- `src/lib/auth-server.ts` (42 lines)
+- `src/components/dashboard/DashboardClient.tsx` (118 lines)
+- `src/components/onboarding/OnboardingClient.tsx` (142 lines)
+- `src/components/settings/SettingsClient.tsx` (175 lines)
+- `src/components/queries/QueryDetailClient.tsx` (370 lines)
+
+**Updated:**
+- `src/app/dashboard/page.tsx` (148 → 8 lines)
+- `src/app/onboarding/page.tsx` (159 → 8 lines)
+- `src/app/settings/page.tsx` (196 → 8 lines)
+- `src/app/queries/[id]/page.tsx` (370 → 14 lines)
+
+**Unchanged:**
+- `src/components/layout/AppLayout.tsx` - Uses `useSession()` for UI only (sidebar visibility)
+- `src/app/page.tsx` - Home page uses `useEffect` for redirect (client-side only, not protected)
+
+### 10.8 Best Practices
+
+**DO:**
+- ✅ Use `requireAuth()` in all protected Server Components
+- ✅ Extract UI logic to Client Components
+- ✅ Add new protected routes to middleware PROTECTED_ROUTES array
+- ✅ Use `getServerSession()` when you need session data but not auth enforcement
+- ✅ Use `getCurrentUser()` for optional auth (returns null if not authenticated)
+
+**DON'T:**
+- ❌ Call `router.push()` during render (use Server Component redirect instead)
+- ❌ Check auth in Client Components (let Server Component handle it)
+- ❌ Mix auth logic with UI logic (separate concerns)
+- ❌ Forget to add routes to middleware (double-check PROTECTED_ROUTES)
+
+---
+
 ## Document History
 
 | Date       | Version | Changes                                     | Author |
@@ -1556,6 +1861,7 @@ export function Sidebar({ "aria-label": ariaLabel, header, children, footer }) {
 | 2025-11-26 | 1.0     | Initial UI component architecture document  | BMad   |
 | 2025-12-01 | 1.1     | Added Section 8: Theme Management (Story 1.5.6) | BMad |
 | 2025-12-01 | 1.2     | Added Section 9: Epic 2 Migration Patterns (Story 1.5.4) | BMad |
+| 2025-12-02 | 1.3     | Added Section 10: Authentication Architecture (Post-1.5.4 critical bug fix) | BMad |
 
 ---
 
