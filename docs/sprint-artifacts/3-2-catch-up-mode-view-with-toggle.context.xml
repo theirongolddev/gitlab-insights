@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<story-context story-id="3.2" name="Catch-Up Mode View with Toggle">
+  <metadata>
+    <created>2025-12-04</created>
+    <updated>2025-12-04</updated>
+    <epic>Epic 3: Catch-Up Mode &amp; Background Sync</epic>
+    <status>ready-for-dev</status>
+    <dependencies>
+      <dependency story-id="3.1" status="done">Catch-Up Mode Backend</dependency>
+      <dependency story-id="2.1" status="done">Keyboard Shortcut System</dependency>
+      <dependency story-id="2.8" status="done">Sidebar Navigation</dependency>
+      <dependency epic-id="1.5" status="done">HeroUI Migration</dependency>
+    </dependencies>
+  </metadata>
+
+  <story-summary>
+    Create the frontend Catch-Up Mode view that allows users to toggle between normal Dashboard
+    view and "new items only" view using the `c` keyboard shortcut. Events are grouped by saved
+    queries with counts, providing an "inbox zero" experience for reviewing what's changed since
+    the user's last visit. State is preserved via URL query param for refresh/back button support.
+  </story-summary>
+
+  <acceptance-criteria>
+    <ac id="3.2.1">Pressing `c` key on dashboard toggles between normal Dashboard view and Catch-Up Mode view</ac>
+    <ac id="3.2.2">Catch-Up Mode header displays: "Catch-Up: X new items since [last visit time]" with total count and relative timestamp</ac>
+    <ac id="3.2.3">Events in Catch-Up Mode are grouped by saved queries, with each section showing "[Query Name] (X new items)"</ac>
+    <ac id="3.2.4">Pressing `c` key again returns user to normal Dashboard view</ac>
+    <ac id="3.2.5">If user has no saved queries, Catch-Up Mode displays empty state: "Create saved queries to use Catch-Up Mode"</ac>
+    <ac id="3.2.6">If all queries have 0 new items, Catch-Up Mode displays: "All caught up! No new items since last visit."</ac>
+    <ac id="3.2.7">A toggle button is visible in dashboard header area indicating current mode with keyboard hint "Press c to toggle"</ac>
+    <ac id="3.2.8">Catch-Up Mode view loads in &lt;500ms (performance DoD from Epic 3)</ac>
+    <ac id="3.2.9">`c` key shortcut is disabled when user is typing in an input field (search bar, modal, etc.)</ac>
+    <ac id="3.2.10">Each query section in Catch-Up Mode displays events using the existing EventTable component with ItemRow format</ac>
+    <ac id="3.2.11">Catch-Up Mode state is preserved via URL query param (`/dashboard?mode=catchup`); page refresh and browser back button maintain mode</ac>
+    <ac id="3.2.12">User can Tab/Shift+Tab between query sections; focused section displays subtle olive background (`bg-olive/5`) and border (`border-olive/30`); j/k navigation operates within the focused section only</ac>
+  </acceptance-criteria>
+
+  <technical-context>
+    <backend-api>
+      <endpoint name="queries.getNewItems" method="GET">
+        <description>Returns events created after query.lastVisitedAt for a specific query</description>
+        <input>{ queryId: string }</input>
+        <output>{ queryId: string, queryName: string, newCount: number, events: EventRow[] }</output>
+        <location>src/server/api/routers/queries.ts:287-354</location>
+      </endpoint>
+      <endpoint name="queries.list" method="GET">
+        <description>Returns user's saved queries with FTS match counts</description>
+        <output>Array of { id, name, filters, count, createdAt, lastVisitedAt }</output>
+        <location>src/server/api/routers/queries.ts:77-106</location>
+      </endpoint>
+    </backend-api>
+
+    <keyboard-system>
+      <pattern name="ShortcutContext">
+        <description>React context providing setter/invoker pattern for keyboard shortcuts</description>
+        <location>src/components/keyboard/ShortcutContext.tsx</location>
+        <integration>
+          1. Add setToggleCatchUpMode setter to context interface
+          2. Add toggleCatchUpModeRef ref
+          3. Add toggleCatchUpMode invoker function
+          4. Components register handlers via setToggleCatchUpMode
+        </integration>
+      </pattern>
+      <pattern name="ShortcutHandler">
+        <description>Global keydown listener that invokes registered shortcut handlers</description>
+        <location>src/components/keyboard/ShortcutHandler.tsx</location>
+        <integration>
+          Add case for 'c' key: if (!isTyping) { toggleCatchUpMode(); }
+        </integration>
+      </pattern>
+    </keyboard-system>
+
+    <url-state-management>
+      <description>Catch-Up Mode state managed via URL query parameter for persistence</description>
+      <implementation>
+        - Use `useSearchParams()` to read mode from URL
+        - Use `router.push()` to toggle between `/dashboard` and `/dashboard?mode=catchup`
+        - Enables page refresh persistence and browser back button support
+      </implementation>
+      <code-example>
+const searchParams = useSearchParams();
+const router = useRouter();
+const isCatchUpMode = searchParams.get('mode') === 'catchup';
+
+const toggleCatchUpMode = () => {
+  if (isCatchUpMode) {
+    router.push('/dashboard');
+  } else {
+    router.push('/dashboard?mode=catchup');
+  }
+};
+      </code-example>
+    </url-state-management>
+
+    <section-navigation>
+      <description>Tab navigation between query sections with visual focus indicator</description>
+      <implementation>
+        - Each query section wrapper has `tabIndex={0}` for keyboard focus
+        - Tab/Shift+Tab cycles between sections (native browser behavior)
+        - j/k navigation only operates within the focused section's EventTable
+        - Visual focus indicator: olive background and border
+      </implementation>
+      <focus-styles>
+        focus:outline-none 
+        focus:bg-olive/5 
+        focus:border focus:border-olive/30
+        dark:focus:bg-olive/10 
+        dark:focus:border-olive/40
+      </focus-styles>
+    </section-navigation>
+
+    <ui-components>
+      <component name="EventTable">
+        <description>HeroUI Table with vim-style navigation for displaying events</description>
+        <location>src/components/dashboard/EventTable.tsx</location>
+        <usage>Reuse for displaying events within each query section in Catch-Up Mode</usage>
+        <note>j/k navigation is scoped to focused section only</note>
+      </component>
+      <component name="ItemRow">
+        <description>Two-line event row with type badge, title, metadata, and labels</description>
+        <location>src/components/dashboard/ItemRow.tsx</location>
+        <usage>Used by EventTable to render individual event rows</usage>
+      </component>
+      <component name="DashboardClient">
+        <description>Main dashboard component with event fetching and display</description>
+        <location>src/components/dashboard/DashboardClient.tsx</location>
+        <modification>Add URL-based Catch-Up Mode state, toggle handler, search exit behavior, and conditional rendering</modification>
+      </component>
+    </ui-components>
+
+    <heroui-patterns>
+      <component name="Button" usage="Toggle button for Catch-Up Mode">
+        <props>color="primary" for olive accent when active</props>
+      </component>
+      <component name="Spinner" usage="Loading state while fetching new items">
+        <props>size="lg" color="primary"</props>
+      </component>
+      <component name="Tooltip" usage="Keyboard hint on toggle button">
+        <props>content="Press c to toggle"</props>
+      </component>
+    </heroui-patterns>
+  </technical-context>
+
+  <file-operations>
+    <create>
+      <file path="src/components/catchup/CatchUpView.tsx">
+        Main Catch-Up Mode view component with query grouping, Tab navigation, and progressive loading
+      </file>
+      <file path="src/components/catchup/CatchUpModeToggle.tsx">
+        Toggle button with badge and keyboard hint
+      </file>
+      <file path="src/components/catchup/index.ts">
+        Module exports
+      </file>
+    </create>
+    <modify>
+      <file path="src/components/keyboard/ShortcutContext.tsx">
+        Add toggleCatchUpMode handler (setter + invoker)
+      </file>
+      <file path="src/components/keyboard/ShortcutHandler.tsx">
+        Add 'c' key case
+      </file>
+      <file path="src/components/dashboard/DashboardClient.tsx">
+        Add URL-based state, toggle integration, search exit behavior, conditional rendering
+      </file>
+    </modify>
+  </file-operations>
+
+  <implementation-patterns>
+    <pattern name="URL State Management">
+      <description>Use URL query param for Catch-Up Mode state persistence</description>
+      <code-example>
+import { useSearchParams, useRouter } from 'next/navigation';
+
+const searchParams = useSearchParams();
+const router = useRouter();
+
+const isCatchUpMode = searchParams.get('mode') === 'catchup';
+
+const toggleCatchUpMode = () => {
+  router.push(isCatchUpMode ? '/dashboard' : '/dashboard?mode=catchup');
+};
+      </code-example>
+    </pattern>
+
+    <pattern name="Search Exit Behavior">
+      <description>Exit Catch-Up Mode silently when search is activated</description>
+      <code-example>
+useEffect(() => {
+  if (isSearchActive &amp;&amp; isCatchUpMode) {
+    router.push('/dashboard');
+  }
+}, [isSearchActive, isCatchUpMode, router]);
+      </code-example>
+    </pattern>
+
+    <pattern name="Progressive Loading with Skeletons">
+      <description>Show skeleton per query section while fetching, replace as data arrives</description>
+      <code-example>
+{queries.map(query => {
+  const { data, isLoading } = api.queries.getNewItems.useQuery({ queryId: query.id });
+  
+  if (isLoading) {
+    return &lt;QuerySectionSkeleton key={query.id} queryName={query.name} /&gt;;
+  }
+  
+  return &lt;QuerySection key={query.id} data={data} /&gt;;
+})}
+      </code-example>
+    </pattern>
+
+    <pattern name="Focusable Section Container">
+      <description>Wrap each query section for Tab navigation with olive focus styling</description>
+      <code-example>
+&lt;div 
+  tabIndex={0}
+  className="
+    rounded-lg transition-colors
+    focus:outline-none 
+    focus:bg-olive/5 
+    focus:border focus:border-olive/30
+    dark:focus:bg-olive/10 
+    dark:focus:border-olive/40
+  "
+&gt;
+  &lt;QuerySectionHeader name={query.name} count={data.newCount} /&gt;
+  &lt;EventTable events={data.events} /&gt;
+&lt;/div&gt;
+      </code-example>
+    </pattern>
+
+    <pattern name="Empty State Handling">
+      <description>Two distinct empty states based on context</description>
+      <code-example>
+if (queries.length === 0) {
+  return &lt;EmptyState message="Create saved queries to use Catch-Up Mode" /&gt;;
+}
+
+const totalNew = results.reduce((sum, r) => sum + r.newCount, 0);
+if (totalNew === 0) {
+  return &lt;EmptyState message="All caught up! No new items since last visit." /&gt;;
+}
+      </code-example>
+    </pattern>
+
+    <pattern name="Relative Time Display">
+      <description>Use date-fns for "5 minutes ago" style timestamps</description>
+      <code-example>
+import { formatDistanceToNow } from 'date-fns';
+
+// Find earliest lastVisitedAt across all queries
+const earliestVisit = Math.min(...queries.map(q => q.lastVisitedAt?.getTime() ?? 0));
+const relativeTime = formatDistanceToNow(earliestVisit, { addSuffix: true });
+// Output: "5 minutes ago", "2 hours ago", etc.
+      </code-example>
+    </pattern>
+  </implementation-patterns>
+
+  <party-mode-decisions date="2025-12-04">
+    <decision id="1" gap="Mark All as Reviewed">
+      <choice>Defer to Story 3.3</choice>
+      <rationale>Story 3.3 handles all "mark as reviewed" actions - both per-query and "mark all"</rationale>
+    </decision>
+    <decision id="2" gap="Search Interaction">
+      <choice>Search silently exits Catch-Up Mode</choice>
+      <rationale>Search should search "everything", not just new items. Users in search mindset want broad results.</rationale>
+    </decision>
+    <decision id="3" gap="URL State">
+      <choice>Use query param `/dashboard?mode=catchup`</choice>
+      <rationale>Preserves state on refresh, enables back button, moderate complexity</rationale>
+    </decision>
+    <decision id="4" gap="N+1 Query Performance">
+      <choice>Accept parallel queries with progressive skeleton loading</choice>
+      <rationale>Progressive loading feels faster. Each section shows independently. Can optimize later if needed.</rationale>
+    </decision>
+    <decision id="5" gap="Loading State UX">
+      <choice>Two-phase loading with per-section skeletons</choice>
+      <rationale>Phase 1: spinner while fetching query list. Phase 2: skeleton per section while fetching new items.</rationale>
+    </decision>
+    <decision id="6" gap="j/k Navigation">
+      <choice>Tab between sections, j/k within focused section, olive focus styling</choice>
+      <rationale>Leverages native Tab behavior. Visual focus indicator with olive bg/border. j/k scoped to active section.</rationale>
+    </decision>
+    <decision id="7" gap="Refresh Interaction">
+      <choice>Refresh adds to view, doesn't reset baseline</choice>
+      <rationale>Only "Mark as Reviewed" updates lastVisitedAt. Supports future webhook architecture. Users don't lose context.</rationale>
+    </decision>
+    <decision id="8" gap="Performance Test Specificity">
+      <choice>Keep simple &lt;500ms target</choice>
+      <rationale>Performance testing is low priority at this early stage. Trust dev judgment on reasonable conditions.</rationale>
+    </decision>
+  </party-mode-decisions>
+
+  <testing-checklist>
+    <test ac="3.2.1">Press 'c' on dashboard → Catch-Up Mode activates</test>
+    <test ac="3.2.2">Header shows "Catch-Up: X new items since [time]"</test>
+    <test ac="3.2.3">Events grouped by query with "[Query Name] (X new items)" headers</test>
+    <test ac="3.2.4">Press 'c' again → returns to normal Dashboard</test>
+    <test ac="3.2.5">No saved queries → shows "Create saved queries..." message</test>
+    <test ac="3.2.6">All queries at 0 new items → shows "All caught up!" message</test>
+    <test ac="3.2.7">Toggle button visible with keyboard hint</test>
+    <test ac="3.2.8">Measure load time, verify &lt;500ms</test>
+    <test ac="3.2.9">Focus search bar → 'c' key blocked</test>
+    <test ac="3.2.10">Events display in EventTable/ItemRow format</test>
+    <test ac="3.2.11">Navigate to `/dashboard?mode=catchup` directly → Catch-Up Mode active</test>
+    <test ac="3.2.11">In Catch-Up Mode, refresh page → mode persists</test>
+    <test ac="3.2.11">In Catch-Up Mode, navigate away then Back → returns to Catch-Up</test>
+    <test ac="3.2.12">Tab between query sections → olive focus styling appears</test>
+    <test ac="3.2.12">Within focused section, j/k → navigation stays within section</test>
+    <test>In Catch-Up Mode, type in search bar → exits to Dashboard</test>
+  </testing-checklist>
+
+  <performance-requirements>
+    <requirement>Catch-Up view loads in &lt;500ms (Epic 3 DoD)</requirement>
+    <requirement>Parallel query fetching for new items</requirement>
+    <requirement>Progressive loading with per-section skeletons</requirement>
+    <requirement>No blocking waterfall queries</requirement>
+  </performance-requirements>
+</story-context>
