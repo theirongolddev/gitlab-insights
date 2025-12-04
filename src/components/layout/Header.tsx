@@ -5,13 +5,18 @@ import { signOut, useSession } from "~/lib/auth-client";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Button } from "@heroui/react";
+import {
+  Button,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+} from "@heroui/react";
 import { useShortcuts } from "~/components/keyboard/ShortcutContext";
 import { useSearch } from "~/components/search/SearchContext";
 import { SearchBar } from "~/components/search/SearchBar";
 import { CreateQueryModal } from "~/components/queries/CreateQueryModal";
-import { Menu, MenuTrigger, MenuItem, Popover } from "react-aria-components";
-import { api } from "~/trpc/react";
+import { api, clearQueryCache } from "~/trpc/react";
 import { useToast } from "~/components/ui/Toast/ToastContext";
 import { ThemeToggle } from "~/components/theme/ThemeToggle";
 
@@ -125,8 +130,11 @@ export function Header() {
   }
 
   const handleSignOut = async () => {
+    // Clear the query cache first to prevent UNAUTHORIZED errors from in-flight queries
+    clearQueryCache();
     await signOut();
-    router.push("/");
+    // Force a hard navigation so middleware runs and properly redirects
+    window.location.href = "/";
   };
 
   return (
@@ -192,61 +200,59 @@ export function Header() {
             </svg>
           </Link>
 
-          {/* User menu dropdown */}
-          <MenuTrigger>
-            <Button
-              variant="light"
-              size="sm"
-              className="flex items-center gap-2 px-2"
-            >
-              {session.user.image && (
-                <Image
-                  src={session.user.image}
-                  alt={session.user.name || "User avatar"}
-                  width={32}
-                  height={32}
-                  className="rounded-full"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                  }}
-                />
-              )}
-              <div className="flex flex-col items-start">
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
-                  {session.user.name}
-                </span>
-                <span className="text-xs text-gray-600 dark:text-gray-400">
-                  {session.user.email}
-                </span>
-              </div>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 text-gray-500"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
+          {/* User menu dropdown - HeroUI Dropdown */}
+          <Dropdown>
+            <DropdownTrigger>
+              <Button
+                variant="light"
+                size="sm"
+                className="flex items-center gap-2 px-2"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </Button>
-            <Popover
-              className="rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
-            >
-              <Menu
-                className="min-w-[160px] py-1 outline-none"
-                onAction={(key) => {
-                  if (key === "settings") {
-                    router.push("/settings");
-                  } else if (key === "signout") {
-                    void handleSignOut();
-                  }
-                }}
-              >
-                <MenuItem
-                  id="settings"
-                  className="flex cursor-pointer items-center gap-2 px-4 py-2 text-sm text-gray-900 outline-none hover:bg-gray-100 focus:bg-gray-100 dark:text-gray-50 dark:hover:bg-gray-700 dark:focus:bg-gray-700"
+                {session.user.image && (
+                  <Image
+                    src={session.user.image}
+                    alt={session.user.name || "User avatar"}
+                    width={32}
+                    height={32}
+                    className="rounded-full"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                )}
+                <div className="flex flex-col items-start">
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
+                    {session.user.name}
+                  </span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">
+                    {session.user.email}
+                  </span>
+                </div>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 text-gray-500"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
                 >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </Button>
+            </DropdownTrigger>
+            <DropdownMenu
+              aria-label="User actions"
+              onAction={(key) => {
+                if (key === "settings") {
+                  router.push("/settings");
+                } else if (key === "signout") {
+                  void handleSignOut();
+                }
+              }}
+            >
+              <DropdownItem
+                key="settings"
+                startContent={
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className="h-4 w-4"
@@ -262,12 +268,13 @@ export function Header() {
                     />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  Settings
-                </MenuItem>
-                <MenuItem
-                  id="signout"
-                  className="flex cursor-pointer items-center gap-2 px-4 py-2 text-sm text-gray-900 outline-none hover:bg-gray-100 focus:bg-gray-100 dark:text-gray-50 dark:hover:bg-gray-700 dark:focus:bg-gray-700"
-                >
+                }
+              >
+                Settings
+              </DropdownItem>
+              <DropdownItem
+                key="signout"
+                startContent={
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className="h-4 w-4"
@@ -282,11 +289,12 @@ export function Header() {
                       d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                     />
                   </svg>
-                  Sign out
-                </MenuItem>
-              </Menu>
-            </Popover>
-          </MenuTrigger>
+                }
+              >
+                Sign out
+              </DropdownItem>
+            </DropdownMenu>
+          </Dropdown>
         </div>
       </div>
     </header>

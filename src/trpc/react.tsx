@@ -1,7 +1,7 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { loggerLink, unstable_httpBatchStreamLink } from "@trpc/client";
+import { loggerLink, unstable_httpBatchStreamLink, TRPCClientError } from "@trpc/client";
 import { createTRPCReact } from "@trpc/react-query";
 import { type inferRouterInputs, type inferRouterOutputs } from "@trpc/server";
 import { useState } from "react";
@@ -9,7 +9,31 @@ import SuperJSON from "superjson";
 
 import { type AppRouter } from "~/server/api/root";
 
-const createQueryClient = () => new QueryClient();
+const createQueryClient = () =>
+  new QueryClient({
+    defaultOptions: {
+      queries: {
+        // Don't retry on UNAUTHORIZED errors (user logged out)
+        retry: (failureCount, error) => {
+          if (error instanceof TRPCClientError && error.data?.code === "UNAUTHORIZED") {
+            return false;
+          }
+          return failureCount < 3;
+        },
+        // Don't refetch on window focus during logout transition
+        refetchOnWindowFocus: false,
+      },
+      mutations: {
+        // Don't retry mutations on UNAUTHORIZED
+        retry: (failureCount, error) => {
+          if (error instanceof TRPCClientError && error.data?.code === "UNAUTHORIZED") {
+            return false;
+          }
+          return failureCount < 3;
+        },
+      },
+    },
+  });
 
 let clientQueryClientSingleton: QueryClient | undefined = undefined;
 const getQueryClient = () => {
@@ -19,6 +43,16 @@ const getQueryClient = () => {
   }
   // Browser: use singleton pattern to keep the same query client
   return (clientQueryClientSingleton ??= createQueryClient());
+};
+
+/**
+ * Clear all queries from the cache. Call this before signing out
+ * to prevent UNAUTHORIZED errors from in-flight queries.
+ */
+export const clearQueryCache = () => {
+  if (clientQueryClientSingleton) {
+    clientQueryClientSingleton.clear();
+  }
 };
 
 export const api = createTRPCReact<AppRouter>();

@@ -2,17 +2,14 @@
 
 import { useState } from "react";
 import {
-  Dialog,
-  DialogTrigger,
-  Heading,
-  Input,
-  Label,
   Modal,
-  ModalOverlay,
-  TextField,
-  Button as AriaButton,
-} from "react-aria-components";
-import { Button } from "@heroui/react";
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
+  Input,
+} from "@heroui/react";
 import { api } from "~/trpc/react";
 
 /**
@@ -161,147 +158,113 @@ export function CreateQueryModal({
   const showValidationError = touched && !queryName.trim();
 
   return (
-    <ModalOverlay
+    <Modal
       isOpen={isOpen}
       onOpenChange={handleOpenChange}
-      // Allows clicking backdrop or pressing Esc to close modal
       isDismissable
-      className="
-        fixed inset-0 z-50
-        bg-black/50
-        flex items-center justify-center
-        p-4
-      "
+      placement="center"
+      classNames={{
+        backdrop: "bg-black/50",
+      }}
     >
-      <Modal
-        className="
-          bg-white dark:bg-gray-800
-          rounded-lg shadow-xl
-          p-6 max-w-md w-full mx-4
-          outline-none
-        "
-      >
-        <Dialog
-          className="outline-none"
-          aria-label="Save Query"
-        >
-          {({ close }) => (
-            <>
-              <Heading
-                slot="title"
-                className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-50"
-              >
-                Save as Query
-              </Heading>
+      <ModalContent>
+        <ModalHeader className="flex flex-col gap-1">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-50">
+            Save as Query
+          </h2>
+        </ModalHeader>
+        <ModalBody>
+          <div className="space-y-4">
+            {/* Query Name Input - auto-focus on open */}
+            <Input
+              autoFocus
+              isRequired
+              label="Query Name"
+              labelPlacement="outside"
+              value={queryName}
+              onChange={(e) => handleNameChange(e)}
+              onBlur={handleBlur}
+              placeholder="e.g., Auth Discussions"
+              isInvalid={showValidationError}
+              errorMessage={showValidationError ? "Query name is required" : undefined}
+              classNames={{
+                label: "text-sm font-medium text-gray-700 dark:text-gray-300",
+                input: "text-gray-900 dark:text-gray-50",
+                inputWrapper: "bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600",
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleSave();
+                } else if (e.key === "Escape") {
+                  handleCancel();
+                }
+              }}
+            />
 
-              <div className="space-y-4">
-                {/* Query Name Input - auto-focus on open */}
-                <TextField
-                  autoFocus
-                  isRequired
-                  className="flex flex-col gap-2"
-                >
-                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Query Name <span className="text-red-600 dark:text-red-400">*</span>
-                  </Label>
-                  <Input
-                    value={queryName}
-                    onChange={handleNameChange}
-                    onBlur={handleBlur}
-                    placeholder="e.g., Auth Discussions"
-                    className={`
-                      px-3 py-2
-                      bg-gray-100 dark:bg-gray-700
-                      text-gray-900 dark:text-gray-50
-                      border rounded-md
-                      outline-none
-                      placeholder:text-gray-500
-                      transition-colors duration-150
-                      ${showValidationError
-                        ? "border-red-500 dark:border-red-400 focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        : "border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-olive-light focus:border-transparent"
-                      }
-                    `}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleSave();
-                      } else if (e.key === "Escape") {
-                        // Allow Esc to bubble to modal for dismissal
-                        handleCancel();
-                      }
-                    }}
-                  />
-                </TextField>
-
-                {/* Keywords Display - Read-only tag pills */}
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Search Keywords
-                  </label>
-                  <div className="
-                    flex flex-wrap gap-1.5
-                    min-h-[40px] px-3 py-2
-                    bg-gray-100 dark:bg-gray-700
-                    border border-gray-300 dark:border-gray-600
-                    rounded-md
-                  ">
-                    {keywords.map((keyword) => (
-                      <span
-                        key={keyword}
-                        className="
-                          inline-flex items-center gap-1 px-2 py-0.5
-                          text-sm font-medium rounded-full
-                          bg-olive/15 border border-olive/50 text-olive
-                          dark:bg-olive-light/20 dark:border-olive-light dark:text-gray-50
-                        "
-                      >
-                        {keyword}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Error Message */}
-                {error && (
-                  <div
-                    role="alert"
+            {/* Keywords Display - Read-only tag pills */}
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Search Keywords
+              </label>
+              <div className="
+                flex flex-wrap gap-1.5
+                min-h-[40px] px-3 py-2
+                bg-gray-100 dark:bg-gray-700
+                border border-gray-300 dark:border-gray-600
+                rounded-md
+              ">
+                {keywords.map((keyword) => (
+                  <span
+                    key={keyword}
                     className="
-                      px-3 py-2
-                      bg-red-50 dark:bg-red-900/20
-                      border border-red-200 dark:border-red-800
-                      rounded-md
-                      text-sm text-red-800 dark:text-red-300
+                      inline-flex items-center gap-1 px-2 py-0.5
+                      text-sm font-medium rounded-full
+                      bg-olive/15 border border-olive/50 text-olive
+                      dark:bg-olive-light/20 dark:border-olive-light dark:text-gray-50
                     "
                   >
-                    {error}
-                  </div>
-                )}
-
-                {/* Action Buttons - HeroUI Buttons */}
-                <div className="flex justify-end gap-3 pt-2">
-                  <Button
-                    onPress={handleCancel}
-                    color="default"
-                    variant="flat"
-                  >
-                    Cancel
-                  </Button>
-
-                  <Button
-                    onPress={handleSave}
-                    color="primary"
-                    isLoading={createQuery.isPending}
-                    isDisabled={createQuery.isPending}
-                  >
-                    {createQuery.isPending ? "Saving..." : "Save Query"}
-                  </Button>
-                </div>
+                    {keyword}
+                  </span>
+                ))}
               </div>
-            </>
-          )}
-        </Dialog>
-      </Modal>
-    </ModalOverlay>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <div
+                role="alert"
+                className="
+                  px-3 py-2
+                  bg-red-50 dark:bg-red-900/20
+                  border border-red-200 dark:border-red-800
+                  rounded-md
+                  text-sm text-red-800 dark:text-red-300
+                "
+              >
+                {error}
+              </div>
+            )}
+          </div>
+        </ModalBody>
+        <ModalFooter>
+          <Button
+            onPress={handleCancel}
+            color="default"
+            variant="flat"
+          >
+            Cancel
+          </Button>
+          <Button
+            onPress={handleSave}
+            color="primary"
+            isLoading={createQuery.isPending}
+            isDisabled={createQuery.isPending}
+          >
+            {createQuery.isPending ? "Saving..." : "Save Query"}
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   );
 }

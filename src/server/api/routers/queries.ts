@@ -352,4 +352,66 @@ export const queriesRouter = createTRPCRouter({
         events,
       };
     }),
+
+  /**
+   * Mark a query as reviewed by updating lastVisitedAt
+   *
+   * PUT /api/trpc/queries.markAsReviewed
+   *
+   * Story 3.3: Mark Query as Reviewed
+   * AC 3.3.2: Clicking "Mark as Reviewed" updates lastVisitedAt to current timestamp
+   * AC 3.3.7: Action completes in <200ms (optimistic update provides instant feedback)
+   * AC 3.3.11: Authorization check ensures users can only mark their own queries
+   */
+  markAsReviewed: protectedProcedure
+    .input(z.object({ queryId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      // Fetch query to verify existence and ownership
+      const query = await ctx.db.userQuery.findUnique({
+        where: { id: input.queryId },
+      });
+
+      // AC: NOT_FOUND if query doesn't exist
+      if (!query) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Query not found",
+        });
+      }
+
+      // AC 3.3.11: Authorization check - FORBIDDEN for wrong user
+      if (query.userId !== ctx.session.user.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to modify this query",
+        });
+      }
+
+      // AC 3.3.2: Update lastVisitedAt to current timestamp
+      const updated = await ctx.db.userQuery.update({
+        where: { id: input.queryId },
+        data: { lastVisitedAt: new Date() },
+      });
+
+      return updated;
+    }),
+
+  /**
+   * Mark all user queries as reviewed by updating lastVisitedAt
+   *
+   * PUT /api/trpc/queries.markAllAsReviewed
+   *
+   * Story 3.3: Mark Query as Reviewed
+   * AC 3.3.9: "Mark All as Reviewed" button appears when totalNewCount > 0
+   * AC 3.3.10: Updates lastVisitedAt for ALL user queries with single batch operation
+   */
+  markAllAsReviewed: protectedProcedure.mutation(async ({ ctx }) => {
+    // AC 3.3.10: Batch update all user queries with updateMany
+    const result = await ctx.db.userQuery.updateMany({
+      where: { userId: ctx.session.user.id },
+      data: { lastVisitedAt: new Date() },
+    });
+
+    return { success: true, updatedCount: result.count };
+  }),
 });

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { RouterProvider } from "react-aria-components";
 import { HeroUIProvider } from "@heroui/react";
+import { Toaster } from "sonner";
 import { TRPCReactProvider } from "~/trpc/react";
 import { ShortcutProvider } from "~/components/keyboard/ShortcutContext";
 import { ShortcutHandler } from "~/components/keyboard/ShortcutHandler";
@@ -29,6 +30,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
               <ToastProvider>
                 {children}
                 <ToastContainer />
+                {/* Story 3.3: Sonner toast for catch-up mode error notifications */}
+                <Toaster position="bottom-right" theme="system" />
               </ToastProvider>
             </SearchProvider>
           </ShortcutProvider>

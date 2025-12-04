@@ -15,8 +15,14 @@ import { useRouter } from "next/navigation";
 import { api } from "~/trpc/react";
 import { EventTable } from "~/components/dashboard/EventTable";
 import type { DashboardEvent } from "~/components/dashboard/ItemRow";
-import { Dialog, DialogTrigger, Modal, ModalOverlay, Heading } from "react-aria-components";
-import { Button } from "@heroui/react";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
+} from "@heroui/react";
 import { useSearch } from "~/components/search/SearchContext";
 import { useToast } from "~/components/ui/Toast/ToastContext";
 
@@ -192,40 +198,44 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
 
   return (
     <div className="flex-1 p-6">
-      {/* Delete Confirmation Dialog */}
-      <DialogTrigger isOpen={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <ModalOverlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center">
-          <Modal className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
-            <Dialog className="outline-none">
-              {({ close }) => (
-                <>
-                  <Heading className="text-lg font-semibold text-gray-900 dark:text-gray-50 mb-4">
-                    Delete Query?
-                  </Heading>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-                    Are you sure you want to delete &quot;{query.name}&quot;? This action cannot be undone.
-                  </p>
-                  <div className="flex justify-end gap-3">
-                    <Button
-                      onPress={close}
-                      color="default"
-                      variant="flat"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onPress={handleDeleteQuery}
-                      color="danger"
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </>
-              )}
-            </Dialog>
-          </Modal>
-        </ModalOverlay>
-      </DialogTrigger>
+      {/* Delete Confirmation Dialog - HeroUI Modal */}
+      <Modal
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        isDismissable
+        placement="center"
+        classNames={{
+          backdrop: "bg-black/60 backdrop-blur-sm",
+        }}
+      >
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50">
+              Delete Query?
+            </h2>
+          </ModalHeader>
+          <ModalBody>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Are you sure you want to delete &quot;{query.name}&quot;? This action cannot be undone.
+            </p>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              onPress={() => setIsDeleteDialogOpen(false)}
+              color="default"
+              variant="flat"
+            >
+              Cancel
+            </Button>
+            <Button
+              onPress={handleDeleteQuery}
+              color="danger"
+            >
+              Delete
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* Query header */}
       <div className="mb-6 pb-4 border-b border-gray-200 dark:border-gray-700/50">

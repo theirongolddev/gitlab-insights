@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { Skeleton } from "@heroui/react";
 import { formatDistanceToNow } from "date-fns";
 import { api } from "~/trpc/react";
@@ -8,6 +8,8 @@ import { EventTable } from "~/components/dashboard/EventTable";
 import { type DashboardEvent } from "~/components/dashboard/ItemRow";
 import { useShortcuts } from "~/components/keyboard/ShortcutContext";
 import { LoadingSpinner } from "~/components/ui/LoadingSpinner";
+import { MarkAsReviewedButton } from "./MarkAsReviewedButton";
+import { MarkAllAsReviewedButton } from "./MarkAllAsReviewedButton";
 
 /**
  * CatchUpView - Displays events grouped by saved queries since last visit
@@ -23,6 +25,23 @@ import { LoadingSpinner } from "~/components/ui/LoadingSpinner";
 export function CatchUpView() {
   // Track which section is currently focused for styling and scoped navigation
   const [focusedSectionIndex, setFocusedSectionIndex] = useState<number | null>(null);
+
+  // Track pending individual mark-as-reviewed mutations to prevent race conditions
+  // Code Review Fix: Disable "Mark All" while individual mutations are pending
+  const [pendingMutationIds, setPendingMutationIds] = useState<Set<string>>(new Set());
+  const hasAnyPendingMutation = pendingMutationIds.size > 0;
+
+  const handleMutationStart = useCallback((queryId: string) => {
+    setPendingMutationIds((prev) => new Set(prev).add(queryId));
+  }, []);
+
+  const handleMutationEnd = useCallback((queryId: string) => {
+    setPendingMutationIds((prev) => {
+      const next = new Set(prev);
+      next.delete(queryId);
+      return next;
+    });
+  }, []);
 
   // Scope management for keyboard shortcuts
   const { setActiveScope, clearActiveScope } = useShortcuts();
@@ -176,7 +195,8 @@ export function CatchUpView() {
   return (
     <div className="flex flex-col">
       {/* AC 3.2.2: Header with total count and relative timestamp */}
-      <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-700">
+      {/* AC 3.3.9: "Mark All as Reviewed" button when totalNewCount > 0 */}
+      <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50">
           Catch-Up: {allQueriesLoaded ? totalNewItems : "..."} new items
           {mostRecentVisit && (
@@ -185,6 +205,12 @@ export function CatchUpView() {
             </span>
           )}
         </h2>
+        {allQueriesLoaded && totalNewItems > 0 && (
+          <MarkAllAsReviewedButton
+            totalNewCount={totalNewItems}
+            isDisabledByPendingMutation={hasAnyPendingMutation}
+          />
+        )}
       </div>
 
       {/* AC 3.2.3: Query sections with "[Query Name] (X new items)" headers */}
@@ -231,7 +257,8 @@ export function CatchUpView() {
               `}
             >
               {/* Query section header */}
-              <div className={`px-4 py-2 rounded-t-lg ${isFocused ? "" : "bg-gray-50 dark:bg-gray-800"}`}>
+              {/* AC 3.3.1: "Mark as Reviewed" button in each query section header */}
+              <div className={`px-4 py-2 rounded-t-lg flex items-center justify-between ${isFocused ? "" : "bg-gray-50 dark:bg-gray-800"}`}>
                 <h3 className="text-base font-medium text-gray-800 dark:text-gray-200">
                   {query.name}
                   {queryResult.isLoading ? (
@@ -242,6 +269,15 @@ export function CatchUpView() {
                     </span>
                   )}
                 </h3>
+                {!queryResult.isLoading && (
+                  <MarkAsReviewedButton
+                    queryId={query.id}
+                    queryName={query.name}
+                    newCount={queryResult.data?.newCount ?? 0}
+                    onMutationStart={() => handleMutationStart(query.id)}
+                    onMutationEnd={() => handleMutationEnd(query.id)}
+                  />
+                )}
               </div>
 
               {/* Query section content */}
