@@ -44,7 +44,7 @@ export function ProjectSelectionLayout({
   // Loading state
   if (isLoading) {
     return (
-      <div className={`flex ${minHeightClass} flex-col items-center justify-center bg-bg-light dark:bg-bg-dark`}>
+      <div className={`flex ${minHeightClass} flex-col items-center justify-center`}>
         <Spinner size="lg" color="primary" />
         <p className="mt-4 text-gray-600 dark:text-gray-400">Loading your projects...</p>
       </div>
@@ -52,7 +52,7 @@ export function ProjectSelectionLayout({
   }
 
   return (
-    <div className={`flex ${minHeightClass} flex-col bg-bg-light dark:bg-bg-dark`}>
+    <div className={`flex ${minHeightClass} flex-col`}>
       {/* Scrollable content area */}
       <div className="flex-1 overflow-auto px-4 py-8 pb-32">
         <div className="mx-auto max-w-3xl">

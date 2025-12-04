@@ -206,12 +206,12 @@ export function SearchBar({
                     className={`
                       inline-flex items-center gap-1 px-2 py-0.5
                       text-sm font-medium rounded-full cursor-default
-                      bg-olive-light/15 border border-olive-light/50 dark:bg-olive-light/20 dark:border-olive-light
-                      text-olive dark:text-gray-50
+                      bg-olive/15 border border-olive/50 text-olive
+                      dark:bg-olive-light/20 dark:border-olive-light dark:text-gray-50
                       outline-none
                       transition-all duration-150
                       data-[focus-visible]:ring-2 data-[focus-visible]:ring-olive-light data-[focus-visible]:ring-offset-1 data-[focus-visible]:ring-offset-white dark:data-[focus-visible]:ring-offset-gray-800
-                      data-[selected]:bg-olive-light/30 dark:data-[selected]:bg-olive-light/40
+                      data-[selected]:bg-olive/30 dark:data-[selected]:bg-olive-light/40
                     `}
                   >
                     {({ allowsRemoving }) => (
@@ -224,12 +224,13 @@ export function SearchBar({
                             className={`
                               flex items-center justify-center
                               w-4 h-4 rounded-full
-                              text-olive-light
+                              text-olive/70 dark:text-olive-light
                               transition-colors duration-150
                               outline-none
-                              data-[hovered]:text-gray-50 data-[hovered]:bg-olive-light/30
-                              data-[pressed]:bg-olive-light/50
-                              data-[focus-visible]:ring-2 data-[focus-visible]:ring-olive-light
+                              data-[hovered]:text-olive data-[hovered]:bg-olive/20
+                              dark:data-[hovered]:text-gray-50 dark:data-[hovered]:bg-olive-light/30
+                              data-[pressed]:bg-olive/30 dark:data-[pressed]:bg-olive-light/50
+                              data-[focus-visible]:ring-2 data-[focus-visible]:ring-olive dark:data-[focus-visible]:ring-olive-light
                             `}
                           >
                             <svg

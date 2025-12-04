@@ -323,7 +323,7 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
             {liveKeywords.map((keyword) => (
               <span
                 key={keyword}
-                className="rounded-full px-2.5 py-0.5 text-xs font-medium bg-olive-light/15 text-olive dark:bg-olive-light/20 dark:text-olive-light"
+                className="rounded-full px-2.5 py-0.5 text-xs font-medium bg-olive/15 text-olive dark:bg-olive-light/20 dark:text-olive-light"
               >
                 {keyword}
               </span>

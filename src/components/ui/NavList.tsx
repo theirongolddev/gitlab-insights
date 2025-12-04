@@ -93,7 +93,7 @@ export function NavItem({
         transition-colors duration-150
         ${
           isActive
-            ? "bg-olive-light/10 text-olive font-medium dark:bg-olive-light/15 dark:text-olive-light"
+            ? "bg-olive/10 text-olive font-medium dark:bg-olive-light/15 dark:text-olive-light"
             : isFocused || isHovered
               ? "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100"
               : "text-gray-700 dark:text-gray-400"
@@ -156,7 +156,7 @@ export function NavItemShortcut({ shortcut, isActive = false }: NavItemShortcutP
         group-hover:inline-block group-data-[focused]:inline-block
         ${
           isActive
-            ? "bg-olive-light/20 text-olive dark:bg-olive-light/30 dark:text-olive-light"
+            ? "bg-olive/20 text-olive dark:bg-olive-light/30 dark:text-olive-light"
             : "bg-gray-200/70 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
         }
       `.trim()}

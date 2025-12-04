@@ -191,7 +191,7 @@ export function EventTable({ events, onRowClick }: EventTableProps) {
         classNames={{
           wrapper: "p-0 shadow-none bg-transparent",
           th: "sr-only", // Hide header visually (screen reader accessible)
-          tr: "cursor-pointer transition-colors hover:bg-gray-200 dark:hover:bg-gray-800 data-[selected=true]:bg-olive-light/10 dark:data-[selected=true]:bg-olive-light/15",
+          tr: "cursor-pointer transition-colors hover:bg-gray-200 dark:hover:bg-gray-800 data-[selected=true]:bg-olive/10 dark:data-[selected=true]:bg-olive-light/15",
           td: "p-0"
         }}
         onRowAction={(key) => {

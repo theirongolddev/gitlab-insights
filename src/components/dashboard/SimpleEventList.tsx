@@ -48,7 +48,7 @@ export function SimpleEventList() {
                 href={event.gitlabUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-base font-medium text-[#2d2e2e] dark:text-[#FDFFFC] hover:text-[#5e6b24] dark:hover:text-[#9DAA5F] hover:underline"
+                className="text-base font-medium text-gray-900 dark:text-gray-50 hover:text-olive dark:hover:text-olive-light hover:underline"
               >
                 {event.title}
               </a>

@@ -1,4 +1,4 @@
-# Sprint Change Proposal: Light Mode Color Specification
+# Sprint Change Proposal: Light Mode Color Specification & Contrast Fixes
 
 **Date:** 2025-12-04
 **Author:** BMad Method (Correct Course Workflow)
@@ -8,23 +8,30 @@
 
 ## 1. Change Summary
 
-**Trigger:** Story 1.5.6 (Dark Mode Toggle) implemented successfully, but the UX specification lacked explicit light mode color definitions. Engineers implementing components didn't have clear guidance on which color values to use for light mode backgrounds, text, and semantic states.
+**Trigger:** Story 1.5.6 (Dark Mode Toggle) implemented successfully, but:
+1. The UX specification lacked explicit light mode color definitions
+2. Light mode had poor contrast between page backgrounds and elevated surfaces (cards, header, sidebar)
 
-**Category:** Misunderstanding/gap in original requirements - UX spec was written dark-mode-first
+**Category:** Misunderstanding/gap in original requirements - UX spec was written dark-mode-first, and light mode contrast was not visually validated
 
-**Resolution:** Direct Adjustment - Documentation updates only (no code changes required)
+**Resolution:** Direct Adjustment - Documentation updates AND code fixes to establish proper light mode visual hierarchy
 
 ---
 
 ## 2. Problem Statement
 
+### 2.1 Documentation Gap
 The dark mode toggle was implemented correctly, but the supporting documentation was incomplete:
 
 1. **`globals.css`** - Semantic tokens explicitly labeled "Dark Mode Context" with no light mode equivalents
 2. **UX Design Specification** - Color values showed dark/light pairs but usage mapping only documented dark mode
 3. **UI Component Architecture** - Semantic tokens section only referenced dark mode context
 
-This gap meant future development would rely on implicit knowledge rather than documented specifications.
+### 2.2 Light Mode Contrast Issue
+Components used `bg-bg-light` (#FDFFFC) for page backgrounds and `bg-white` (#FFFFFF) for elevated surfaces - these colors are nearly identical, creating **zero visual hierarchy** between:
+- Page background vs. header
+- Page background vs. cards
+- Page background vs. sidebar
 
 ---
 
@@ -38,10 +45,11 @@ This gap meant future development would rely on implicit knowledge rather than d
 | UX Specification | **Primary** | Added light/dark mode pairing table |
 | UI Component Architecture | **Secondary** | Updated semantic tokens section |
 | globals.css | **Primary** | Added light mode semantic tokens |
+| **Component Code** | **Primary** | Fixed light mode backgrounds for contrast |
 
 ---
 
-## 4. Changes Applied
+## 4. Documentation Changes Applied
 
 ### 4.1 `src/styles/globals.css`
 
@@ -69,7 +77,7 @@ This gap meant future development would rely on implicit knowledge rather than d
 
 ### 4.2 `docs/ux-design-specification.md`
 
-**Added:** "Light vs Dark Mode Color Pairing Pattern" section after line 454
+**Added:** "Light vs Dark Mode Color Pairing Pattern" section
 
 - Complete pairing table showing light/dark mode value mappings
 - Tailwind usage pattern example
@@ -83,28 +91,86 @@ This gap meant future development would rely on implicit knowledge rather than d
 - Added table showing token mappings for both light and dark modes
 - Added reference to `globals.css` as source of truth
 - Added Tailwind usage example with dark: prefix pattern
-- Added guidance: "Always pair light/dark variants for theme consistency"
 
 ---
 
-## 5. Validation
+## 5. Code Changes Applied
 
-- [x] Changes are documentation-only (no runtime impact)
-- [x] Light mode values follow established contrast principle (darker values on light backgrounds)
-- [x] Dark mode values unchanged (backward compatible)
-- [x] All three artifacts now consistent in their theme documentation
+### 5.1 Light Mode Background Contrast Fix
+
+**Problem:** `bg-bg-light` (#FDFFFC) and `bg-white` (#FFFFFF) are visually identical, creating no contrast between page background and elevated surfaces.
+
+**Solution:** 
+- Page background: `bg-gray-100` (#F3F4F6) - provides visible tint
+- Elevated surfaces (header, sidebar, cards): `bg-white` - pure white stands out
+
+### 5.2 Files Modified - Background Contrast
+
+| File | Change |
+|------|--------|
+| `src/app/layout.tsx` | Changed body background from `bg-bg-light` to `bg-gray-100` |
+| `src/app/page.tsx` | Removed redundant `bg-bg-light` (inherits from body) |
+| `src/components/dashboard/DashboardClient.tsx` | Removed redundant `bg-bg-light` from container and loading states |
+| `src/components/onboarding/OnboardingClient.tsx` | Removed redundant `bg-bg-light` from loading states |
+| `src/components/projects/ProjectSelectionLayout.tsx` | Removed redundant `bg-bg-light` from container and loading states |
+| `src/components/dashboard/SimpleEventList.tsx` | Replaced hardcoded hex colors with design tokens |
+
+### 5.3 Tag Pill / Accent Color Contrast Fix
+
+**Problem:** Tag pills and selected states used `olive-light` (lighter olive) backgrounds in light mode, creating poor contrast against light backgrounds.
+
+**Solution:** Apply the light/dark pairing pattern consistently:
+- Light mode: Use `olive` (darker) for backgrounds - provides visible contrast
+- Dark mode: Use `olive-light` (lighter) for backgrounds - provides visible contrast
+
+### 5.4 Files Modified - Tag Pill Contrast
+
+| File | Change |
+|------|--------|
+| `src/components/search/SearchBar.tsx` | Tag pills: `bg-olive-light/15` → `bg-olive/15`, border and remove button colors updated |
+| `src/components/queries/QueryDetailClient.tsx` | Keyword pills: `bg-olive-light/15` → `bg-olive/15` |
+| `src/components/queries/CreateQueryModal.tsx` | Keyword pills: `bg-olive-light/15` → `bg-olive/15` |
+| `src/components/ui/NavList.tsx` | Active nav item: `bg-olive-light/10` → `bg-olive/10`, shortcut badge updated |
+| `src/components/dashboard/EventTable.tsx` | Selected row: `bg-olive-light/10` → `bg-olive/10` |
+
+### 5.5 Light Mode Visual Hierarchy (After Fix)
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ Header: bg-white                                         │  ← Elevated (white)
+├─────────────────────────────────────────────────────────┤
+│         │                                               │
+│ Sidebar │  Page Content Area                            │
+│ bg-white│  bg-gray-100                                  │  ← Page background (tinted)
+│         │                                               │
+│         │  ┌─────────────────────────────────────────┐  │
+│         │  │ Card: bg-white                         │  │  ← Elevated (white)
+│         │  └─────────────────────────────────────────┘  │
+│         │                                               │
+└─────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## 6. Follow-Up Actions
+## 6. Validation
 
-None required. This was a documentation gap fill, not a feature change.
-
-Future developers now have explicit guidance for implementing components with proper light/dark mode support.
+- [x] Documentation updates complete
+- [x] Light mode now has visible contrast between page background and elevated surfaces
+- [x] Tag pills and accent colors now have proper contrast in light mode
+- [x] Dark mode unchanged (backward compatible)
+- [x] No `bg-bg-light` usages remain in src/ directory
+- [x] Hardcoded hex colors replaced with design tokens
+- [x] TypeScript compilation passes with no errors
 
 ---
 
-## 7. Approval
+## 7. Follow-Up Actions
+
+None required. Both documentation and code changes are complete.
+
+---
+
+## 8. Approval
 
 | Role | Approver | Date |
 |------|----------|------|

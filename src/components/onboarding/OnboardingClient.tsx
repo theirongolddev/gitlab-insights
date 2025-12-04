@@ -67,7 +67,7 @@ export function OnboardingClient() {
   // Show loading while checking for monitored projects
   if (isLoadingMonitored) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-bg-light dark:bg-bg-dark">
+      <div className="flex min-h-screen flex-col items-center justify-center">
         <Spinner size="lg" color="primary" />
         <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
       </div>
@@ -77,7 +77,7 @@ export function OnboardingClient() {
   // Show loading while redirecting to dashboard
   if (monitoredProjects && monitoredProjects.length > 0) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-bg-light dark:bg-bg-dark">
+      <div className="flex min-h-screen flex-col items-center justify-center">
         <Spinner size="lg" color="primary" />
         <p className="mt-4 text-gray-600 dark:text-gray-400">Redirecting to dashboard...</p>
       </div>

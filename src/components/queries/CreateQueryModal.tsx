@@ -252,8 +252,8 @@ export function CreateQueryModal({
                         className="
                           inline-flex items-center gap-1 px-2 py-0.5
                           text-sm font-medium rounded-full
-                          bg-olive-light/15 border border-olive-light/50 dark:bg-olive-light/20 dark:border-olive-light
-                          text-olive dark:text-gray-50
+                          bg-olive/15 border border-olive/50 text-olive
+                          dark:bg-olive-light/20 dark:border-olive-light dark:text-gray-50
                         "
                       >
                         {keyword}
