@@ -22,7 +22,7 @@ export function CatchUpModeToggle({
   onToggle,
   newItemsCount,
 }: CatchUpModeToggleProps) {
-  const buttonContent = (
+  const button = (
     <Button
       variant={isCatchUpMode ? "solid" : "bordered"}
       color="primary"
@@ -31,7 +31,6 @@ export function CatchUpModeToggle({
       aria-label={isCatchUpMode ? "Exit Catch-Up Mode" : "Enter Catch-Up Mode"}
       aria-pressed={isCatchUpMode}
     >
-      {/* Bell icon */}
       <svg
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
@@ -52,34 +51,33 @@ export function CatchUpModeToggle({
       <kbd className="hidden sm:inline text-xs opacity-60 ml-1 px-1 py-0.5 rounded bg-white/20 dark:bg-white/30 font-mono">
         c
       </kbd>
-      {/* Badge with new items count */}
-      {newItemsCount > 0 && !isCatchUpMode && (
-        <Badge
-          content={newItemsCount > 99 ? "99+" : newItemsCount.toString()}
-          color="danger"
-          size="sm"
-          placement="top-right"
-          className="absolute -top-1 -right-1"
-        >
-          <span className="sr-only">{newItemsCount} new items</span>
-        </Badge>
-      )}
     </Button>
   );
+
+  const showBadge = newItemsCount > 0 && !isCatchUpMode;
+  const badgeContent = newItemsCount > 99 ? "99+" : newItemsCount.toString();
 
   return (
     <Tooltip
       content={
         <span className="text-xs">
-          {isCatchUpMode ? "Exit to Dashboard" : "View new items"} &middot; Press{" "}
-          <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-600 rounded font-mono">c</kbd>
+          Press <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-600 rounded font-mono">c</kbd> to {isCatchUpMode ? "exit Catch-Up Mode" : "enter Catch-Up Mode"}
         </span>
       }
       placement="bottom"
     >
-      <div className="relative">
-        {buttonContent}
-      </div>
+      {showBadge ? (
+        <Badge
+          content={badgeContent}
+          color="danger"
+          size="sm"
+          placement="top-right"
+        >
+          {button}
+        </Badge>
+      ) : (
+        button
+      )}
     </Tooltip>
   );
 }

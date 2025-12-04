@@ -4,14 +4,13 @@
  * Purpose: Manual testing UI for catch-up mode backend features
  *
  * Stories covered:
- * - Story 3.1: queries.getNewItems and queries.testSetup (lastVisitedAt tracking)
+ * - Story 3.1: queries.getNewItems (lastVisitedAt tracking)
  * - Story 3.2: Catch-Up Mode View (will add frontend tests here)
  * - Story 3.3: Mark Query as Reviewed (will add updateLastVisited tests here)
  * - Story 3.4: Sidebar badges (will add badge count tests here)
  *
  * Test cases for Story 3.1:
  * - AC 3.1.3: getNewItems returns events created after lastVisitedAt
- * - AC 3.1.4: Never-visited query (NULL lastVisitedAt) returns all matching events
  * - AC 3.1.5: Recently visited query returns empty array
  * - AC 3.1.7: Response shape includes queryId, queryName, newCount, events[]
  * - AC 3.1.8: Query filters combined with "new since" using AND logic
@@ -57,15 +56,7 @@ export default function TestCatchUpPage() {
     }
   );
 
-  // Story 3.1: testSetup mutation
-  const testSetupMutation = api.queries.testSetup.useMutation({
-    onSuccess: () => {
-      addLog("✅ testSetup: lastVisitedAt set to NULL");
-      utils.queries.list.invalidate();
-    },
-    onError: (err) =>
-      addLog(`❌ testSetup failed: [${err.data?.code}] ${err.message}`),
-  });
+
 
   const addLog = (message: string) => {
     setLog((prev) => [
@@ -98,20 +89,7 @@ export default function TestCatchUpPage() {
     }
   };
 
-  const handleTestSetup = () => {
-    if (!selectedQueryId) {
-      addLog("⚠️ Select a query first");
-      return;
-    }
 
-    addLog(
-      `Calling testSetup to NULL lastVisitedAt for query: ${selectedQueryId}`
-    );
-    testSetupMutation.mutate({
-      action: "nullLastVisited",
-      queryId: selectedQueryId,
-    });
-  };
 
   const handleTestNotFound = () => {
     addLog(`Testing NOT_FOUND with fake queryId: nonexistent-id-12345`);
@@ -207,29 +185,6 @@ export default function TestCatchUpPage() {
               <p className="text-xs text-gray-400">
                 Returns events created after lastVisitedAt. Call twice to test
                 AC 3.1.5 (second call should return empty).
-              </p>
-            </div>
-          </div>
-
-          {/* Story 3.1: Test testSetup (NULL lastVisitedAt) */}
-          <div className="rounded-lg bg-gray-800 p-4">
-            <h2 className="mb-3 text-lg font-semibold text-yellow-400">
-              Story 3.1: Test Setup - NULL lastVisitedAt (AC 3.1.4)
-            </h2>
-            <div className="space-y-2">
-              <button
-                onClick={handleTestSetup}
-                disabled={!selectedQueryId || testSetupMutation.isPending}
-                className="w-full rounded bg-yellow-600 px-4 py-2 hover:bg-yellow-700 disabled:opacity-50"
-              >
-                {testSetupMutation.isPending
-                  ? "Setting..."
-                  : "NULL lastVisitedAt"}
-              </button>
-              <p className="text-xs text-gray-400">
-                Sets lastVisitedAt to NULL (never visited). Then call
-                &quot;Get New Items&quot; to verify it returns ALL matching
-                events.
               </p>
             </div>
           </div>
@@ -368,11 +323,6 @@ export default function TestCatchUpPage() {
       <div className="mt-8 rounded-lg bg-gray-800 p-4 text-sm">
         <h2 className="mb-2 font-semibold">Story 3.1 Test Instructions:</h2>
         <ol className="list-inside list-decimal space-y-2 text-gray-300">
-          <li>
-            <strong>AC 3.1.4 - Never Visited:</strong> Select a query → Click
-            &quot;NULL lastVisitedAt&quot; → Click &quot;Get New Items&quot; →
-            Should return ALL matching events
-          </li>
           <li>
             <strong>AC 3.1.5 - Recently Visited:</strong> Click &quot;Get New
             Items&quot; twice quickly → Second call should return empty array

@@ -9,8 +9,8 @@ import { EventTable } from "~/components/dashboard/EventTable";
 import { useSearch } from "~/components/search/SearchContext";
 import { CatchUpView, CatchUpModeToggle } from "~/components/catchup";
 import { useShortcuts } from "~/components/keyboard/ShortcutContext";
+import { LoadingSpinner } from "~/components/ui/LoadingSpinner";
 import { api } from "~/trpc/react";
-import { Spinner } from "@heroui/react";
 
 export function DashboardClient() {
   const router = useRouter();
@@ -69,11 +69,15 @@ export function DashboardClient() {
   const { data: dashboardData, isLoading: eventsLoading } =
     api.events.getForDashboard.useQuery({});
 
-  const { data: queriesData } = api.queries.list.useQuery();
+  // Only fetch queries and new items count when NOT in Catch-Up Mode
+  // CatchUpView fetches this data when it renders, avoiding duplicate requests
+  const { data: queriesData } = api.queries.list.useQuery(undefined, {
+    enabled: !isCatchUpMode,
+  });
 
   const queryIds = queriesData?.map(q => q.id) ?? [];
   const newItemsQueries = api.useQueries((t) =>
-    queryIds.length > 0
+    !isCatchUpMode && queryIds.length > 0
       ? queryIds.map((queryId) => t.queries.getNewItems({ queryId }))
       : []
   );
@@ -148,21 +152,11 @@ export function DashboardClient() {
   const displayEvents = isSearchActive ? searchEventsAsDashboard : allDashboardEvents;
 
   if (isLoadingMonitored) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center">
-        <Spinner size="lg" color="primary" />
-        <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
-      </div>
-    );
+    return <LoadingSpinner size="lg" label="Loading..." className="min-h-screen" />;
   }
 
   if (monitoredProjects && monitoredProjects.length === 0) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center">
-        <Spinner size="lg" color="primary" />
-        <p className="mt-4 text-gray-600 dark:text-gray-400">Redirecting to setup...</p>
-      </div>
-    );
+    return <LoadingSpinner size="lg" label="Redirecting to setup..." className="min-h-screen" />;
   }
 
   return (

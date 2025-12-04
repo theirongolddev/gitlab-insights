@@ -18,6 +18,8 @@ interface EventTableProps {
   onRowClick?: (event: DashboardEvent) => void;
   /** Optional scope ID for scoped keyboard handlers (Story 3.2: Catch-Up Mode sections) */
   scopeId?: string;
+  /** Mark all items as new (Story 3.2: Catch-Up Mode shows NEW badges) */
+  showNewBadges?: boolean;
 }
 
 /**
@@ -30,7 +32,7 @@ interface EventTableProps {
  * - Maintains WCAG 2.1 Level AA accessibility compliance
  * - Integrates with existing ItemRow component (Epic 1)
  */
-export function EventTable({ events, onRowClick, scopeId }: EventTableProps) {
+export function EventTable({ events, onRowClick, scopeId, showNewBadges = false }: EventTableProps) {
   // Task 1.4: selectedKeys state for single-selection mode
   const [selectedKeys, setSelectedKeys] = useState<Selection>(new Set());
 
@@ -51,7 +53,12 @@ export function EventTable({ events, onRowClick, scopeId }: EventTableProps) {
     unregisterJumpHalfPageUp,
   } = useShortcuts();
 
-  // Number of rows to jump for half-page navigation (Ctrl+d/Ctrl+u)
+  /**
+   * Number of rows to jump for half-page navigation (Ctrl+d/Ctrl+u).
+   * Fixed at 10 rows as a reasonable default that works across viewport sizes.
+   * Vim's actual half-page jump is viewport-dependent, but a fixed value
+   * provides consistent, predictable behavior for keyboard navigation.
+   */
   const HALF_PAGE_JUMP = 10;
 
   // Use refs to avoid stale closure issues with selection state
@@ -245,7 +252,7 @@ export function EventTable({ events, onRowClick, scopeId }: EventTableProps) {
                     selectedKeys !== "all" &&
                     (selectedKeys as Set<string>).has(event.id)
                   }
-                  isNew={false}
+                  isNew={showNewBadges}
                   onClick={() => onRowClick?.(event)}
                 />
               </TableCell>

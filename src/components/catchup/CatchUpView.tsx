@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Spinner, Skeleton } from "@heroui/react";
+import { useMemo, useState, useEffect, useRef } from "react";
+import { Skeleton } from "@heroui/react";
 import { formatDistanceToNow } from "date-fns";
 import { api } from "~/trpc/react";
 import { EventTable } from "~/components/dashboard/EventTable";
 import { type DashboardEvent } from "~/components/dashboard/ItemRow";
 import { useShortcuts } from "~/components/keyboard/ShortcutContext";
+import { LoadingSpinner } from "~/components/ui/LoadingSpinner";
 
 /**
  * CatchUpView - Displays events grouped by saved queries since last visit
@@ -54,6 +55,30 @@ export function CatchUpView() {
   const isInitialLoading = queriesLoading;
   const allQueriesLoaded = newItemsQueries.every(q => !q.isLoading);
 
+  // AC 3.2.8: Performance measurement - track load time
+  const loadStartTimeRef = useRef<number | null>(null);
+  const hasLoggedPerformanceRef = useRef(false);
+
+  // Initialize start time on mount (only runs once)
+  useEffect(() => {
+    if (loadStartTimeRef.current === null) {
+      loadStartTimeRef.current = performance.now();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (allQueriesLoaded && !hasLoggedPerformanceRef.current && !isInitialLoading && loadStartTimeRef.current !== null) {
+      const loadTime = performance.now() - loadStartTimeRef.current;
+      const meetsTarget = loadTime < 500;
+      // AC 3.2.8: Log performance measurement to console (browser dev tools)
+      console.info(`[CatchUpView] Load time: ${loadTime.toFixed(2)}ms (target: <500ms, met: ${meetsTarget})`);
+      if (!meetsTarget) {
+        console.warn(`[CatchUpView] Performance target missed: ${loadTime.toFixed(2)}ms exceeds 500ms threshold`);
+      }
+      hasLoggedPerformanceRef.current = true;
+    }
+  }, [allQueriesLoaded, isInitialLoading]);
+
   // Find the most recent lastVisitedAt timestamp for header display
   const mostRecentVisit = useMemo(() => {
     if (!queries || queries.length === 0) return null;
@@ -64,7 +89,17 @@ export function CatchUpView() {
     return new Date(Math.max(...visits.map(d => new Date(d).getTime())));
   }, [queries]);
 
-  // Transform API response events to DashboardEvent format
+  /**
+   * Transforms API response events to DashboardEvent format for EventTable.
+   *
+   * The tRPC `queries.getNewItems` endpoint returns events with a generic `type: string`,
+   * but EventTable expects the stricter `DashboardEvent["type"]` union type.
+   * This function performs the type assertion and ensures Date objects are properly
+   * instantiated (API may return ISO strings that need conversion).
+   *
+   * @param events - Raw events from the `queries.getNewItems` API response
+   * @returns Events formatted for use with EventTable component
+   */
   const transformEvents = (events: Array<{
     id: string;
     type: string;
@@ -100,7 +135,6 @@ export function CatchUpView() {
   if (!isInitialLoading && (!queries || queries.length === 0)) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="text-4xl mb-4">📋</div>
         <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-50 mb-2">
           No Saved Queries
         </h2>
@@ -113,11 +147,7 @@ export function CatchUpView() {
 
   // Initial loading state - spinner while fetching queries list
   if (isInitialLoading) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <Spinner size="lg" color="primary" />
-      </div>
-    );
+    return <LoadingSpinner size="lg" className="py-16" />;
   }
 
   // AC 3.2.6: "All caught up!" state when all queries have 0 new items
@@ -132,7 +162,6 @@ export function CatchUpView() {
         </div>
         {/* All caught up message */}
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="text-4xl mb-4">✅</div>
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-50 mb-2">
             All caught up!
           </h2>
@@ -176,11 +205,22 @@ export function CatchUpView() {
                 setActiveScope(sectionScopeId);
               }}
               onBlur={(e) => {
-                // Only clear if focus is leaving the section entirely
-                if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                  setFocusedSectionIndex(null);
-                  clearActiveScope(sectionScopeId);
+                const currentTarget = e.currentTarget;
+                const relatedTarget = e.relatedTarget as Node | null;
+                
+                // If relatedTarget exists and is within section, don't clear
+                if (relatedTarget && currentTarget.contains(relatedTarget)) {
+                  return;
                 }
+                
+                // Use requestAnimationFrame to check if focus moved within section
+                // This handles cases where relatedTarget is null (e.g., clicking elements)
+                requestAnimationFrame(() => {
+                  if (!currentTarget.contains(document.activeElement)) {
+                    setFocusedSectionIndex(null);
+                    clearActiveScope(sectionScopeId);
+                  }
+                });
               }}
               className={`
                 rounded-lg transition-all outline-none
@@ -219,6 +259,7 @@ export function CatchUpView() {
                     events={transformEvents(queryResult.data.events)}
                     onRowClick={handleRowClick}
                     scopeId={sectionScopeId}
+                    showNewBadges={true}
                   />
                 ) : (
                   <p className="text-sm text-gray-500 dark:text-gray-400 px-4 py-3">
