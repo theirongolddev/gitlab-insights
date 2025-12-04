@@ -55,7 +55,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-screen bg-bg-light dark:bg-bg-dark" suppressHydrationWarning>
+      <body className="min-h-screen bg-gray-100 dark:bg-bg-dark" suppressHydrationWarning>
         <Providers>
           <div className="flex min-h-screen flex-col">
             <Header />

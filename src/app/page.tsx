@@ -27,7 +27,8 @@ function AuthShowcase() {
 
   useEffect(() => {
     if (sessionData) {
-      router.push("/onboarding");
+      // Redirect to dashboard - onboarding will redirect back if needed
+      router.push("/dashboard");
     }
   }, [sessionData, router]);
 
@@ -44,7 +45,7 @@ function AuthShowcase() {
   const handleSignIn = async () => {
     await signIn.social({
       provider: "gitlab",
-      callbackURL: "/onboarding",
+      callbackURL: "/dashboard",
     });
   };
 

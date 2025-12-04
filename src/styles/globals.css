@@ -51,14 +51,37 @@
   --color-gray-800: hsl(215, 28%, 17%); /* was #1F2937 */
   --color-gray-900: hsl(221, 39%, 11%); /* was #111827 */
 
-  /* Semantic Tokens (Dark Mode Context) */
-  --color-text-primary: var(--color-gray-50);
-  --color-text-secondary: var(--color-gray-300);
-  --color-text-tertiary: var(--color-gray-400);
-  --color-bg-surface: var(--color-gray-800);
-  --color-bg-elevated: var(--color-gray-700);
-  --color-border-default: var(--color-gray-600);
-  --color-border-subtle: var(--color-gray-700);
+  /* ==========================================================================
+     Semantic Tokens - Theme-Aware Color Mappings
+     
+     These tokens define the ROLE of colors (text, background, border) rather
+     than specific values. Components should use these tokens for consistent
+     theming across light and dark modes.
+     
+     Usage in Tailwind:
+     - Light mode: class="text-text-primary bg-bg-surface"
+     - Dark mode:  class="dark:text-text-primary-dark dark:bg-bg-surface-dark"
+     
+     Or use CSS custom properties directly for computed styles.
+     ========================================================================== */
+
+  /* Light Mode Semantic Tokens (Default) */
+  --color-text-primary: var(--color-gray-900);      /* Near-black for high contrast */
+  --color-text-secondary: var(--color-gray-500);    /* Muted gray for secondary content */
+  --color-text-tertiary: var(--color-gray-400);     /* Light gray for metadata, timestamps */
+  --color-bg-surface: var(--color-bg-light);        /* Clean white background */
+  --color-bg-elevated: var(--color-gray-50);        /* Subtle lift for cards, modals */
+  --color-border-default: var(--color-gray-200);    /* Visible but soft borders */
+  --color-border-subtle: var(--color-gray-100);     /* Very subtle dividers */
+
+  /* Dark Mode Semantic Tokens (Applied when .dark class on html) */
+  --color-text-primary-dark: var(--color-gray-50);  /* Bright white for readability */
+  --color-text-secondary-dark: var(--color-gray-300); /* Light gray for secondary */
+  --color-text-tertiary-dark: var(--color-gray-400);  /* Muted for metadata */
+  --color-bg-surface-dark: var(--color-bg-dark);    /* Dark charcoal background */
+  --color-bg-elevated-dark: var(--color-gray-800);  /* Slightly lighter for elevation */
+  --color-border-default-dark: var(--color-gray-600); /* Visible on dark backgrounds */
+  --color-border-subtle-dark: var(--color-gray-700);  /* Subtle dark dividers */
 
   /* Animation Durations */
   --transition-slide: 200ms ease-out;

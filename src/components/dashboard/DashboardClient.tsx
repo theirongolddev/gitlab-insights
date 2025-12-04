@@ -1,15 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { RefreshButton } from "~/components/dashboard/RefreshButton";
 import { SyncIndicator } from "~/components/dashboard/SyncIndicator";
 import { type DashboardEvent } from "~/components/dashboard/ItemRow";
 import { EventTable } from "~/components/dashboard/EventTable";
 import { useSearch } from "~/components/search/SearchContext";
 import { api } from "~/trpc/react";
+import { Spinner } from "@heroui/react";
 
 export function DashboardClient() {
+  const router = useRouter();
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Check if user has monitored projects - redirect to onboarding if not
+  const { data: monitoredProjects, isLoading: isLoadingMonitored } =
+    api.projects.getMonitored.useQuery();
+
+  useEffect(() => {
+    if (!isLoadingMonitored && monitoredProjects && monitoredProjects.length === 0) {
+      router.replace("/onboarding");
+    }
+  }, [monitoredProjects, isLoadingMonitored, router]);
 
   // Story 2.6: Search state from global SearchContext
   const { searchResults, isSearchActive } = useSearch();
@@ -87,8 +100,28 @@ export function DashboardClient() {
   // Final events to display - search results when searching, all events otherwise
   const displayEvents = isSearchActive ? searchEventsAsDashboard : allDashboardEvents;
 
+  // Show loading while checking for monitored projects
+  if (isLoadingMonitored) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center">
+        <Spinner size="lg" color="primary" />
+        <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
+      </div>
+    );
+  }
+
+  // Show loading while redirecting to onboarding
+  if (monitoredProjects && monitoredProjects.length === 0) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center">
+        <Spinner size="lg" color="primary" />
+        <p className="mt-4 text-gray-600 dark:text-gray-400">Redirecting to setup...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex min-h-screen flex-col bg-bg-light dark:bg-bg-dark">
+    <div className="flex min-h-screen flex-col">
       {/* Dashboard sub-header with sync indicator and refresh */}
       <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">

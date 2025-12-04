@@ -453,6 +453,47 @@ gray-800: hsl(215, 28%, 17%)    /* #1F2937 - Elevated surfaces, cards */
 gray-900: hsl(221, 39%, 11%)    /* #111827 - Layering, slightly lighter than bg */
 ```
 
+**Light vs Dark Mode Color Pairing Pattern:**
+
+The design system uses a consistent pairing strategy where light and dark modes use different values from the same color family to maintain contrast:
+
+| Role | Light Mode Value | Dark Mode Value | Rationale |
+|------|------------------|-----------------|-----------|
+| **Primary Text** | `gray-900` (#111827) | `gray-50` (#F9FAFB) | Maximum contrast against respective backgrounds |
+| **Secondary Text** | `gray-500` (#6B7280) | `gray-300` (#D1D5DB) | Readable but de-emphasized |
+| **Tertiary Text** | `gray-400` (#9CA3AF) | `gray-400` (#9CA3AF) | Metadata, timestamps (same in both) |
+| **Background** | `bg-light` (#FDFFFC) | `bg-dark` (#2d2e2e) | Base surface color |
+| **Elevated Surface** | `gray-50` (#F9FAFB) | `gray-800` (#1F2937) | Cards, modals, dropdowns |
+| **Borders** | `gray-200` (#E5E7EB) | `gray-600` (#4B5563) | Visible dividers |
+| **Subtle Borders** | `gray-100` (#F3F4F6) | `gray-700` (#374151) | Very light separation |
+| **Accent (Olive)** | `olive` (#5e6b24) | `olive-light` (#9DAA5F) | Sufficient contrast on each bg |
+| **Accent Hover** | `olive-hover` (#4F5A1F) | `olive-hover-light` (#A8B86C) | Darker/lighter for interaction |
+
+**Tailwind Usage Pattern:**
+
+```tsx
+// Component with both light and dark mode support
+<div className="
+  bg-bg-light dark:bg-bg-dark           // Background
+  text-gray-900 dark:text-gray-50       // Primary text
+  border-gray-200 dark:border-gray-600  // Borders
+">
+  <h1 className="text-olive dark:text-olive-light">Title</h1>
+  <p className="text-gray-500 dark:text-gray-300">Secondary text</p>
+</div>
+```
+
+**Semantic Color Pairing (Success, Warning, Error, Info):**
+
+| Semantic | Light Mode | Dark Mode | Usage |
+|----------|------------|-----------|-------|
+| Success | `hsl(142, 71%, 37%)` | `hsl(142, 71%, 45%)` | Darker in light mode, brighter in dark |
+| Warning | `hsl(38, 92%, 50%)` | `hsl(54, 97%, 63%)` | Amber in light, yellow in dark |
+| Error | `hsl(0, 72%, 42%)` | `hsl(0, 72%, 51%)` | Deeper red in light, brighter in dark |
+| Info | `hsl(199, 97%, 39%)` | `hsl(199, 92%, 60%)` | Deep sky blue in light, bright in dark |
+
+**Key Principle:** Light mode uses **darker/richer** values; dark mode uses **lighter/brighter** values. This ensures WCAG AA contrast (4.5:1 minimum) in both modes.
+
 **Typography System:**
 
 ```css

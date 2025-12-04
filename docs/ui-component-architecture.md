@@ -114,27 +114,33 @@ All colors are defined in `src/styles/globals.css` within the `@theme` block. **
 - Surface backgrounds: `gray-800`
 - Layering: `gray-900`
 
-#### Semantic Tokens (Contextual)
+#### Semantic Tokens (Theme-Aware)
 
-```css
-/* Text Colors (Dark Mode) */
---color-text-primary    /* Primary readable text */
---color-text-secondary  /* De-emphasized text */
---color-text-tertiary   /* Metadata, timestamps */
+Semantic tokens define the **role** of colors (text, background, border) rather than specific values. They enable consistent theming across light and dark modes.
 
-/* Background Colors (Dark Mode) */
---color-bg-surface     /* Default surface */
---color-bg-elevated    /* Elevated cards, modals */
+**Source of Truth:** `src/styles/globals.css` contains the complete token definitions.
 
-/* Border Colors (Dark Mode) */
---color-border-default /* Standard borders */
---color-border-subtle  /* Subtle dividers */
+| Token | Light Mode | Dark Mode | Role |
+|-------|------------|-----------|------|
+| `--color-text-primary` | `gray-900` | `gray-50` | Primary readable text |
+| `--color-text-secondary` | `gray-500` | `gray-300` | De-emphasized text |
+| `--color-text-tertiary` | `gray-400` | `gray-400` | Metadata, timestamps |
+| `--color-bg-surface` | `bg-light` | `bg-dark` | Default surface |
+| `--color-bg-elevated` | `gray-50` | `gray-800` | Cards, modals |
+| `--color-border-default` | `gray-200` | `gray-600` | Standard borders |
+| `--color-border-subtle` | `gray-100` | `gray-700` | Subtle dividers |
+
+**Tailwind Usage:**
+```tsx
+// Light mode uses base tokens, dark mode uses dark: prefix with *-dark variants
+<div className="text-text-primary dark:text-text-primary-dark bg-bg-surface dark:bg-bg-surface-dark">
 ```
 
 **When to Use Semantic Tokens:**
 - Use semantic tokens for role-based styling (text-primary for body copy)
 - Use specific grays when you need precise control (gray-300 for icons)
 - Prefer semantic tokens for maintainability
+- Always pair light/dark variants for theme consistency
 
 ### 1.2 Tailwind Class Usage
 
