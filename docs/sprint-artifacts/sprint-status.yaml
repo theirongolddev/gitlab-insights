@@ -78,7 +78,7 @@ development_status:
   epic-3: contexted
   3-1-catch-up-mode-backend-new-since-last-visit-logic: done
   3-2-catch-up-mode-view-with-toggle: done  # Re-review PASSED: All findings resolved 2025-12-04
-  3-3-mark-query-as-reviewed: backlog
+  3-3-mark-query-as-reviewed: ready-for-dev
   3-4-sidebar-new-item-badges: backlog
   3-5-inngest-background-polling-job: backlog
   3-6-last-sync-indicator: backlog
