@@ -16,6 +16,8 @@ import { useShortcuts } from "../keyboard/ShortcutContext";
 interface EventTableProps {
   events: DashboardEvent[];
   onRowClick?: (event: DashboardEvent) => void;
+  /** Optional scope ID for scoped keyboard handlers (Story 3.2: Catch-Up Mode sections) */
+  scopeId?: string;
 }
 
 /**
@@ -28,7 +30,7 @@ interface EventTableProps {
  * - Maintains WCAG 2.1 Level AA accessibility compliance
  * - Integrates with existing ItemRow component (Epic 1)
  */
-export function EventTable({ events, onRowClick }: EventTableProps) {
+export function EventTable({ events, onRowClick, scopeId }: EventTableProps) {
   // Task 1.4: selectedKeys state for single-selection mode
   const [selectedKeys, setSelectedKeys] = useState<Selection>(new Set());
 
@@ -37,7 +39,17 @@ export function EventTable({ events, onRowClick }: EventTableProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   // Task 3: Get shortcut handlers from context
-  const { setMoveSelectionDown, setMoveSelectionUp, setJumpHalfPageDown, setJumpHalfPageUp } = useShortcuts();
+  // Story 3.2: Added unregister functions for scoped handler cleanup
+  const {
+    setMoveSelectionDown,
+    setMoveSelectionUp,
+    setJumpHalfPageDown,
+    setJumpHalfPageUp,
+    unregisterMoveSelectionDown,
+    unregisterMoveSelectionUp,
+    unregisterJumpHalfPageDown,
+    unregisterJumpHalfPageUp,
+  } = useShortcuts();
 
   // Number of rows to jump for half-page navigation (Ctrl+d/Ctrl+u)
   const HALF_PAGE_JUMP = 10;
@@ -112,7 +124,7 @@ export function EventTable({ events, onRowClick }: EventTableProps) {
   );
 
   // Task 3: Focus Router Pattern - register handlers with ShortcutContext
-  // Only register once since moveSelection uses refs for current state
+  // Story 3.2: Pass scopeId for scoped handlers, cleanup on unmount
   useEffect(() => {
     // Helper to ensure table has focus before navigation
     const ensureFocus = () => {
@@ -124,30 +136,48 @@ export function EventTable({ events, onRowClick }: EventTableProps) {
       }
     };
 
-    // Task 3.4: Register moveSelectionDown handler (j key)
+    // Register handlers with optional scopeId
     setMoveSelectionDown(() => {
       ensureFocus();
       moveSelection("down");
-    });
+    }, scopeId);
 
-    // Task 3.5: Register moveSelectionUp handler (k key)
     setMoveSelectionUp(() => {
       ensureFocus();
       moveSelection("up");
-    });
+    }, scopeId);
 
-    // Register Ctrl+d handler (half-page down)
     setJumpHalfPageDown(() => {
       ensureFocus();
       moveSelection("down", HALF_PAGE_JUMP);
-    });
+    }, scopeId);
 
-    // Register Ctrl+u handler (half-page up)
     setJumpHalfPageUp(() => {
       ensureFocus();
       moveSelection("up", HALF_PAGE_JUMP);
-    });
-  }, [setMoveSelectionDown, setMoveSelectionUp, setJumpHalfPageDown, setJumpHalfPageUp, moveSelection, HALF_PAGE_JUMP]);
+    }, scopeId);
+
+    // Cleanup scoped handlers on unmount
+    return () => {
+      if (scopeId) {
+        unregisterMoveSelectionDown(scopeId);
+        unregisterMoveSelectionUp(scopeId);
+        unregisterJumpHalfPageDown(scopeId);
+        unregisterJumpHalfPageUp(scopeId);
+      }
+    };
+  }, [
+    setMoveSelectionDown,
+    setMoveSelectionUp,
+    setJumpHalfPageDown,
+    setJumpHalfPageUp,
+    unregisterMoveSelectionDown,
+    unregisterMoveSelectionUp,
+    unregisterJumpHalfPageDown,
+    unregisterJumpHalfPageUp,
+    moveSelection,
+    scopeId,
+  ]);
 
 
   // Task 6.4: Empty state handling

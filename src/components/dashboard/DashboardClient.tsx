@@ -1,20 +1,30 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { RefreshButton } from "~/components/dashboard/RefreshButton";
 import { SyncIndicator } from "~/components/dashboard/SyncIndicator";
 import { type DashboardEvent } from "~/components/dashboard/ItemRow";
 import { EventTable } from "~/components/dashboard/EventTable";
 import { useSearch } from "~/components/search/SearchContext";
+import { CatchUpView, CatchUpModeToggle } from "~/components/catchup";
+import { useShortcuts } from "~/components/keyboard/ShortcutContext";
 import { api } from "~/trpc/react";
 import { Spinner } from "@heroui/react";
 
 export function DashboardClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Check if user has monitored projects - redirect to onboarding if not
+  const isCatchUpMode = searchParams?.get("mode") === "catchup";
+
+  const prevCatchUpModeRef = useRef(isCatchUpMode);
+
+  useEffect(() => {
+    prevCatchUpModeRef.current = isCatchUpMode;
+  }, [isCatchUpMode]);
+
   const { data: monitoredProjects, isLoading: isLoadingMonitored } =
     api.projects.getMonitored.useQuery();
 
@@ -24,20 +34,62 @@ export function DashboardClient() {
     }
   }, [monitoredProjects, isLoadingMonitored, router]);
 
-  // Story 2.6: Search state from global SearchContext
-  const { searchResults, isSearchActive } = useSearch();
+  const { searchResults, isSearchActive, clearSearch } = useSearch();
+
+  const { setToggleCatchUpMode } = useShortcuts();
+
+  const toggleCatchUpMode = useCallback(() => {
+    if (isCatchUpMode) {
+      router.push("/dashboard");
+    } else {
+      if (isSearchActive) {
+        clearSearch();
+      }
+      router.push("/dashboard?mode=catchup");
+    }
+  }, [isCatchUpMode, router, isSearchActive, clearSearch]);
+
+  useEffect(() => {
+    setToggleCatchUpMode(toggleCatchUpMode);
+  }, [setToggleCatchUpMode, toggleCatchUpMode]);
+
+  useEffect(() => {
+    if (!isCatchUpMode || !isSearchActive) return;
+
+    const justEntered = !prevCatchUpModeRef.current;
+    if (justEntered) {
+      clearSearch();
+    } else {
+      router.push("/dashboard");
+    }
+  }, [isCatchUpMode, isSearchActive, clearSearch, router]);
 
   const utils = api.useUtils();
 
-  // Fetch dashboard data (session already validated by server component)
   const { data: dashboardData, isLoading: eventsLoading } =
     api.events.getForDashboard.useQuery({});
 
-  // Manual refresh mutation
+  const { data: queriesData } = api.queries.list.useQuery();
+
+  const queryIds = queriesData?.map(q => q.id) ?? [];
+  const newItemsQueries = api.useQueries((t) =>
+    queryIds.length > 0
+      ? queryIds.map((queryId) => t.queries.getNewItems({ queryId }))
+      : []
+  );
+
+  const totalNewItemsCount = newItemsQueries.reduce((sum, query) => {
+    if (query.data) {
+      return sum + query.data.newCount;
+    }
+    return sum;
+  }, 0);
+
   const manualRefresh = api.events.manualRefresh.useMutation({
     onSuccess: async () => {
       await utils.events.getForDashboard.invalidate();
       await utils.events.getLastSync.invalidate();
+      await utils.queries.getNewItems.invalidate();
       setIsRefreshing(false);
     },
     onError: (error) => {
@@ -51,12 +103,10 @@ export function DashboardClient() {
     manualRefresh.mutate();
   };
 
-  // Handle row click - open GitLab URL in new tab
   const handleRowClick = (event: DashboardEvent) => {
     window.open(event.gitlabUrl, "_blank", "noopener,noreferrer");
   };
 
-  // Transform API data to DashboardEvent format
   const issues: DashboardEvent[] = (dashboardData?.issues ?? []).map((e) => ({
     ...e,
     type: e.type as DashboardEvent["type"],
@@ -75,12 +125,10 @@ export function DashboardClient() {
     createdAt: new Date(e.createdAt),
   }));
 
-  // Combine all events and sort by createdAt desc
   const allDashboardEvents: DashboardEvent[] = [...issues, ...mergeRequests, ...comments].sort(
     (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
   );
 
-  // Transform search results to DashboardEvent format
   const searchEventsAsDashboard: DashboardEvent[] = searchResults.map((e) => ({
     id: e.id,
     type: e.type as DashboardEvent["type"],
@@ -97,10 +145,8 @@ export function DashboardClient() {
     highlightedSnippet: e.highlightedSnippet,
   }));
 
-  // Final events to display - search results when searching, all events otherwise
   const displayEvents = isSearchActive ? searchEventsAsDashboard : allDashboardEvents;
 
-  // Show loading while checking for monitored projects
   if (isLoadingMonitored) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center">
@@ -110,7 +156,6 @@ export function DashboardClient() {
     );
   }
 
-  // Show loading while redirecting to onboarding
   if (monitoredProjects && monitoredProjects.length === 0) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center">
@@ -122,22 +167,29 @@ export function DashboardClient() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      {/* Dashboard sub-header with sync indicator and refresh */}
       <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50">
-              Dashboard
+              {isCatchUpMode ? "Catch-Up Mode" : "Dashboard"}
             </h1>
             <SyncIndicator />
           </div>
-          <RefreshButton onRefresh={handleRefresh} isLoading={isRefreshing} />
+          <div className="flex items-center gap-2">
+            <CatchUpModeToggle
+              isCatchUpMode={isCatchUpMode}
+              onToggle={toggleCatchUpMode}
+              newItemsCount={totalNewItemsCount}
+            />
+            <RefreshButton onRefresh={handleRefresh} isLoading={isRefreshing} />
+          </div>
         </div>
       </div>
 
-      {/* Events Table with vim-style navigation */}
       <div className="container mx-auto px-4 py-6">
-        {eventsLoading && !isSearchActive ? (
+        {isCatchUpMode ? (
+          <CatchUpView />
+        ) : eventsLoading && !isSearchActive ? (
           <div className="flex items-center justify-center py-12">
             <p className="text-lg text-gray-400">Loading events...</p>
           </div>

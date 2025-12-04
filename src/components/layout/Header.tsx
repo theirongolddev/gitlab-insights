@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { signOut, useSession } from "~/lib/auth-client";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
@@ -25,6 +25,19 @@ export function Header() {
 
   // Story 2.6: Search state from context - now uses keywords array
   const { keywords, addKeyword, removeKeyword, clearSearch, setKeywords, isSearchLoading } = useSearch();
+
+  // Story 3.2: Check if currently in Catch-Up Mode
+  const searchParams = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+  const isCatchUpMode = pathname === "/dashboard" && searchParams.get("mode") === "catchup";
+
+  // Story 3.2: Wrap addKeyword to exit Catch-Up Mode first
+  const handleAddKeyword = useCallback((keyword: string) => {
+    if (isCatchUpMode) {
+      // Navigate to dashboard first, then add keyword
+      router.push("/dashboard");
+    }
+    addKeyword(keyword);
+  }, [isCatchUpMode, router, addKeyword]);
 
   // Story 2.8.5: Modal state for CreateQueryModal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -138,7 +151,7 @@ export function Header() {
           <div className="flex flex-1 items-center justify-center px-4">
             <SearchBar
               keywords={keywords}
-              onAddKeyword={addKeyword}
+              onAddKeyword={handleAddKeyword}
               onRemoveKeyword={removeKeyword}
               onSave={handleSaveQuery}
               onUpdate={handleUpdateQuery}

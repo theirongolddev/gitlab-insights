@@ -43,6 +43,7 @@ export function ShortcutHandler() {
     clearFocusAndModals,
     navigateToQuery,
     openSaveModal,
+    toggleCatchUpMode,
   } = useShortcuts();
 
   const handleKeyDown = useCallback(
@@ -88,6 +89,10 @@ export function ShortcutHandler() {
         case "s":
           openSaveModal();
           break;
+        // Story 3.2 (AC 3.2.1, 3.2.4, 3.2.9): 'c' key toggles Catch-Up Mode
+        case "c":
+          toggleCatchUpMode();
+          break;
         // Story 2.8 (AC 2.8.4): Number keys 1-9 navigate to query by position
         case "1":
         case "2":
@@ -103,7 +108,7 @@ export function ShortcutHandler() {
           break;
       }
     },
-    [focusSearch, moveSelectionDown, moveSelectionUp, jumpHalfPageDown, jumpHalfPageUp, clearFocusAndModals, navigateToQuery, openSaveModal],
+    [focusSearch, moveSelectionDown, moveSelectionUp, jumpHalfPageDown, jumpHalfPageUp, clearFocusAndModals, navigateToQuery, openSaveModal, toggleCatchUpMode],
   );
 
   useEffect(() => {
