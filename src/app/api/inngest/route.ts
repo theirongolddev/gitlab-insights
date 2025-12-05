@@ -1,0 +1,8 @@
+import { serve } from "inngest/next";
+import { inngest } from "~/inngest/client";
+import { apiPollingJob } from "~/inngest";
+
+export const { GET, POST, PUT } = serve({
+  client: inngest,
+  functions: [apiPollingJob],
+});

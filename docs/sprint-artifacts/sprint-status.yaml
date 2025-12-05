@@ -80,7 +80,7 @@ development_status:
   3-2-catch-up-mode-view-with-toggle: done  # Re-review PASSED: All findings resolved 2025-12-04
   3-3-mark-query-as-reviewed: done  # Re-review PASSED 2025-12-05: All issues resolved
   3-4-sidebar-new-item-badges: done  # Re-review PASSED 2025-12-05: All ACs verified, all issues resolved
-  3-5-inngest-background-polling-job: backlog
+  3-5-inngest-background-polling-job: review
   3-6-last-sync-indicator: backlog
   3-7-manual-refresh-button-with-r-shortcut: backlog
   epic-3-retrospective: optional
