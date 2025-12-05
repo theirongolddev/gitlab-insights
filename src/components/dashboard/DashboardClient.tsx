@@ -11,7 +11,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { RefreshButton } from "~/components/dashboard/RefreshButton";
-import { SyncIndicator } from "~/components/dashboard/SyncIndicator";
 import { type DashboardEvent } from "~/components/dashboard/ItemRow";
 import { EventTable } from "~/components/dashboard/EventTable";
 import { useSearch } from "~/components/search/SearchContext";
@@ -160,7 +159,6 @@ export function DashboardClient() {
             <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50">
               {isCatchUpMode ? "Catch-Up Mode" : "Dashboard"}
             </h1>
-            <SyncIndicator />
           </div>
           <div className="flex items-center gap-2">
             <CatchUpModeToggle

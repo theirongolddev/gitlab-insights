@@ -13,7 +13,7 @@
 
 import { inngest } from "../client";
 import { db } from "~/server/db";
-import { GitLabClient } from "~/server/services/gitlab-client";
+import { GitLabClient, GitLabAPIError } from "~/server/services/gitlab-client";
 import {
   transformIssues,
   transformMergeRequests,
@@ -24,6 +24,7 @@ import {
 import { logger } from "~/lib/logger";
 
 // Default: every 10 minutes. Override with INNGEST_POLLING_CRON for testing.
+// Note: Invalid cron expressions will cause Inngest to fail at function registration time.
 const POLLING_CRON = process.env.INNGEST_POLLING_CRON ?? "*/10 * * * *";
 
 export const apiPollingJob = inngest.createFunction(
@@ -113,8 +114,17 @@ export const apiPollingJob = inngest.createFunction(
 
         processed++;
       } catch (error) {
-        logger.error({ userId: user.id, error }, "api-polling: Failed to sync user");
-        failed++;
+        // Handle 401 token expiry - skip user (requires re-auth), don't count as failure
+        if (error instanceof GitLabAPIError && error.statusCode === 401) {
+          logger.warn(
+            { userId: user.id },
+            "api-polling: User token expired, skipping (requires re-auth)"
+          );
+          skipped++;
+        } else {
+          logger.error({ userId: user.id, error }, "api-polling: Failed to sync user");
+          failed++;
+        }
       }
     }
 
@@ -123,8 +133,11 @@ export const apiPollingJob = inngest.createFunction(
       "api-polling: Job completed"
     );
 
+    // Success if we processed at least one user, or if there were no users to process
+    const success = processed > 0 || users.length === 0;
+
     return {
-      success: true,
+      success,
       processed,
       failed,
       skipped,

@@ -19,6 +19,7 @@ import { CreateQueryModal } from "~/components/queries/CreateQueryModal";
 import { api, clearQueryCache } from "~/trpc/react";
 import { useToast } from "~/components/ui/Toast/ToastContext";
 import { ThemeToggle } from "~/components/theme/ThemeToggle";
+import { SyncIndicator } from "~/components/sync/SyncIndicator";
 
 export function Header() {
   const { data: session } = useSession();
@@ -170,6 +171,9 @@ export function Header() {
           </div>
 
         <div className="flex items-center gap-4">
+          {/* Story 3.6: Sync status indicator */}
+          <SyncIndicator />
+
           {/* Story 1.5.6: Theme toggle button */}
           <ThemeToggle />
 

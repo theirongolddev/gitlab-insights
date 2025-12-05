@@ -31,6 +31,12 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
+    // Inngest - optional (Inngest SDK handles missing keys in dev mode)
+    // In production, set these from your Inngest dashboard
+    INNGEST_EVENT_KEY: z.string().optional(),
+    INNGEST_SIGNING_KEY: z.string().optional(),
+    // Optional: Override polling schedule for testing (default: every 10 minutes)
+    INNGEST_POLLING_CRON: z.string().optional(),
   },
 
   /**
@@ -54,6 +60,9 @@ export const env = createEnv({
     GITLAB_INSTANCE_URL: process.env.GITLAB_INSTANCE_URL,
     DATABASE_URL: process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
+    INNGEST_EVENT_KEY: process.env.INNGEST_EVENT_KEY,
+    INNGEST_SIGNING_KEY: process.env.INNGEST_SIGNING_KEY,
+    INNGEST_POLLING_CRON: process.env.INNGEST_POLLING_CRON,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

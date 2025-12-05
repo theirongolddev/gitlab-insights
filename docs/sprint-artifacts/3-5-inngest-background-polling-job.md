@@ -1,6 +1,6 @@
 # Story 3.5: Inngest Background Polling Job
 
-Status: Ready for Review
+Status: done
 
 ## Story
 
@@ -55,8 +55,8 @@ so that **events are automatically fetched without user intervention**.
   - [x] 4.4 Handle OAuth token expiry gracefully (skip user, log warning)
 
 - [x] Task 5: Performance Optimization (AC: 3.5.7)
-  - [x] 5.1 Use `step.run()` for each user to enable parallel processing
-  - [x] 5.2 Limit concurrent API calls to avoid rate limiting
+  - [x] 5.1 Use `step.run()` for each user to enable per-user resilience and retry isolation
+  - [x] 5.2 Limit concurrent API calls via `concurrency: { limit: 5 }` to avoid rate limiting
   - [x] 5.3 Use `updatedAfter` parameter to fetch only new/updated events
 
 - [x] Task 6: Testing and Validation (per ADR-006: minimal testing for MVP)
@@ -68,6 +68,16 @@ so that **events are automatically fetched without user intervention**.
   - [ ] 6.6 Verify events stored in database after job completion
   - [ ] 6.7 Verify `LastSync` record updated with correct timestamp
   - Note: No unit tests required - validate via Inngest dev dashboard and manual triggers
+
+### Review Follow-ups (AI)
+
+- [x] [AI-Review][HIGH] Add Inngest env vars to Zod schema in `src/env.js`: INNGEST_EVENT_KEY, INNGEST_SIGNING_KEY, INNGEST_POLLING_CRON as optional strings
+- [x] [AI-Review][MEDIUM] Task 5.1 claims parallel processing but implementation is sequential - either fix code to use Promise.all or correct task description
+- [x] [AI-Review][MEDIUM] Add 401 token expiry detection in catch block at `src/inngest/functions/api-polling.ts:115` - log as warning and increment skipped instead of failed
+- [x] [AI-Review][MEDIUM] Update story File List to include `docs/sprint-artifacts/3-5-inngest-background-polling-job-validation-report.md` and `docs/sprint-artifacts/sprint-status.yaml`
+- [x] [AI-Review][MEDIUM] Fix `success: true` always returned - should be `success: processed > 0 || users.length === 0` at `src/inngest/functions/api-polling.ts:127`
+- [x] [AI-Review][LOW] Validate INNGEST_POLLING_CRON is valid cron expression (or document that invalid cron fails at Inngest runtime)
+- [x] [AI-Review][LOW] Consider adding comment about Pages Router vs App Router hybrid setup for Inngest route
 
 ## Dev Notes
 
@@ -153,129 +163,13 @@ export const { GET, POST, PUT } = serve({
 
 ### Background Polling Function Pattern
 
-```typescript
-// src/inngest/functions/api-polling.ts
-import { inngest } from "../client";
-import { db } from "~/server/db";
-import { GitLabClient } from "~/server/services/gitlab-client";
-import {
-  transformIssues,
-  transformMergeRequests,
-  transformNotes,
-  storeEvents,
-  getProjectMap,
-} from "~/server/services/event-transformer";
-import { logger } from "~/lib/logger";
+See actual implementation at `src/inngest/functions/api-polling.ts` for current code.
 
-export const apiPollingJob = inngest.createFunction(
-  {
-    id: "gitlab-api-polling",
-    name: "GitLab API Polling",
-    retries: 3, // 3 retries = 4 total attempts
-    concurrency: {
-      limit: 5, // Max 5 users processed simultaneously to avoid GitLab rate limits
-    },
-    onFailure: async ({ error }) => {
-      logger.error({ error }, "api-polling: All retries exhausted");
-    },
-  },
-  { cron: "*/10 * * * *" }, // Every 10 minutes
-  async ({ step }) => {
-    // Step 1: Fetch all users with monitored projects
-    const users = await step.run("fetch-users", async () => {
-      return db.user.findMany({
-        where: {
-          projects: { some: {} }, // Only users with monitored projects
-        },
-        include: {
-          projects: true,
-          accounts: {
-            where: { providerId: "gitlab" },
-            select: { accessToken: true },
-          },
-        },
-      });
-    });
-
-    let processed = 0;
-    let failed = 0;
-    let skipped = 0;
-
-    // Step 2: Process each user
-    for (const user of users) {
-      const accessToken = user.accounts[0]?.accessToken;
-      
-      if (!accessToken) {
-        logger.warn({ userId: user.id }, "api-polling: User has no access token, skipping");
-        skipped++;
-        continue;
-      }
-
-      try {
-        await step.run(`fetch-events-user-${user.id}`, async () => {
-          // Get last sync time for incremental fetching
-          const lastSync = await db.lastSync.findUnique({
-            where: { userId: user.id },
-          });
-          
-          const updatedAfter = lastSync?.lastSyncAt?.toISOString();
-          const projectIds = user.projects.map(p => p.gitlabProjectId);
-          
-          // Fetch events from GitLab
-          const client = new GitLabClient(accessToken);
-          const { issues, mergeRequests, notes } = await client.fetchEvents(
-            projectIds,
-            updatedAfter
-          );
-          
-          // Transform events
-          const projectMap = await getProjectMap(db, user.id, projectIds);
-          const allEvents = [
-            ...transformIssues(issues, projectMap),
-            ...transformMergeRequests(mergeRequests, projectMap),
-            ...transformNotes(notes, projectMap),
-          ];
-          
-          // Store events
-          const result = await storeEvents(db, user.id, allEvents);
-          
-          // Update last sync timestamp
-          await db.lastSync.upsert({
-            where: { userId: user.id },
-            create: { userId: user.id, lastSyncAt: new Date() },
-            update: { lastSyncAt: new Date() },
-          });
-          
-          logger.info({
-            userId: user.id,
-            stored: result.stored,
-            skipped: result.skipped,
-            projectCount: projectIds.length,
-          }, "api-polling: User events synced");
-          
-          return result;
-        });
-        
-        processed++;
-      } catch (error) {
-        logger.error({ userId: user.id, error }, "api-polling: Failed to sync user");
-        failed++;
-        // Continue with other users
-      }
-    }
-
-    logger.info({ processed, failed, skipped, total: users.length }, "api-polling: Job completed");
-    
-    return {
-      success: true,
-      processed,
-      failed,
-      skipped,
-      total: users.length,
-    };
-  }
-);
-```
+Key implementation details:
+- Imports `GitLabAPIError` to detect 401 token expiry
+- Uses `INNGEST_POLLING_CRON` env var (default: `*/10 * * * *`)
+- 401 errors increment `skipped` (not `failed`) and log as warning
+- Returns `success: processed > 0 || users.length === 0` (not always true)
 
 ### Environment Variables
 
@@ -292,10 +186,10 @@ INNGEST_SIGNING_KEY=your_signing_key
 ### Performance Considerations
 
 1. **Incremental Fetching:** Use `lastSyncAt` as `updatedAfter` parameter to fetch only new/updated events
-2. **Parallel Processing:** Inngest `step.run()` enables parallel execution per user
+2. **Per-User Resilience:** Each user processed in separate `step.run()` for retry isolation (sequential, not parallel)
 3. **Rate Limiting:** `GitLabClient` already handles retries with exponential backoff
 4. **Batch Inserts:** `storeEvents()` uses `createMany` with `skipDuplicates` for efficiency
-5. **Concurrency Limit:** Set `concurrency: { limit: 5 }` to prevent overwhelming GitLab API
+5. **Concurrency Limit:** `concurrency: { limit: 5 }` limits concurrent function instances (not users within a function)
 
 ### Error Handling Strategy
 
@@ -431,6 +325,8 @@ Claude (claude-sonnet-4-20250514)
 | 2025-12-05 | Implementation complete: Inngest SDK installed, background polling function created with all ACs satisfied, typecheck/build/lint pass | Dev Agent |
 | 2025-12-05 | Added unified dev startup with concurrently, configurable polling cron for testing | Dev Agent |
 | 2025-12-05 | Added useBackgroundSyncRefresh hook for coordinated UI refresh after background sync | Dev Agent |
+| 2025-12-05 | Addressed all 7 review follow-ups: env schema, 401 detection, success logic, docs | Dev Agent |
+| 2025-12-05 | Code review passed: Updated status to done, fixed stale Dev Notes code example | Code Review |
 
 ### File List
 
@@ -446,3 +342,5 @@ Claude (claude-sonnet-4-20250514)
 | `package-lock.json` | Modify | Lock file updated with inngest and concurrently dependencies |
 | `src/hooks/useBackgroundSyncRefresh.ts` | Create | Hook to detect background sync and refresh UI |
 | `src/components/layout/AppLayout.tsx` | Modify | Added BackgroundSyncWatcher component |
+| `src/env.js` | Modify | Added INNGEST_EVENT_KEY, INNGEST_SIGNING_KEY, INNGEST_POLLING_CRON to Zod schema |
+| `docs/sprint-artifacts/sprint-status.yaml` | Modify | Updated story status to in-progress then review |
