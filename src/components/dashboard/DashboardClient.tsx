@@ -1,5 +1,13 @@
 "use client";
 
+/**
+ * DashboardClient - Main dashboard view component
+ *
+ * Story 3.4: Sidebar New Item Badges
+ * AC 3.4.5: Uses shared NewItemsContext for totalNewCount (no duplicate fetching)
+ * AC 3.4.8: Data fetched once at AppLayout level
+ */
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { RefreshButton } from "~/components/dashboard/RefreshButton";
@@ -10,6 +18,7 @@ import { useSearch } from "~/components/search/SearchContext";
 import { CatchUpView, CatchUpModeToggle } from "~/components/catchup";
 import { useShortcuts } from "~/components/keyboard/ShortcutContext";
 import { LoadingSpinner } from "~/components/ui/LoadingSpinner";
+import { useNewItems } from "~/contexts/NewItemsContext";
 import { api } from "~/trpc/react";
 
 export function DashboardClient() {
@@ -69,25 +78,9 @@ export function DashboardClient() {
   const { data: dashboardData, isLoading: eventsLoading } =
     api.events.getForDashboard.useQuery({});
 
-  // Only fetch queries and new items count when NOT in Catch-Up Mode
-  // CatchUpView fetches this data when it renders, avoiding duplicate requests
-  const { data: queriesData } = api.queries.list.useQuery(undefined, {
-    enabled: !isCatchUpMode,
-  });
-
-  const queryIds = queriesData?.map(q => q.id) ?? [];
-  const newItemsQueries = api.useQueries((t) =>
-    !isCatchUpMode && queryIds.length > 0
-      ? queryIds.map((queryId) => t.queries.getNewItems({ queryId }))
-      : []
-  );
-
-  const totalNewItemsCount = newItemsQueries.reduce((sum, query) => {
-    if (query.data) {
-      return sum + query.data.newCount;
-    }
-    return sum;
-  }, 0);
+  // AC 3.4.5: Use shared context for totalNewCount (no duplicate fetching)
+  // AC 3.4.8: Data fetched once at AppLayout level in NewItemsProvider
+  const { totalNewCount } = useNewItems();
 
   const manualRefresh = api.events.manualRefresh.useMutation({
     onSuccess: async () => {
@@ -173,7 +166,7 @@ export function DashboardClient() {
             <CatchUpModeToggle
               isCatchUpMode={isCatchUpMode}
               onToggle={toggleCatchUpMode}
-              newItemsCount={totalNewItemsCount}
+              newItemsCount={totalNewCount}
             />
             <RefreshButton onRefresh={handleRefresh} isLoading={isRefreshing} />
           </div>

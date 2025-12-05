@@ -9,17 +9,22 @@
  * AC 2.8.3: Clicking query navigates to /queries/[id]
  * AC 2.8.4: Number keys 1-9 jump to queries by position
  * AC 2.8.5: Empty state shown when no queries
+ *
+ * Story 3.4: Sidebar New Item Badges
+ * AC 3.4.1: Each sidebar query displays badge showing new item count
+ * AC 3.4.5: Badge count derived from single data source (NewItemsContext)
+ * AC 3.4.7: Badge replaces total count; total count moves to tooltip
  */
 
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { api } from "~/trpc/react";
 import { useShortcuts } from "~/components/keyboard/ShortcutContext";
+import { useNewItems } from "~/contexts/NewItemsContext";
+import { NewItemsBadge } from "~/components/sidebar/NewItemsBadge";
 import { Sidebar } from "~/components/ui/Sidebar";
 import {
   NavList,
   NavItem,
-  NavItemCount,
   NavItemShortcut,
 } from "~/components/ui/NavList";
 
@@ -98,8 +103,9 @@ export function QuerySidebar({ className = "" }: QuerySidebarProps) {
   const router = useRouter();
   const { setNavigateToQuery } = useShortcuts();
 
-  // AC 2.8.2: Fetch user's queries with counts
-  const { data: queries, isLoading } = api.queries.list.useQuery();
+  // Code Review Fix: Consume queries from shared context (AC 3.4.8)
+  // This eliminates duplicate queries.list fetch and inherits staleTime/refetchOnWindowFocus settings
+  const { queries, queriesWithNewCounts, isQueriesLoading: isLoading } = useNewItems();
 
   // AC 2.8.4: Register keyboard shortcut handler for 1-9 navigation
   useEffect(() => {
@@ -115,6 +121,12 @@ export function QuerySidebar({ className = "" }: QuerySidebarProps) {
     ? pathname.split("/")[2]
     : null;
 
+  // AC 3.4.5: Helper to look up newCount by queryId
+  const getNewCount = (queryId: string): number => {
+    const found = queriesWithNewCounts.find((q) => q.queryId === queryId);
+    return found?.newCount ?? 0;
+  };
+
   return (
     <Sidebar
       aria-label="Saved queries"
@@ -128,13 +140,20 @@ export function QuerySidebar({ className = "" }: QuerySidebarProps) {
       {/* AC 2.8.5: Empty state */}
       {!isLoading && (!queries || queries.length === 0) && <EmptyState />}
 
-      {/* AC 2.8.2, 2.8.3: Query list with counts and navigation */}
+      {/* AC 2.8.2, 2.8.3: Query list with navigation */}
+      {/* AC 3.4.1, 3.4.7: New items badge + total count in tooltip */}
       {!isLoading && queries && queries.length > 0 && (
         <NavList aria-label="Saved queries list">
           {queries.map((query, index) => {
             const isActive = query.id === currentQueryId;
             const shortcutKey = index < 9 ? index + 1 : null;
+            const newCount = getNewCount(query.id);
 
+            // AC 3.4.7: Total count moved to tooltip
+            const tooltipContent = `${query.count} matching event${query.count === 1 ? "" : "s"}`;
+
+            // Code Review Fix: Use native title attribute for tooltip instead of HeroUI Tooltip
+            // to avoid breaking React Aria ListBox keyboard navigation (arrow keys, type-ahead)
             return (
               <NavItem
                 key={query.id}
@@ -142,9 +161,11 @@ export function QuerySidebar({ className = "" }: QuerySidebarProps) {
                 href={`/queries/${query.id}`}
                 isActive={isActive}
                 textValue={query.name}
+                title={tooltipContent}
                 trailing={
                   <>
-                    <NavItemCount count={query.count} isActive={isActive} />
+                    {/* AC 3.4.1: New items badge (replaces NavItemCount) */}
+                    <NewItemsBadge newCount={newCount} />
                     {shortcutKey && (
                       <NavItemShortcut
                         shortcut={shortcutKey}

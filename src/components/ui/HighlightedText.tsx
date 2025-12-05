@@ -24,7 +24,7 @@ export function HighlightedText({ html, className = "" }: HighlightedTextProps) 
 
   return (
     <div
-      className={className}
+      className={`overflow-hidden ${className}`}
       dangerouslySetInnerHTML={sanitized}
     />
   );

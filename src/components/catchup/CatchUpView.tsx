@@ -3,11 +3,11 @@
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { Skeleton } from "@heroui/react";
 import { formatDistanceToNow } from "date-fns";
-import { api } from "~/trpc/react";
 import { EventTable } from "~/components/dashboard/EventTable";
 import { type DashboardEvent } from "~/components/dashboard/ItemRow";
 import { useShortcuts } from "~/components/keyboard/ShortcutContext";
 import { LoadingSpinner } from "~/components/ui/LoadingSpinner";
+import { useNewItems } from "~/contexts/NewItemsContext";
 import { MarkAsReviewedButton } from "./MarkAsReviewedButton";
 import { MarkAllAsReviewedButton } from "./MarkAllAsReviewedButton";
 
@@ -21,6 +21,8 @@ import { MarkAllAsReviewedButton } from "./MarkAllAsReviewedButton";
  * AC 3.2.6: "All caught up!" state for zero new items
  * AC 3.2.10: Uses EventTable component for event display
  * AC 3.2.12: Tab navigation between query sections with olive focus styling
+ *
+ * Code Review Fix: Now consumes NewItemsContext instead of duplicating data fetching (AC 3.4.8)
  */
 export function CatchUpView() {
   // Track which section is currently focused for styling and scoped navigation
@@ -46,33 +48,19 @@ export function CatchUpView() {
   // Scope management for keyboard shortcuts
   const { setActiveScope, clearActiveScope } = useShortcuts();
 
-  // Fetch user's queries
-  const { data: queries, isLoading: queriesLoading } = api.queries.list.useQuery();
+  // Code Review Fix: Consume shared context instead of duplicating data fetching (AC 3.4.8)
+  const {
+    queries,
+    newItemsResults,
+    totalNewCount,
+    isQueriesLoading,
+    allNewItemsLoaded,
+  } = useNewItems();
 
-  // Fetch new items for each query using useQueries pattern
-  // Only fetch when we have queries to avoid empty/invalid requests
-  const queryIds = queries?.map(q => q.id) ?? [];
-  
-  const newItemsQueries = api.useQueries((t) =>
-    queryIds.length > 0
-      ? queryIds.map((queryId) => t.queries.getNewItems({ queryId }))
-      : []
-  );
-
-  // Calculate total new items across all queries
-  const totalNewItems = useMemo(() => {
-    if (!newItemsQueries || newItemsQueries.length === 0) return 0;
-    return newItemsQueries.reduce((sum, query) => {
-      if (query.data) {
-        return sum + query.data.newCount;
-      }
-      return sum;
-    }, 0);
-  }, [newItemsQueries]);
-
-  // Determine loading states
-  const isInitialLoading = queriesLoading;
-  const allQueriesLoaded = newItemsQueries.every(q => !q.isLoading);
+  // Alias for compatibility with existing code
+  const totalNewItems = totalNewCount;
+  const isInitialLoading = isQueriesLoading;
+  const allQueriesLoaded = allNewItemsLoaded;
 
   // AC 3.2.8: Performance measurement - track load time
   const loadStartTimeRef = useRef<number | null>(null);
@@ -215,7 +203,7 @@ export function CatchUpView() {
 
       {/* AC 3.2.3: Query sections with "[Query Name] (X new items)" headers */}
       <div className="flex flex-col gap-6 p-4">
-        {newItemsQueries.map((queryResult, index) => {
+        {newItemsResults.map((queryResult, index) => {
           const query = queries?.[index];
           if (!query) return null;
 

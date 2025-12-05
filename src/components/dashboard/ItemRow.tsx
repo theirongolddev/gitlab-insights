@@ -71,50 +71,50 @@ export function ItemRow({ item, isSelected, isNew, onClick }: ItemRowProps) {
   return (
     <div
       onClick={onClick}
-      className={`min-h-10 px-4 mb-2 rounded-lg transition-colors
+      className={`min-h-10 px-4 mb-2 rounded-lg transition-colors overflow-hidden
         hover:bg-gray-300 dark:hover:bg-gray-800
         ${isSelected ? "ring-2 ring-olive-light" : ""}`}
     >
       {/* Line 1: Badge + Title + Metadata */}
-      <div className="flex items-center justify-between h-7 pt-1.5">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
+      <div className="flex items-center justify-between h-7 pt-1.5 overflow-hidden">
+        <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
           <Badge type={item.type} isNew={isNew} />
           {item.highlightedTitle ? (
             <HighlightedText
               html={item.highlightedTitle}
-              className="text-sm font-medium text-gray-900 dark:text-gray-50 truncate"
+              className="text-sm font-medium text-gray-900 dark:text-gray-50 truncate min-w-0"
             />
           ) : (
-            <span className="text-sm font-medium text-gray-900 dark:text-gray-50 truncate">
+            <span className="text-sm font-medium text-gray-900 dark:text-gray-50 truncate min-w-0">
               {item.title}
             </span>
           )}
         </div>
         {/* Right-aligned metadata column */}
-        <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 ml-4 shrink-0">
+        <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 ml-4 min-w-0 shrink">
           {/* Show relevance rank for search results */}
           {item.rank !== undefined && (
             <>
-              <span className="text-olive-light font-mono" title="FTS relevance score">
+              <span className="text-olive-light font-mono hidden sm:inline" title="FTS relevance score">
                 {item.rank.toFixed(4)}
               </span>
-              <span>•</span>
+              <span className="hidden sm:inline">•</span>
             </>
           )}
-          <span>{item.author}</span>
+          <span className="truncate max-w-[80px] sm:max-w-none">{item.author}</span>
           <span>•</span>
-          <span className="max-w-[120px] truncate">{item.project}</span>
-          <span>•</span>
-          <span>{formatRelativeTime(new Date(item.createdAt))}</span>
+          <span className="max-w-[80px] sm:max-w-[120px] truncate">{item.project}</span>
+          <span className="hidden sm:inline">•</span>
+          <span className="hidden sm:inline">{formatRelativeTime(new Date(item.createdAt))}</span>
         </div>
       </div>
 
       {/* Line 2: Snippet */}
-      <div className="pl-4 pt-1 text-wrap">
+      <div className="pl-4 pt-1 overflow-hidden">
         {item.highlightedSnippet ? (
           <HighlightedText
             html={item.highlightedSnippet}
-            className="text-sm text-gray-600 dark:text-gray-400 truncate block text-wrap"
+            className="text-sm text-gray-600 dark:text-gray-400 line-clamp-1 break-all"
           />
         ) : (
           <p className="text-sm text-gray-600 dark:text-gray-400 truncate">

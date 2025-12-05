@@ -6,6 +6,9 @@
  * Story 2.8: Sidebar Navigation
  * AC 2.8.1: Sidebar visible on all authenticated pages (dashboard, queries, settings)
  *
+ * Story 3.4: Sidebar New Item Badges
+ * AC 3.4.8: NewItemsProvider wraps children to share new items data
+ *
  * Shows sidebar only for authenticated users on appropriate routes.
  * Login/onboarding pages don't show sidebar.
  */
@@ -13,6 +16,7 @@
 import { useSession } from "~/lib/auth-client";
 import { usePathname } from "next/navigation";
 import { QuerySidebar } from "~/components/queries/QuerySidebar";
+import { NewItemsProvider } from "~/contexts/NewItemsContext";
 import { type ReactNode } from "react";
 
 interface AppLayoutProps {
@@ -33,16 +37,22 @@ export function AppLayout({ children }: AppLayoutProps) {
   const shouldShowSidebar =
     isAuthenticated && !NO_SIDEBAR_ROUTES.includes(pathname ?? "");
 
-  if (!shouldShowSidebar) {
-    // No sidebar - just render content
-    return <main className="flex-1">{children}</main>;
-  }
-
-  // AC 2.8.1: Sidebar visible on authenticated pages
+  // AC 3.4.8: NewItemsProvider ALWAYS wraps children to ensure useNewItems() works
+  // This is necessary because useSession() returns undefined during initial hydration,
+  // but server-protected routes (like /dashboard) render children that need the context.
+  // The provider handles unauthenticated state gracefully (queries will fail/return empty).
   return (
-    <div className="flex flex-1">
-      <QuerySidebar />
-      <main className="flex-1 overflow-auto">{children}</main>
-    </div>
+    <NewItemsProvider>
+      {shouldShowSidebar ? (
+        // AC 2.8.1: Sidebar visible on authenticated pages
+        <div className="flex flex-1 min-w-0">
+          <QuerySidebar />
+          <main className="flex-1 overflow-auto min-w-0">{children}</main>
+        </div>
+      ) : (
+        // No sidebar - login, onboarding, or session still loading
+        <main className="flex-1">{children}</main>
+      )}
+    </NewItemsProvider>
   );
 }

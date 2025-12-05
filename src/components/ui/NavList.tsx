@@ -61,6 +61,8 @@ export interface NavItemProps extends Omit<ListBoxItemProps, "className"> {
   children: ReactNode;
   /** Secondary content (e.g., count badge, shortcut hint) */
   trailing?: ReactNode;
+  /** Native tooltip text (avoids breaking keyboard navigation) */
+  title?: string;
   /** Additional CSS classes */
   className?: string;
 }
@@ -79,6 +81,7 @@ export function NavItem({
   isActive = false,
   children,
   trailing,
+  title,
   className = "",
   ...props
 }: NavItemProps) {
@@ -101,7 +104,8 @@ export function NavItem({
         ${className}
       `.trim()}
     >
-      <span className="truncate">{children}</span>
+      {/* Code Review Fix: Use native title for tooltip to preserve keyboard navigation */}
+      <span className="truncate" title={title}>{children}</span>
       {trailing && (
         <span className="ml-2 flex shrink-0 items-center gap-1.5">
           {trailing}
@@ -120,6 +124,9 @@ export interface NavItemCountProps {
 
 /**
  * NavItemCount - A count badge for NavItem trailing content.
+ *
+ * @deprecated Story 3.4 replaced this with NewItemsBadge for sidebar.
+ * Kept for potential reuse in other nav contexts. Consider removing if unused after Epic 3.
  */
 export function NavItemCount({ count, isActive = false }: NavItemCountProps) {
   return (
