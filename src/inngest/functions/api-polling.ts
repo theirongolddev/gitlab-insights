@@ -14,6 +14,7 @@
 import { inngest } from "../client";
 import { db } from "~/server/db";
 import { GitLabClient, GitLabAPIError } from "~/server/services/gitlab-client";
+import { getGitLabAccessToken } from "~/server/services/gitlab-token";
 import {
   transformIssues,
   transformMergeRequests,
@@ -22,6 +23,7 @@ import {
   getProjectMap,
 } from "~/server/services/event-transformer";
 import { logger } from "~/lib/logger";
+import { TRPCError } from "@trpc/server";
 
 // Default: every 10 minutes. Override with INNGEST_POLLING_CRON for testing.
 // Note: Invalid cron expressions will cause Inngest to fail at function registration time.
@@ -48,10 +50,6 @@ export const apiPollingJob = inngest.createFunction(
         },
         include: {
           projects: true,
-          accounts: {
-            where: { providerId: "gitlab" },
-            select: { accessToken: true },
-          },
         },
       });
     });
@@ -61,16 +59,11 @@ export const apiPollingJob = inngest.createFunction(
     let skipped = 0;
 
     for (const user of users) {
-      const accessToken = user.accounts[0]?.accessToken;
-
-      if (!accessToken) {
-        logger.warn({ userId: user.id }, "api-polling: User has no access token, skipping");
-        skipped++;
-        continue;
-      }
-
       try {
         await step.run(`fetch-events-user-${user.id}`, async () => {
+          // Get fresh access token (auto-refreshes if expired)
+          const { accessToken } = await getGitLabAccessToken(user.id);
+
           const lastSync = await db.lastSync.findUnique({
             where: { userId: user.id },
           });
@@ -114,11 +107,18 @@ export const apiPollingJob = inngest.createFunction(
 
         processed++;
       } catch (error) {
-        // Handle 401 token expiry - skip user (requires re-auth), don't count as failure
-        if (error instanceof GitLabAPIError && error.statusCode === 401) {
+        // Handle token refresh failures - skip user (requires re-auth)
+        if (error instanceof TRPCError && error.code === "UNAUTHORIZED") {
           logger.warn(
             { userId: user.id },
-            "api-polling: User token expired, skipping (requires re-auth)"
+            "api-polling: User token expired/revoked, skipping (requires re-auth)"
+          );
+          skipped++;
+        // Handle 401 from GitLab API directly  
+        } else if (error instanceof GitLabAPIError && error.statusCode === 401) {
+          logger.warn(
+            { userId: user.id },
+            "api-polling: GitLab token rejected, skipping (requires re-auth)"
           );
           skipped++;
         } else {

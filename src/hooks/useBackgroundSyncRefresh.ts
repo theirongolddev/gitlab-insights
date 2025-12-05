@@ -12,15 +12,21 @@
  */
 
 import { useEffect, useRef } from "react";
+import { useSession } from "~/lib/auth-client";
 import { api } from "~/trpc/react";
 
 export function useBackgroundSyncRefresh() {
+  // Check session to prevent queries during logout transition
+  const { data: session } = useSession();
+  const isAuthenticated = !!session?.user;
+
   const utils = api.useUtils();
   const lastKnownSyncRef = useRef<string | null>(null);
 
   const { data: lastSyncData } = api.events.getLastSync.useQuery(undefined, {
     refetchInterval: 30000, // Poll every 30 seconds
     refetchOnWindowFocus: true, // Also check when user returns to tab
+    enabled: isAuthenticated, // Don't poll when not authenticated
   });
 
   useEffect(() => {

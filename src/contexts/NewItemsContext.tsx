@@ -5,7 +5,7 @@
  *
  * Story 3.4: Sidebar New Item Badges
  * AC 3.4.5: Badge count is accurate and derived from a single data source shared with CatchUpModeToggle
- * AC 3.4.8: New items data is fetched once at AppLayout level and shared via context
+ * AC 3.4.8: New items data is fetched once at AuthenticatedLayout level and shared via context
  * AC 3.4.9: React Query configured with appropriate staleTime (30s) and refetchOnWindowFocus: false
  * AC 3.4.10: Badge gracefully handles loading and error states
  *
@@ -19,6 +19,7 @@
  */
 
 import { createContext, useContext, type ReactNode } from "react";
+import { useSession } from "~/lib/auth-client";
 import { api, type RouterOutputs } from "~/trpc/react";
 
 type Query = RouterOutputs["queries"]["list"][number];
@@ -56,24 +57,30 @@ interface NewItemsProviderProps {
 /**
  * NewItemsProvider - Fetches new items data once and shares via context
  *
- * AC 3.4.8: Fetches data once at AppLayout level
+ * AC 3.4.8: Fetches data once at AuthenticatedLayout level
  * AC 3.4.9: Configured with staleTime: 30s, refetchOnWindowFocus: false
  *
  * Code Review Fix: Also expose queries and newItemsResults for CatchUpView
  */
 export function NewItemsProvider({ children }: NewItemsProviderProps) {
-  // Fetch list of user's queries
+  // Check session to prevent queries during logout transition
+  const { data: session } = useSession();
+  const isAuthenticated = !!session?.user;
+
+  // Fetch list of user's queries (only when authenticated)
   const queriesQuery = api.queries.list.useQuery(undefined, {
     staleTime: 30 * 1000,
     refetchOnWindowFocus: false,
+    enabled: isAuthenticated,
   });
 
   const queries = queriesQuery.data ?? [];
   const queryIds = queries.map((q) => q.id);
 
   // AC 3.4.9: Fetch new items for each query with optimized cache settings
+  // Only fetch when authenticated and have query IDs
   const newItemsQueries = api.useQueries((t) =>
-    queryIds.length > 0
+    isAuthenticated && queryIds.length > 0
       ? queryIds.map((queryId) =>
           t.queries.getNewItems(
             { queryId },

@@ -4,8 +4,6 @@ import { type Metadata } from "next";
 import { Geist } from "next/font/google";
 
 import { Providers } from "./providers";
-import { Header } from "~/components/layout/Header";
-import { AppLayout } from "~/components/layout/AppLayout";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -58,8 +56,7 @@ export default function RootLayout({
       <body className="min-h-screen bg-gray-100 dark:bg-bg-dark" suppressHydrationWarning>
         <Providers>
           <div className="flex min-h-screen flex-col">
-            <Header />
-            <AppLayout>{children}</AppLayout>
+            {children}
           </div>
         </Providers>
       </body>

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<story_context>
+  <metadata>
+    <story_id>6-x-session-token-refresh</story_id>
+    <epic>Epic 6 - Reliability & Error Handling</epic>
+    <status>done</status>
+    <completed>2025-12-05</completed>
+  </metadata>
+
+  <problem_statement>
+    OAuth access tokens expire after 2 hours, causing silent API failures.
+    Users had to manually re-authenticate even when their session was still valid.
+    Poor UX with popup warnings on manual refresh attempts.
+  </problem_statement>
+
+  <solution_summary>
+    Implemented automatic OAuth token refresh using better-auth's getAccessToken API.
+    Added client-side error handling to force logout when refresh fails.
+    Applied consistent pattern across all GitLab API touchpoints.
+  </solution_summary>
+
+  <files_modified>
+    <file path="src/server/services/gitlab-token.ts" action="created">
+      Centralized token utility using better-auth's auto-refresh mechanism
+    </file>
+    <file path="src/server/api/routers/events.ts" action="modified">
+      Replaced direct DB token lookup with getGitLabAccessToken()
+    </file>
+    <file path="src/server/api/routers/gitlab.ts" action="modified">
+      Replaced direct DB token lookup with getGitLabAccessToken()
+    </file>
+    <file path="src/inngest/functions/api-polling.ts" action="modified">
+      Uses auto-refresh for background sync, graceful handling of expired tokens
+    </file>
+    <file path="src/trpc/react.tsx" action="modified">
+      Added global UNAUTHORIZED error handler with forced sign-out
+    </file>
+  </files_modified>
+
+  <technical_decisions>
+    <decision id="1">
+      <title>Use better-auth getAccessToken API</title>
+      <rationale>
+        Better-auth provides built-in token refresh that handles the OAuth flow internally.
+        No need to implement custom refresh logic or manage token expiry manually.
+      </rationale>
+    </decision>
+    <decision id="2">
+      <title>Centralized token utility</title>
+      <rationale>
+        Single point of change for token logic. Consistent error handling.
+        Easy to add logging, metrics, or additional validation later.
+      </rationale>
+    </decision>
+    <decision id="3">
+      <title>Force logout on refresh failure</title>
+      <rationale>
+        When refresh token is expired/revoked, the only option is re-authentication.
+        Forcing logout provides clear UX and prevents repeated failing API calls.
+      </rationale>
+    </decision>
+  </technical_decisions>
+
+  <acceptance_criteria>
+    <criterion id="AC1" status="satisfied">
+      GitLab access tokens automatically refreshed when expired via better-auth
+    </criterion>
+    <criterion id="AC2" status="satisfied">
+      All server-side GitLab API calls use auto-refresh mechanism
+    </criterion>
+    <criterion id="AC3" status="satisfied">
+      Failed token refresh forces user re-authentication with redirect
+    </criterion>
+    <criterion id="AC4" status="satisfied">
+      Background sync handles expired tokens gracefully, continues with other users
+    </criterion>
+  </acceptance_criteria>
+
+  <testing_notes>
+    <note>Token expiry is 2 hours for access tokens</note>
+    <note>To test refresh: manually expire accessTokenExpiresAt in DB, make API call</note>
+    <note>To test forced logout: delete both tokens from account table, make API call</note>
+    <note>Background job logs warn-level messages for skipped users</note>
+  </testing_notes>
+
+  <related_requirements>
+    <requirement id="FR8">Graceful handling of API unavailability</requirement>
+    <requirement id="FR90">Graceful handling of API unavailability</requirement>
+  </related_requirements>
+</story_context>

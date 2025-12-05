@@ -100,9 +100,10 @@ development_status:
   epic-5: backlog
   epic-5-retrospective: optional
 
-  # Epic 6: Reliability & Error Handling (No detailed stories yet)
-  epic-6: backlog
-  6-x-session-token-refresh: backlog
+  # Epic 6: Reliability & Error Handling
+  epic-6: contexted
+  6-x-session-token-refresh: done  # Implemented 2025-12-05: OAuth token auto-refresh via better-auth
+  6-2-route-architecture-refactor: done  # Implemented 2025-12-05: Clean route separation for auth/public
   epic-6-retrospective: optional
 
   # Epic 7: Production Readiness & Polish (No detailed stories yet)

@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { env } from "~/env";
 import { logger } from "~/lib/logger";
+import { getGitLabAccessToken } from "~/server/services/gitlab-token";
 
 /**
  * GitLab API Router
@@ -31,30 +32,12 @@ export const gitlabRouter = createTRPCRouter({
    */
   listUserProjects: protectedProcedure.query(async ({ ctx }) => {
     try {
-      // Retrieve user's GitLab access token from Account table
-      const account = await ctx.db.account.findFirst({
-        where: {
-          userId: ctx.session.user.id,
-          providerId: "gitlab",
-        },
-        select: {
-          accessToken: true,
-          scope: true,
-        },
-      });
-
-      if (!account?.accessToken) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "GitLab access token not found. Please re-authenticate.",
-        });
-      }
+      // Get user's GitLab access token (auto-refreshes if expired)
+      const { accessToken } = await getGitLabAccessToken(ctx.session.user.id);
 
       logger.debug({
         userId: ctx.session.user.id,
-        hasToken: !!account.accessToken,
-        tokenLength: account.accessToken?.length,
-        scope: account.scope,
+        hasToken: true,
       }, "gitlab.listUserProjects: Fetching projects");
 
       // Fetch projects from GitLab API
@@ -64,7 +47,7 @@ export const gitlabRouter = createTRPCRouter({
         `${env.GITLAB_INSTANCE_URL}/api/v4/projects?membership=true&per_page=100&archived=false&order_by=last_activity_at`,
         {
           headers: {
-            Authorization: `Bearer ${account.accessToken}`,
+            Authorization: `Bearer ${accessToken}`,
           },
           // 10 second timeout to handle slow GitLab instances
           signal: AbortSignal.timeout(10000),

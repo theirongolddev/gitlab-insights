@@ -19,6 +19,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Spinner } from "@heroui/react";
+import { useSession } from "~/lib/auth-client";
 import { api } from "~/trpc/react";
 
 interface SyncIndicatorProps {
@@ -122,9 +123,16 @@ function SyncStatusDisplay({
 }
 
 export function SyncIndicator({ isSyncing = false }: SyncIndicatorProps) {
+  // Check session to prevent queries during logout transition (defense-in-depth)
+  const { data: session } = useSession();
+  const isAuthenticated = !!session?.user;
+
   const { data: syncStatus, isLoading, error, dataUpdatedAt, refetch } = api.events.getLastSync.useQuery(
     undefined,
-    { refetchInterval: REFRESH_INTERVAL_MS }
+    { 
+      refetchInterval: REFRESH_INTERVAL_MS,
+      enabled: isAuthenticated,
+    }
   );
 
   // Track current timestamp for time calculations

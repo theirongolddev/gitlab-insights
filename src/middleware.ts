@@ -19,8 +19,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // Redirect authenticated users from login page
-  if (pathname === "/" && hasSession) {
+  // Redirect authenticated users from public pages (root and login)
+  if ((pathname === "/" || pathname === "/login") && hasSession) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 

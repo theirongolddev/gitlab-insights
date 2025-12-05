@@ -8,6 +8,37 @@ import { useState } from "react";
 import SuperJSON from "superjson";
 
 import { type AppRouter } from "~/server/api/root";
+import { signOut } from "~/lib/auth-client";
+
+// Track if we're already handling an auth error to prevent multiple redirects
+let isHandlingAuthError = false;
+
+/**
+ * Handle UNAUTHORIZED errors by signing out and redirecting to login.
+ * Called from onError callbacks in QueryClient.
+ */
+const handleUnauthorizedError = async (error: unknown) => {
+  if (isHandlingAuthError) return;
+  
+  if (error instanceof TRPCClientError && error.data?.code === "UNAUTHORIZED") {
+    isHandlingAuthError = true;
+    
+    // Clear query cache first to prevent in-flight queries
+    if (clientQueryClientSingleton) {
+      clientQueryClientSingleton.clear();
+    }
+    
+    try {
+      await signOut({ fetchOptions: { onSuccess: () => {
+        // Redirect to login after sign out
+        window.location.href = "/login";
+      }}});
+    } catch {
+      // If signOut fails, force redirect anyway
+      window.location.href = "/login";
+    }
+  }
+};
 
 const createQueryClient = () =>
   new QueryClient({
@@ -31,6 +62,8 @@ const createQueryClient = () =>
           }
           return failureCount < 3;
         },
+        // Handle auth errors on mutations
+        onError: handleUnauthorizedError,
       },
     },
   });

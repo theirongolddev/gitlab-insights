@@ -5,7 +5,7 @@
  *
  * Story 3.4: Sidebar New Item Badges
  * AC 3.4.5: Uses shared NewItemsContext for totalNewCount (no duplicate fetching)
- * AC 3.4.8: Data fetched once at AppLayout level
+ * AC 3.4.8: Data fetched once at AuthenticatedLayout level
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -78,7 +78,7 @@ export function DashboardClient() {
     api.events.getForDashboard.useQuery({});
 
   // AC 3.4.5: Use shared context for totalNewCount (no duplicate fetching)
-  // AC 3.4.8: Data fetched once at AppLayout level in NewItemsProvider
+  // AC 3.4.8: Data fetched once at AuthenticatedLayout level in NewItemsProvider
   const { totalNewCount } = useNewItems();
 
   const manualRefresh = api.events.manualRefresh.useMutation({

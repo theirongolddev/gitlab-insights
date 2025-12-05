@@ -8,6 +8,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { GitLabClient, GitLabAPIError } from "~/server/services/gitlab-client";
+import { getGitLabAccessToken } from "~/server/services/gitlab-token";
 import { logger } from "~/lib/logger";
 import {
   transformIssues,
@@ -36,23 +37,8 @@ export const eventsRouter = createTRPCRouter({
     const startTime = Date.now();
 
     try {
-      // 1. Get user's GitLab access token
-      const account = await ctx.db.account.findFirst({
-        where: {
-          userId: ctx.session.user.id,
-          providerId: "gitlab",
-        },
-        select: {
-          accessToken: true,
-        },
-      });
-
-      if (!account?.accessToken) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "GitLab access token not found. Please re-authenticate.",
-        });
-      }
+      // 1. Get user's GitLab access token (auto-refreshes if expired)
+      const { accessToken } = await getGitLabAccessToken(ctx.session.user.id);
 
       // 2. Get user's monitored projects
       const monitoredProjects = await ctx.db.monitoredProject.findMany({
@@ -76,7 +62,7 @@ export const eventsRouter = createTRPCRouter({
       const projectIds = monitoredProjects.map((p) => p.gitlabProjectId);
 
       // 3. Fetch events from GitLab API
-      const gitlabClient = new GitLabClient(account.accessToken);
+      const gitlabClient = new GitLabClient(accessToken);
 
       // Get last sync time for incremental updates (optional optimization)
       const lastSync = await ctx.db.lastSync.findUnique({

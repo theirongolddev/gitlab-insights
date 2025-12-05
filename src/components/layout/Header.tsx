@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { signOut, useSession } from "~/lib/auth-client";
+import { useSession } from "~/lib/auth-client";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
@@ -127,15 +127,28 @@ export function Header() {
   }, [setFocusSearch, setClearFocusAndModals, setOpenSaveModal, keywords.length]);
 
   if (!session?.user) {
-    return null; // Don't show header on login page
+    // Return header skeleton to prevent layout shift during initial load
+    return (
+      <header className="border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-bg-dark">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+          <div className="h-7 w-40 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          <div className="flex-1 mx-4">
+            <div className="h-10 max-w-2xl mx-auto bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+            <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+            <div className="h-8 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          </div>
+        </div>
+      </header>
+    );
   }
 
-  const handleSignOut = async () => {
-    // Clear the query cache first to prevent UNAUTHORIZED errors from in-flight queries
+  const handleSignOut = () => {
     clearQueryCache();
-    await signOut();
-    // Force a hard navigation so middleware runs and properly redirects
-    window.location.href = "/";
+    // Redirect to logout page - handles signOut() and redirects to /login
+    window.location.href = "/logout";
   };
 
   return (
@@ -250,7 +263,7 @@ export function Header() {
                 if (key === "settings") {
                   router.push("/settings");
                 } else if (key === "signout") {
-                  void handleSignOut();
+                  handleSignOut();
                 }
               }}
             >

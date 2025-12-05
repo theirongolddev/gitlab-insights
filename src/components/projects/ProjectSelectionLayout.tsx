@@ -21,8 +21,8 @@ interface ProjectSelectionLayoutProps {
   // Footer
   footerContent: React.ReactNode;
   
-  // Optional: for settings page which renders inside AppLayout
-  insideAppLayout?: boolean;
+  // Optional: for settings page which renders inside AuthenticatedLayout
+  insideAuthenticatedLayout?: boolean;
 }
 
 export function ProjectSelectionLayout({
@@ -35,9 +35,9 @@ export function ProjectSelectionLayout({
   onSelectionChange,
   currentSelectionSize,
   footerContent,
-  insideAppLayout = false,
+  insideAuthenticatedLayout = false,
 }: ProjectSelectionLayoutProps) {
-  const minHeightClass = insideAppLayout 
+  const minHeightClass = insideAuthenticatedLayout 
     ? "min-h-[calc(100vh-65px)]" 
     : "min-h-screen";
 

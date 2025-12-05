@@ -79,7 +79,7 @@ export function SettingsClient() {
       initialSelectedIds={initialSelectedIds}
       onSelectionChange={handleSelectionChange}
       currentSelectionSize={currentSelection.size}
-      insideAppLayout={true}
+      insideAuthenticatedLayout={true}
       footerContent={
         <>
           {saveSuccess && (
