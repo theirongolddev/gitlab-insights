@@ -82,7 +82,7 @@ development_status:
   3-4-sidebar-new-item-badges: done  # Re-review PASSED 2025-12-05: All ACs verified, all issues resolved
   3-5-inngest-background-polling-job: review
   3-6-last-sync-indicator: review
-  3-7-manual-refresh-button-with-r-shortcut: backlog
+  3-7-manual-refresh-button-with-r-shortcut: review  # Re-review ready 2025-12-05: All 9 review issues resolved, added useManualRefresh hook
   epic-3-retrospective: optional
 
   # Epic 4: Split View & Detail Navigation

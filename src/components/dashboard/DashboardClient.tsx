@@ -10,7 +10,6 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { RefreshButton } from "~/components/dashboard/RefreshButton";
 import { type DashboardEvent } from "~/components/dashboard/ItemRow";
 import { EventTable } from "~/components/dashboard/EventTable";
 import { useSearch } from "~/components/search/SearchContext";
@@ -23,7 +22,6 @@ import { api } from "~/trpc/react";
 export function DashboardClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const isCatchUpMode = searchParams?.get("mode") === "catchup";
 
@@ -72,32 +70,12 @@ export function DashboardClient() {
     }
   }, [isCatchUpMode, isSearchActive, clearSearch, router]);
 
-  const utils = api.useUtils();
-
   const { data: dashboardData, isLoading: eventsLoading } =
     api.events.getForDashboard.useQuery({});
 
   // AC 3.4.5: Use shared context for totalNewCount (no duplicate fetching)
   // AC 3.4.8: Data fetched once at AuthenticatedLayout level in NewItemsProvider
   const { totalNewCount } = useNewItems();
-
-  const manualRefresh = api.events.manualRefresh.useMutation({
-    onSuccess: async () => {
-      await utils.events.getForDashboard.invalidate();
-      await utils.events.getLastSync.invalidate();
-      await utils.queries.getNewItems.invalidate();
-      setIsRefreshing(false);
-    },
-    onError: (error) => {
-      alert(`Refresh failed: ${error.message}`);
-      setIsRefreshing(false);
-    },
-  });
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    manualRefresh.mutate();
-  };
 
   const handleRowClick = (event: DashboardEvent) => {
     window.open(event.gitlabUrl, "_blank", "noopener,noreferrer");
@@ -166,7 +144,6 @@ export function DashboardClient() {
               onToggle={toggleCatchUpMode}
               newItemsCount={totalNewCount}
             />
-            <RefreshButton onRefresh={handleRefresh} isLoading={isRefreshing} />
           </div>
         </div>
       </div>

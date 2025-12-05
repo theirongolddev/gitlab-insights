@@ -20,6 +20,8 @@ import { api, clearQueryCache } from "~/trpc/react";
 import { useToast } from "~/components/ui/Toast/ToastContext";
 import { ThemeToggle } from "~/components/theme/ThemeToggle";
 import { SyncIndicator } from "~/components/sync/SyncIndicator";
+import { RefreshButton } from "~/components/sync/RefreshButton";
+import { useManualRefresh } from "~/hooks/useManualRefresh";
 
 export function Header() {
   const { data: session } = useSession();
@@ -28,6 +30,10 @@ export function Header() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { setFocusSearch, setClearFocusAndModals, setOpenSaveModal } = useShortcuts();
   const { showToast } = useToast();
+
+  // Story 3.7: Manual refresh logic (extracted to custom hook)
+  const { isSyncing, triggerRefresh } = useManualRefresh();
+  const utils = api.useUtils();
 
   // Story 2.6: Search state from context - now uses keywords array
   const { keywords, addKeyword, removeKeyword, clearSearch, setKeywords, isSearchLoading } = useSearch();
@@ -72,7 +78,6 @@ export function Header() {
   }, [currentQuery?.id, currentQueryId]);
 
   // Story 2.10: Update mutation for updating existing query
-  const utils = api.useUtils();
   const updateMutation = api.queries.update.useMutation({
     onSuccess: () => {
       void utils.queries.getById.invalidate({ id: currentQueryId! });
@@ -104,7 +109,7 @@ export function Header() {
     }
   };
 
-  // Register keyboard shortcut handlers
+  // Register keyboard shortcut handlers (non-refresh shortcuts)
   useEffect(() => {
     // AC 2.4.1: `/` focuses search input
     setFocusSearch(() => {
@@ -117,14 +122,16 @@ export function Header() {
         document.activeElement.blur();
       }
     });
+  }, [setFocusSearch, setClearFocusAndModals]);
 
-    // Story 2.8.5 (AC 2.8.5.4): 's' key opens save modal (only if keywords exist)
+  // Story 2.8.5: Separate effect for save modal (depends on keywords)
+  useEffect(() => {
     setOpenSaveModal(() => {
       if (keywords.length > 0) {
         setIsModalOpen(true);
       }
     });
-  }, [setFocusSearch, setClearFocusAndModals, setOpenSaveModal, keywords.length]);
+  }, [setOpenSaveModal, keywords.length]);
 
   if (!session?.user) {
     // Return header skeleton to prevent layout shift during initial load
@@ -185,7 +192,10 @@ export function Header() {
 
         <div className="flex items-center gap-4">
           {/* Story 3.6: Sync status indicator */}
-          <SyncIndicator />
+          <SyncIndicator isSyncing={isSyncing} />
+
+          {/* Story 3.7: Manual refresh button */}
+          <RefreshButton onRefresh={triggerRefresh} isLoading={isSyncing} />
 
           {/* Story 1.5.6: Theme toggle button */}
           <ThemeToggle />

@@ -44,6 +44,7 @@ export function ShortcutHandler() {
     navigateToQuery,
     openSaveModal,
     toggleCatchUpMode,
+    triggerManualRefresh,
   } = useShortcuts();
 
   const handleKeyDown = useCallback(
@@ -93,6 +94,10 @@ export function ShortcutHandler() {
         case "c":
           toggleCatchUpMode();
           break;
+        // Story 3.7 (AC 3.7.1): 'r' key triggers manual refresh
+        case "r":
+          triggerManualRefresh();
+          break;
         // Story 2.8 (AC 2.8.4): Number keys 1-9 navigate to query by position
         case "1":
         case "2":
@@ -108,7 +113,7 @@ export function ShortcutHandler() {
           break;
       }
     },
-    [focusSearch, moveSelectionDown, moveSelectionUp, jumpHalfPageDown, jumpHalfPageUp, clearFocusAndModals, navigateToQuery, openSaveModal, toggleCatchUpMode],
+    [focusSearch, moveSelectionDown, moveSelectionUp, jumpHalfPageDown, jumpHalfPageUp, clearFocusAndModals, navigateToQuery, openSaveModal, toggleCatchUpMode, triggerManualRefresh],
   );
 
   useEffect(() => {

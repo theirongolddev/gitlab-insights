@@ -37,6 +37,7 @@ interface ShortcutContextValue {
   setNavigateToQuery: (handler: (index: number) => void) => void;
   setOpenSaveModal: (handler: () => void) => void;
   setToggleCatchUpMode: (handler: () => void) => void;
+  setTriggerManualRefresh: (handler: () => void) => void;
 
   // Scoped handler setters - optional scopeId for section-specific handlers
   setMoveSelectionDown: (handler: () => void, scopeId?: string) => void;
@@ -64,6 +65,7 @@ interface ShortcutContextValue {
   navigateToQuery: (index: number) => void;
   openSaveModal: () => void;
   toggleCatchUpMode: () => void;
+  triggerManualRefresh: () => void;
 }
 
 const ShortcutContext = createContext<ShortcutContextValue | null>(null);
@@ -83,6 +85,7 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
   const navigateToQueryRef = useRef<((index: number) => void) | null>(null);
   const openSaveModalRef = useRef<(() => void) | null>(null);
   const toggleCatchUpModeRef = useRef<(() => void) | null>(null);
+  const triggerManualRefreshRef = useRef<(() => void) | null>(null);
 
   // Scoped handler refs - Map of scopeId to handler (null key = global)
   const moveSelectionDownRef = useRef<ScopedHandlerMap>(new Map());
@@ -112,6 +115,10 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
 
   const setToggleCatchUpMode = useCallback((handler: () => void) => {
     toggleCatchUpModeRef.current = handler;
+  }, []);
+
+  const setTriggerManualRefresh = useCallback((handler: () => void) => {
+    triggerManualRefreshRef.current = handler;
   }, []);
 
   // Scoped setter functions - register handler with optional scopeId
@@ -280,6 +287,17 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
     }
   }, []);
 
+  // Story 3.7: Invoke manual refresh handler (AC 3.7.1)
+  const triggerManualRefresh = useCallback(() => {
+    if (triggerManualRefreshRef.current) {
+      triggerManualRefreshRef.current();
+    } else if (process.env.NODE_ENV === "development") {
+      console.debug(
+        "[Shortcuts] triggerManualRefresh() called - no handler registered (r key)",
+      );
+    }
+  }, []);
+
   const value: ShortcutContextValue = {
     // Global-only setters
     setFocusSearch,
@@ -287,6 +305,7 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
     setNavigateToQuery,
     setOpenSaveModal,
     setToggleCatchUpMode,
+    setTriggerManualRefresh,
     // Scoped setters
     setMoveSelectionDown,
     setMoveSelectionUp,
@@ -310,6 +329,7 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
     navigateToQuery,
     openSaveModal,
     toggleCatchUpMode,
+    triggerManualRefresh,
   };
 
   return (
