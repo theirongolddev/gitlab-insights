@@ -22,7 +22,7 @@ import { ThemeToggle } from "~/components/theme/ThemeToggle";
 import { SyncIndicator } from "~/components/sync/SyncIndicator";
 import { RefreshButton } from "~/components/sync/RefreshButton";
 import { useManualRefresh } from "~/hooks/useManualRefresh";
-import { useDetailPane } from "~/hooks/useDetailPane";
+import { useDetailPane } from "~/contexts/DetailPaneContext";
 import { PanelRightClose, PanelRightOpen } from "lucide-react";
 
 export function Header() {

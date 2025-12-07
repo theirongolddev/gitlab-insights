@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from 'react';
-import { useDetailPane } from '~/hooks/useDetailPane';
+import { useDetailPane } from '~/contexts/DetailPaneContext';
 import { useMediaQuery } from '~/hooks/useMediaQuery';
 import { cn } from '~/lib/utils';
 

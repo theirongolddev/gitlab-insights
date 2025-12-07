@@ -26,7 +26,7 @@ import {
 import { useSearch } from "~/components/search/SearchContext";
 import { useToast } from "~/components/ui/Toast/ToastContext";
 import { SplitView } from "~/components/layout/SplitView";
-import { useDetailPane } from "~/hooks/useDetailPane";
+import { useDetailPane } from "~/contexts/DetailPaneContext";
 import { useMediaQuery } from "~/hooks/useMediaQuery";
 
 // Story 4.1: Storage key for detail pane state (must match useDetailPane.ts)
