@@ -113,6 +113,7 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
 
   // Story 4.1: Deep linking support - open detail pane if ?detail param present
   useEffect(() => {
+    if (!searchParams) return;
     const detailParam = searchParams.get('detail');
     if (detailParam) {
       setSelectedEventId(detailParam);

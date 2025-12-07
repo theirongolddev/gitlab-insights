@@ -1,9 +1,8 @@
 "use client";
 
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useDetailPane } from '~/hooks/useDetailPane';
 import { useMediaQuery } from '~/hooks/useMediaQuery';
-import { cn } from '~/lib/utils';
 
 interface SplitViewProps {
   listContent: ReactNode;
@@ -35,13 +34,14 @@ export function SplitView({ listContent, detailContent, selectedEventId }: Split
   const { isOpen } = useDetailPane();
   const isMobile = useMediaQuery('(max-width: 767px)');
 
+  const listClassName = `transition-all duration-200 ${
+    isOpen && !isMobile ? "w-3/5" : "w-full"
+  }`;
+
   return (
     <div className="flex h-full">
       {/* List/Table Section */}
-      <div className={cn(
-        "transition-all duration-200",
-        isOpen && !isMobile ? "w-3/5" : "w-full"
-      )}>
+      <div className={listClassName}>
         {listContent}
       </div>
 
