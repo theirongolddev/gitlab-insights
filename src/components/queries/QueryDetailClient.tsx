@@ -45,7 +45,12 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
   // Story 4.1: Split pane state
   const { isOpen: isDetailPaneOpen, setIsOpen: setDetailPaneOpen } = useDetailPane();
   const isMobile = useMediaQuery('(max-width: 767px)');
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(() => {
+    // Initialize from URL ?detail param if present
+    if (typeof window === 'undefined') return null;
+    const params = new URLSearchParams(window.location.search);
+    return params.get('detail');
+  });
 
   // State for inline editing
   const [isEditingName, setIsEditingName] = useState(false);
@@ -115,11 +120,10 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
   useEffect(() => {
     if (!searchParams) return;
     const detailParam = searchParams.get('detail');
-    if (detailParam) {
-      setSelectedEventId(detailParam);
+    if (detailParam && detailParam !== selectedEventId) {
       setDetailPaneOpen(true);
     }
-  }, [searchParams, setDetailPaneOpen]);
+  }, [searchParams, selectedEventId, setDetailPaneOpen]);
 
   // Story 4.1: Handle row click - open in split pane on desktop/tablet, navigate to full page on mobile
   const handleRowClick = (event: DashboardEvent) => {

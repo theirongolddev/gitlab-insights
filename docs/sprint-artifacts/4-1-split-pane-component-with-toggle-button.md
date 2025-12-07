@@ -512,3 +512,243 @@ To be filled during implementation
 - Story 3.7 - Manual Refresh Button (useManualRefresh pattern)
 - Story 1.5.6 - Dark Mode Toggle (theme integration)
 - Story 2.2 - React Aria Table (keyboard navigation)
+
+---
+
+## Code Review - Iteration 1
+
+**Date:** 2025-12-07 21:15
+**Reviewer:** code-reviewer (AI)
+**Decision:** NEEDS CHANGES
+
+### Scores
+
+| Category | Score | Notes |
+|----------|-------|-------|
+| Security | A | No security issues found |
+| Correctness | C | ESLint errors need fixing, AC4 partially implemented |
+| Performance | A | Efficient implementation with proper hooks |
+| Maintainability | A | Clean, well-structured code with good patterns |
+
+### Acceptance Criteria Status
+
+- [x] **AC1:** Desktop Default Open - VERIFIED (useDetailPane defaultOpenForScreenSize returns true for ≥1024px)
+- [x] **AC2:** Toggle Button Visibility - VERIFIED (Header.tsx lines 206-219, hidden md:flex className)
+- [x] **AC3:** Close Split View - VERIFIED (SplitView.tsx toggles width between w-3/5 and w-full)
+- [ ] **AC4:** Open Split View with Last Event - PARTIAL (deep linking works, but no "last event" tracking implemented)
+- [x] **AC5:** Persistence - VERIFIED (useDetailPane persists to localStorage on line 47)
+- [x] **AC6:** Tablet Default Closed - VERIFIED (defaultOpenForScreenSize only returns true for ≥1024px, tablet <1024px defaults to false)
+- [x] **AC7:** Mobile Navigation - VERIFIED (QueryDetailClient.tsx lines 126-134, routes to /events/:id on mobile)
+
+### Issues Found
+
+#### CRITICAL (Blocking)
+
+| ID | File:Line | Issue | Required Action |
+|----|-----------|-------|-----------------|
+| C1 | `src/hooks/useMediaQuery.ts:20` | ESLint error: setState called synchronously in useEffect | Move setMatches to useState initializer or use layoutEffect |
+| C2 | `src/components/queries/QueryDetailClient.tsx:119-120` | ESLint error: setState called synchronously in useEffect | Move state initialization outside effect or use conditional rendering |
+
+#### MAJOR (Should Fix)
+
+| ID | File:Line | Issue | Required Action |
+|----|-----------|-------|-----------------|
+| M1 | `src/components/queries/QueryDetailClient.tsx:392-409` | Placeholder detail content lacks event data | Full event detail rendering deferred to future story, acceptable for Story 4.1 scope |
+| M2 | `src/components/events/EventDetailClient.tsx:20-60` | Placeholder mobile detail view | Full event detail rendering deferred to future story, acceptable for Story 4.1 scope |
+| M3 | All files | AC4 "last selected event" not implemented | Need to track and restore last selected event when reopening pane |
+
+#### MINOR (Suggestions)
+
+| ID | File:Line | Suggestion |
+|----|-----------|------------|
+| m1 | `src/components/layout/SplitView.tsx:37-39` | Template literal for className could use cn() utility for consistency |
+| m2 | `src/hooks/useDetailPane.ts:35-38` | Consider using ?? operator instead of !== null check for cleaner code |
+
+### What Was Done Well
+
+- Excellent separation of concerns with custom hooks (useDetailPane, useMediaQuery)
+- Proper SSR handling with typeof window checks
+- Clean responsive design with appropriate breakpoints
+- Good use of HeroUI Button component following architecture standards
+- No hardcoded hex values - all design tokens used correctly
+- Proper accessibility with aria-labels on toggle button
+- Deep linking support via URL params working correctly
+- TypeScript types properly defined for all props
+
+### Required Next Steps
+
+1. [ ] Fix C1: Refactor useMediaQuery to avoid synchronous setState in useEffect
+2. [ ] Fix C2: Refactor QueryDetailClient deep linking logic to avoid synchronous setState
+3. [ ] Fix M3: Implement "last selected event" tracking for AC4 completion
+4. [ ] Run npm run lint to verify fixes
+5. [ ] Re-run code review after fixes
+
+### Issue Resolution Tracking
+
+| Issue ID | Status | Resolved In | Notes |
+|----------|--------|-------------|-------|
+| C1 | OPEN | - | ESLint blocking error |
+| C2 | OPEN | - | ESLint blocking error |
+| M1 | DEFERRED | Future story | Acceptable placeholder for Story 4.1 |
+| M2 | DEFERRED | Future story | Acceptable placeholder for Story 4.1 |
+| M3 | OPEN | - | AC4 incomplete |
+
+---
+
+### Detailed Analysis
+
+#### Critical Issue C1: useMediaQuery setState in useEffect
+
+The current implementation calls setMatches synchronously within useEffect, which triggers React's new lint rule in React 19.
+
+**Current Code (src/hooks/useMediaQuery.ts:16-25):**
+```typescript
+useEffect(() => {
+  if (typeof window === 'undefined') return;
+
+  const media = window.matchMedia(query);
+  setMatches(media.matches);  // ❌ Synchronous setState in effect
+
+  const listener = (e: MediaQueryListEvent) => setMatches(e.matches);
+  media.addEventListener('change', listener);
+  return () => media.removeEventListener('change', listener);
+}, [query]);
+```
+
+**Recommended Fix:**
+```typescript
+export function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia(query).matches;
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const media = window.matchMedia(query);
+
+    const listener = (e: MediaQueryListEvent) => setMatches(e.matches);
+    media.addEventListener('change', listener);
+
+    // Sync on mount in case state is stale
+    if (media.matches !== matches) {
+      setMatches(media.matches);
+    }
+
+    return () => media.removeEventListener('change', listener);
+  }, [query]);
+
+  return matches;
+}
+```
+
+#### Critical Issue C2: QueryDetailClient setState in useEffect
+
+Deep linking logic calls setState synchronously within useEffect.
+
+**Current Code (src/components/queries/QueryDetailClient.tsx:115-122):**
+```typescript
+useEffect(() => {
+  if (!searchParams) return;
+  const detailParam = searchParams.get('detail');
+  if (detailParam) {
+    setSelectedEventId(detailParam);  // ❌ Synchronous setState
+    setDetailPaneOpen(true);           // ❌ Synchronous setState
+  }
+}, [searchParams, setDetailPaneOpen]);
+```
+
+**Recommended Fix:**
+Extract initialization logic outside the effect or use a ref to track if already initialized:
+
+```typescript
+const initializedRef = useRef(false);
+
+useEffect(() => {
+  if (!searchParams || initializedRef.current) return;
+  const detailParam = searchParams.get('detail');
+  if (detailParam) {
+    setSelectedEventId(detailParam);
+    setDetailPaneOpen(true);
+    initializedRef.current = true;
+  }
+}, [searchParams, setDetailPaneOpen]);
+```
+
+Or better yet, move to useState initializer:
+
+```typescript
+const [selectedEventId, setSelectedEventId] = useState<string | null>(() => {
+  if (typeof window === 'undefined') return null;
+  const params = new URLSearchParams(window.location.search);
+  return params.get('detail');
+});
+
+// Then in useEffect, just update the pane state:
+useEffect(() => {
+  if (selectedEventId) {
+    setDetailPaneOpen(true);
+  }
+}, []); // Only run once on mount
+```
+
+#### Major Issue M3: AC4 Incomplete - "Last Selected Event" Not Tracked
+
+AC4 states: "Given split view is closed, when I click toggle, then detail pane opens and **last selected event loads**"
+
+Current implementation opens the pane but doesn't track or restore the last selected event. The selectedEventId state is local and resets when the pane closes.
+
+**Recommended Fix:**
+Persist selectedEventId to localStorage alongside the isOpen state:
+
+```typescript
+// In useDetailPane or QueryDetailClient
+const LAST_EVENT_KEY = 'gitlab-insights-last-selected-event';
+
+// Save on selection
+useEffect(() => {
+  if (selectedEventId) {
+    localStorage.setItem(LAST_EVENT_KEY, selectedEventId);
+  }
+}, [selectedEventId]);
+
+// Restore on pane open
+const handleToggle = () => {
+  if (!isOpen) {
+    const lastEvent = localStorage.getItem(LAST_EVENT_KEY);
+    if (lastEvent) {
+      setSelectedEventId(lastEvent);
+    }
+  }
+  setIsOpen(!isOpen);
+};
+```
+
+---
+
+### Architecture Compliance
+
+VERIFIED:
+- HeroUI Button component used (Header.tsx line 206)
+- Design tokens used throughout (no hardcoded hex values)
+- Responsive patterns follow Tailwind conventions
+- Custom hooks follow established patterns from Story 3.7
+- Server/Client component split maintained
+- TypeScript types properly defined
+
+### Build & Test Results
+
+BUILD: PASSED
+- Project builds successfully with no TypeScript errors
+- All routes generate correctly
+
+LINT: FAILED
+- 2 ESLint errors blocking (C1, C2)
+- Must be fixed before merge
+
+MANUAL TESTING: NOT PERFORMED
+- Requires fixes to C1, C2 before testing
+- Will need verification of AC4 after implementing M3
+
+---
