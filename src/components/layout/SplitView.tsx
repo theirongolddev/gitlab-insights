@@ -34,8 +34,14 @@ export function SplitView({ listContent, detailContent, selectedEventId }: Split
   const { isOpen } = useDetailPane();
   const isMobile = useMediaQuery('(max-width: 767px)');
 
+  const shouldShowPane = isOpen && !isMobile && selectedEventId;
+
   const listClassName = `transition-all duration-200 overflow-y-auto ${
-    isOpen && !isMobile ? "w-3/5" : "w-full"
+    shouldShowPane ? "w-3/5" : "w-full"
+  }`;
+
+  const detailClassName = `w-2/5 border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-y-auto flex-shrink-0 transition-transform duration-200 ease-out ${
+    shouldShowPane ? "translate-x-0" : "translate-x-full"
   }`;
 
   return (
@@ -45,9 +51,9 @@ export function SplitView({ listContent, detailContent, selectedEventId }: Split
         {listContent}
       </div>
 
-      {/* Detail Pane - Fixed to Right, Independently Scrollable */}
-      {isOpen && !isMobile && selectedEventId && (
-        <div className="w-2/5 border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-y-auto flex-shrink-0">
+      {/* Detail Pane - Slides in from right, Independently Scrollable */}
+      {!isMobile && (
+        <div className={detailClassName}>
           {detailContent}
         </div>
       )}
