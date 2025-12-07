@@ -172,8 +172,8 @@ export function Header() {
         keywords={keywords}
       />
 
-      <header className="border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-bg-dark">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+      <header className="border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-bg-dark" style={{ height: 'var(--header-height)' }}>
+        <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-4">
           <Link href="/dashboard" className="flex items-center gap-3">
             <h1 className="text-xl font-bold text-gray-900 dark:text-gray-50">
               GitLab <span className="text-olive dark:text-olive-light">Insights</span>
