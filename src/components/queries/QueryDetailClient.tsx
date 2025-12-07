@@ -28,6 +28,7 @@ import { useToast } from "~/components/ui/Toast/ToastContext";
 import { SplitView } from "~/components/layout/SplitView";
 import { useDetailPane } from "~/contexts/DetailPaneContext";
 import { useMediaQuery } from "~/hooks/useMediaQuery";
+import { EventDetail } from "~/components/events/EventDetail";
 
 // Story 4.1: Storage key for detail pane state (must match useDetailPane.ts)
 const STORAGE_KEY = 'gitlab-insights-split-view-open';
@@ -470,32 +471,7 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
               onRowClick={handleRowClick}
             />
           }
-          detailContent={
-            selectedEventId ? (
-              <div className="p-6">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50 mb-4">
-                  Event Details
-                </h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Event ID: {selectedEventId}
-                </p>
-                <div className="mt-4">
-                  <a
-                    href={searchData.events.find(e => e.id === selectedEventId)?.gitlabUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-olive dark:text-olive-light hover:underline"
-                  >
-                    View in GitLab →
-                  </a>
-                </div>
-              </div>
-            ) : (
-              <div className="p-6 text-center text-gray-500 dark:text-gray-400">
-                Select an event to view details
-              </div>
-            )
-          }
+          detailContent={<EventDetail eventId={selectedEventId} />}
           selectedEventId={selectedEventId}
         />
         ) : (

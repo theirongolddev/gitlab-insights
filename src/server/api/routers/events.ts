@@ -273,6 +273,33 @@ export const eventsRouter = createTRPCRouter({
   }),
 
   /**
+   * Get event by ID
+   *
+   * GET /api/trpc/events.getById
+   *
+   * Returns a single event with full details for the detail pane (Story 4.2)
+   */
+  getById: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const event = await ctx.db.event.findUnique({
+        where: {
+          id: input.id,
+          userId: ctx.session.user.id, // Ensure user owns this event
+        },
+      });
+
+      if (!event) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Event not found",
+        });
+      }
+
+      return event;
+    }),
+
+  /**
    * Search events using PostgreSQL Full-Text Search
    *
    * GET /api/trpc/events.search

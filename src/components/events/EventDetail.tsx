@@ -1,0 +1,169 @@
+"use client";
+
+import { Button } from "@heroui/react";
+import { ExternalLink } from "lucide-react";
+import { api } from "~/trpc/react";
+
+interface EventDetailProps {
+  eventId: string | null;
+}
+
+/**
+ * Format relative time (e.g., "5m ago", "2h ago", "3d ago")
+ */
+const formatRelativeTime = (date: Date) => {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return `${diffDays}d ago`;
+};
+
+/**
+ * Story 4.2: Event Detail Component
+ *
+ * Displays full event information in the detail pane:
+ * - Event title, body, author, timestamps
+ * - Project metadata and labels
+ * - "Open in GitLab" button
+ * - Proper empty states and loading states
+ *
+ * AC1: Display full event data (title, body, author, timestamp, project, labels, GitLab link)
+ * AC2: GitLab link button opens event URL in new tab
+ * AC3: Empty state when no event selected
+ * AC4: Empty body placeholder when event has no body text
+ */
+export function EventDetail({ eventId }: EventDetailProps) {
+  const { data: event, isLoading } = api.events.getById.useQuery(
+    { id: eventId! },
+    { enabled: !!eventId }
+  );
+
+  // AC3: Empty state - no event selected
+  if (!eventId) {
+    return (
+      <div className="flex h-full items-center justify-center text-gray-400 dark:text-gray-600">
+        <p>Select an event to view details</p>
+      </div>
+    );
+  }
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-primary-500 dark:border-gray-700 dark:border-t-primary-500" />
+      </div>
+    );
+  }
+
+  // Not found state
+  if (!event) {
+    return (
+      <div className="flex h-full items-center justify-center text-gray-400 dark:text-gray-600">
+        <p>Event not found</p>
+      </div>
+    );
+  }
+
+  // AC1: Full event data display
+  return (
+    <div className="flex h-full flex-col">
+      {/* Sticky Header */}
+      <div className="border-b border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-50">
+          {event.title}
+        </h2>
+        <div className="mt-2 flex gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <span>{event.author}</span>
+          <span>•</span>
+          <span>{formatRelativeTime(event.createdAt)}</span>
+        </div>
+      </div>
+
+      {/* Scrollable Content */}
+      <div className="flex-1 space-y-6 overflow-y-auto p-4">
+        {/* Title Section */}
+        <section id="title">
+          <h3 className="mb-2 font-medium text-gray-700 dark:text-gray-300">
+            Title
+          </h3>
+          <p className="text-gray-900 dark:text-gray-50">
+            {event.title}
+          </p>
+        </section>
+
+        {/* Body Section */}
+        <section id="body">
+          <h3 className="mb-2 font-medium text-gray-700 dark:text-gray-300">
+            Description
+          </h3>
+          <div className="prose prose-sm max-w-none whitespace-pre-wrap text-gray-900 dark:prose-invert dark:text-gray-50">
+            {/* AC4: Empty body placeholder */}
+            {event.body || (
+              <em className="text-gray-400 dark:text-gray-600">
+                (No description)
+              </em>
+            )}
+          </div>
+        </section>
+
+        {/* Metadata Section */}
+        <section id="metadata">
+          <h3 className="mb-2 font-medium text-gray-700 dark:text-gray-300">
+            Details
+          </h3>
+          <dl className="grid grid-cols-2 gap-2 text-sm">
+            <dt className="text-gray-600 dark:text-gray-400">Project:</dt>
+            <dd className="font-medium text-gray-900 dark:text-gray-50">
+              {event.project}
+            </dd>
+
+            <dt className="text-gray-600 dark:text-gray-400">Type:</dt>
+            <dd className="font-medium text-gray-900 dark:text-gray-50">
+              {event.type}
+            </dd>
+
+            <dt className="text-gray-600 dark:text-gray-400">Created:</dt>
+            <dd className="font-medium text-gray-900 dark:text-gray-50">
+              {new Date(event.createdAt).toLocaleString()}
+            </dd>
+
+            {event.labels && event.labels.length > 0 && (
+              <>
+                <dt className="text-gray-600 dark:text-gray-400">Labels:</dt>
+                <dd className="flex flex-wrap gap-1">
+                  {event.labels.map((label) => (
+                    <span
+                      key={label}
+                      className="rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                    >
+                      {label}
+                    </span>
+                  ))}
+                </dd>
+              </>
+            )}
+          </dl>
+        </section>
+      </div>
+
+      {/* Footer - AC2: GitLab link button */}
+      <div className="border-t border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+        <Button
+          color="primary"
+          className="w-full"
+          onPress={() => window.open(event.gitlabUrl, '_blank')}
+          endContent={<ExternalLink className="h-4 w-4" />}
+        >
+          Open in GitLab
+        </Button>
+      </div>
+    </div>
+  );
+}

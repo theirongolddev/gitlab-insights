@@ -74,21 +74,21 @@ development_status:
   1-5-6-dark-mode-toggle: done
   epic-1-5-retrospective: optional
 
-  # Epic 3: Catch-Up Mode & Background Sync - IN PROGRESS
-  epic-3: contexted
+  # Epic 3: Catch-Up Mode & Background Sync - COMPLETE
+  epic-3: done
   3-1-catch-up-mode-backend-new-since-last-visit-logic: done
   3-2-catch-up-mode-view-with-toggle: done  # Re-review PASSED: All findings resolved 2025-12-04
   3-3-mark-query-as-reviewed: done  # Re-review PASSED 2025-12-05: All issues resolved
   3-4-sidebar-new-item-badges: done  # Re-review PASSED 2025-12-05: All ACs verified, all issues resolved
-  3-5-inngest-background-polling-job: review
-  3-6-last-sync-indicator: review
-  3-7-manual-refresh-button-with-r-shortcut: review  # Re-review ready 2025-12-05: All 9 review issues resolved, added useManualRefresh hook
+  3-5-inngest-background-polling-job: done  # Completed 2025-12-07: Review passed
+  3-6-last-sync-indicator: done  # Completed 2025-12-07: Review passed
+  3-7-manual-refresh-button-with-r-shortcut: done  # Completed 2025-12-07: All 9 review issues resolved, added useManualRefresh hook
   epic-3-retrospective: optional
 
   # Epic 4: Split View & Detail Navigation
   epic-4: in-progress
-  4-1-split-pane-component-with-toggle-button: ready-for-dev
-  4-2-detail-pane-content-rendering: backlog
+  4-1-split-pane-component-with-toggle-button: done  # Completed 2025-12-07: Code review approved with minor improvements
+  4-2-detail-pane-content-rendering: review  # Code review 2025-12-07: 7 issues found (3 High, 2 Medium, 2 Low) - action items created
   4-3-auto-update-detail-on-row-click: backlog
   4-4-keyword-highlighting-in-detail-view: backlog
   4-5-section-navigation-with-clickable-headers: backlog
