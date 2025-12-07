@@ -29,6 +29,9 @@ import { SplitView } from "~/components/layout/SplitView";
 import { useDetailPane } from "~/hooks/useDetailPane";
 import { useMediaQuery } from "~/hooks/useMediaQuery";
 
+// Story 4.1: Storage key for detail pane state (must match useDetailPane.ts)
+const STORAGE_KEY = 'gitlab-insights-split-view-open';
+
 interface QueryDetailClientProps {
   queryId: string;
 }
@@ -46,10 +49,28 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
   const { isOpen: isDetailPaneOpen, setIsOpen: setDetailPaneOpen } = useDetailPane();
   const isMobile = useMediaQuery('(max-width: 767px)');
   const [selectedEventId, setSelectedEventId] = useState<string | null>(() => {
-    // Initialize from URL ?detail param if present
+    // Initialize from URL ?detail param if present, otherwise from localStorage (AC4)
     if (typeof window === 'undefined') return null;
     const params = new URLSearchParams(window.location.search);
-    return params.get('detail');
+    const detailParam = params.get('detail');
+    if (detailParam) return detailParam;
+
+    // AC4: If no URL param and pane is open, try to restore last selected event
+    // Check localStorage for last event (will be used if pane opens on mount)
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const isOpen = JSON.parse(stored);
+        if (isOpen) {
+          const lastEventId = localStorage.getItem(`gitlab-insights-last-event-${queryId}`);
+          return lastEventId;
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to restore last selected event on mount:', error);
+    }
+
+    return null;
   });
 
   // State for inline editing
@@ -117,13 +138,35 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
   });
 
   // Story 4.1: Deep linking support - open detail pane if ?detail param present
+  // Use ref to avoid synchronous setState on initial mount (selectedEventId already initialized from URL)
+  const initializedFromUrlRef = useRef(false);
+  const hasUrlSyncedRef = useRef(false);
+
   useEffect(() => {
     if (!searchParams) return;
+
+    // Skip first run since selectedEventId is already initialized from URL in useState
+    if (!initializedFromUrlRef.current) {
+      initializedFromUrlRef.current = true;
+      // Open pane if we have a detail param on mount
+      const detailParam = searchParams.get('detail');
+      if (detailParam) {
+        setDetailPaneOpen(true);
+        hasUrlSyncedRef.current = true;
+      } else if (isDetailPaneOpen && selectedEventId && !hasUrlSyncedRef.current) {
+        // AC4: Selected event was restored from localStorage - sync URL once
+        router.push(`/queries/${queryId}?detail=${selectedEventId}`, { scroll: false });
+        hasUrlSyncedRef.current = true;
+      }
+      return;
+    }
+
+    // On subsequent runs (e.g., browser back/forward), update state
     const detailParam = searchParams.get('detail');
     if (detailParam && detailParam !== selectedEventId) {
       setDetailPaneOpen(true);
     }
-  }, [searchParams, selectedEventId, setDetailPaneOpen]);
+  }, [searchParams, selectedEventId, setDetailPaneOpen, isDetailPaneOpen, queryId, router]);
 
   // Story 4.1: Handle row click - open in split pane on desktop/tablet, navigate to full page on mobile
   const handleRowClick = (event: DashboardEvent) => {
@@ -137,32 +180,17 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
 
       // AC4: Store last selected event in localStorage for this query
       if (typeof window !== 'undefined') {
-        localStorage.setItem(`gitlab-insights-last-event-${queryId}`, event.id);
+        try {
+          localStorage.setItem(`gitlab-insights-last-event-${queryId}`, event.id);
+        } catch (error) {
+          // localStorage unavailable - ignore (AC4 degrades gracefully)
+          console.warn('Failed to save last selected event:', error);
+        }
       }
 
       router.push(`/queries/${queryId}?detail=${event.id}`, { scroll: false });
     }
   };
-
-  // Story 4.1 AC4: Handle toggle - when reopening, load last selected event
-  const handleTogglePaneFromHeader = () => {
-    if (!isDetailPaneOpen && !selectedEventId && typeof window !== 'undefined') {
-      // Opening pane without selection - try to load last selected event
-      const lastEventId = localStorage.getItem(`gitlab-insights-last-event-${queryId}`);
-      if (lastEventId) {
-        setSelectedEventId(lastEventId);
-        router.push(`/queries/${queryId}?detail=${lastEventId}`, { scroll: false });
-      }
-    }
-  };
-
-  // Story 4.1: Listen to detail pane state changes from Header toggle
-  useEffect(() => {
-    if (isDetailPaneOpen && !selectedEventId) {
-      handleTogglePaneFromHeader();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDetailPaneOpen]);
 
   // Auto-focus input when entering edit mode
   useEffect(() => {

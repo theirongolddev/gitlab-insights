@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { useDetailPane } from '~/hooks/useDetailPane';
 import { useMediaQuery } from '~/hooks/useMediaQuery';
+import { cn } from '~/lib/utils';
 
 interface SplitViewProps {
   listContent: ReactNode;
@@ -36,24 +37,26 @@ export function SplitView({ listContent, detailContent, selectedEventId }: Split
 
   const shouldShowPane = isOpen && !isMobile && selectedEventId;
 
-  const listClassName = `transition-all duration-200 overflow-y-auto ${
-    shouldShowPane ? "w-3/5" : "w-full"
-  }`;
-
-  const detailClassName = `border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-y-auto flex-shrink-0 transition-all duration-200 ease-out ${
-    shouldShowPane ? "w-2/5 translate-x-0" : "w-0 translate-x-full"
-  }`;
-
   return (
     <div className="flex h-full overflow-hidden">
       {/* List/Table Section - Independently Scrollable */}
-      <div className={listClassName}>
+      <div
+        className={cn(
+          "transition-all duration-200 overflow-y-auto",
+          shouldShowPane ? "w-3/5" : "w-full"
+        )}
+      >
         {listContent}
       </div>
 
       {/* Detail Pane - Slides in from right, Independently Scrollable */}
       {!isMobile && (
-        <div className={detailClassName}>
+        <div
+          className={cn(
+            "border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-y-auto flex-shrink-0 transition-all duration-200 ease-out",
+            shouldShowPane ? "w-2/5 translate-x-0" : "w-0 translate-x-full"
+          )}
+        >
           {detailContent}
         </div>
       )}

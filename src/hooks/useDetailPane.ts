@@ -32,9 +32,14 @@ export function useDetailPane() {
     if (typeof window === 'undefined') return false;
 
     // Check localStorage first for user preference
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored !== null) {
-      return JSON.parse(stored);
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored !== null) {
+        return JSON.parse(stored);
+      }
+    } catch (error) {
+      // localStorage unavailable (private browsing, etc.) - ignore and use default
+      console.warn('localStorage not available:', error);
     }
 
     // Fall back to screen size default
@@ -44,26 +49,52 @@ export function useDetailPane() {
   // Persist to localStorage whenever state changes
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(isOpen));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(isOpen));
+    } catch (error) {
+      // localStorage unavailable - ignore (functionality degrades gracefully)
+      console.warn('Failed to save detail pane state to localStorage:', error);
+    }
+  }, [isOpen]);
+
+  // Dispatch custom event AFTER state changes (not during setState)
+  // This prevents "Cannot update component while rendering" errors
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Dispatch event to notify other component instances
+    window.dispatchEvent(new CustomEvent('detailPaneChange', { detail: isOpen }));
   }, [isOpen]);
 
   // Sync state across components when localStorage changes (e.g., from Header toggle)
+  // NOTE: Custom events are necessary because each useDetailPane() call creates its own useState.
+  // Without sync mechanism, toggling in Header wouldn't update QueryDetailClient's state.
+  // localStorage 'storage' events only fire in OTHER tabs/windows, not same-window changes.
+  // Alternative: React Context (future refactor consideration).
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === STORAGE_KEY && e.newValue !== null) {
-        setIsOpen(JSON.parse(e.newValue));
+        try {
+          setIsOpen(JSON.parse(e.newValue));
+        } catch (error) {
+          console.warn('Failed to parse storage event value:', error);
+        }
       }
     };
 
-    // Listen for storage events from other components
+    // Listen for storage events from other tabs/windows
     window.addEventListener('storage', handleStorageChange);
 
-    // Also listen for custom event for same-page updates
+    // Listen for custom event for same-page component sync
     const handleCustomEvent = (e: Event) => {
       const customEvent = e as CustomEvent<boolean>;
-      setIsOpen(customEvent.detail);
+      // Prevent infinite loop by only updating if value actually changed
+      setIsOpen(prev => {
+        if (prev === customEvent.detail) return prev;
+        return customEvent.detail;
+      });
     };
 
     window.addEventListener('detailPaneChange', handleCustomEvent);
@@ -74,19 +105,5 @@ export function useDetailPane() {
     };
   }, []);
 
-  // Wrapper to also dispatch custom event for same-page sync
-  const setIsOpenWithEvent = (value: boolean | ((prev: boolean) => boolean)) => {
-    setIsOpen((prev) => {
-      const newValue = typeof value === 'function' ? value(prev) : value;
-
-      // Dispatch custom event for same-page components
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('detailPaneChange', { detail: newValue }));
-      }
-
-      return newValue;
-    });
-  };
-
-  return { isOpen, setIsOpen: setIsOpenWithEvent };
+  return { isOpen, setIsOpen };
 }
