@@ -254,7 +254,7 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
   }
 
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - 64px)' }}>
+    <div className="flex flex-col" style={{ height: 'calc(100vh - var(--header-height))' }}>
       {/* Delete Confirmation Dialog - HeroUI Modal */}
       <Modal
         isOpen={isDeleteDialogOpen}

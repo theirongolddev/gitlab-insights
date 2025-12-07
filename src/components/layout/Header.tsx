@@ -141,8 +141,8 @@ export function Header() {
   if (!session?.user) {
     // Return header skeleton to prevent layout shift during initial load
     return (
-      <header className="border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-bg-dark">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+      <header className="border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-bg-dark" style={{ height: 'var(--header-height)' }}>
+        <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-4">
           <div className="h-7 w-40 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
           <div className="flex-1 mx-4">
             <div className="h-10 max-w-2xl mx-auto bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />

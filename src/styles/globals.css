@@ -83,6 +83,9 @@
   --color-border-default-dark: var(--color-gray-600); /* Visible on dark backgrounds */
   --color-border-subtle-dark: var(--color-gray-700);  /* Subtle dark dividers */
 
+  /* Layout Dimensions */
+  --header-height: 64px;
+
   /* Animation Durations */
   --transition-slide: 200ms ease-out;
 
