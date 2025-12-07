@@ -209,7 +209,7 @@ export function Header() {
             size="sm"
             onPress={() => setDetailPaneOpen(!isDetailPaneOpen)}
             aria-label={isDetailPaneOpen ? "Close detail pane" : "Open detail pane"}
-            className="hidden md:flex"
+            className="hidden md:flex text-gray-600 dark:text-gray-400"
           >
             {isDetailPaneOpen ? (
               <PanelRightClose className="h-5 w-5" />

@@ -34,20 +34,20 @@ export function SplitView({ listContent, detailContent, selectedEventId }: Split
   const { isOpen } = useDetailPane();
   const isMobile = useMediaQuery('(max-width: 767px)');
 
-  const listClassName = `transition-all duration-200 ${
+  const listClassName = `transition-all duration-200 overflow-y-auto ${
     isOpen && !isMobile ? "w-3/5" : "w-full"
   }`;
 
   return (
-    <div className="flex h-full">
-      {/* List/Table Section */}
+    <div className="flex h-full overflow-hidden">
+      {/* List/Table Section - Independently Scrollable */}
       <div className={listClassName}>
         {listContent}
       </div>
 
-      {/* Detail Pane */}
+      {/* Detail Pane - Fixed to Right, Independently Scrollable */}
       {isOpen && !isMobile && selectedEventId && (
-        <div className="w-2/5 border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-y-auto">
+        <div className="w-2/5 border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-y-auto flex-shrink-0">
           {detailContent}
         </div>
       )}

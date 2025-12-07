@@ -47,5 +47,46 @@ export function useDetailPane() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(isOpen));
   }, [isOpen]);
 
-  return { isOpen, setIsOpen };
+  // Sync state across components when localStorage changes (e.g., from Header toggle)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY && e.newValue !== null) {
+        setIsOpen(JSON.parse(e.newValue));
+      }
+    };
+
+    // Listen for storage events from other components
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also listen for custom event for same-page updates
+    const handleCustomEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<boolean>;
+      setIsOpen(customEvent.detail);
+    };
+
+    window.addEventListener('detailPaneChange', handleCustomEvent);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('detailPaneChange', handleCustomEvent);
+    };
+  }, []);
+
+  // Wrapper to also dispatch custom event for same-page sync
+  const setIsOpenWithEvent = (value: boolean | ((prev: boolean) => boolean)) => {
+    setIsOpen((prev) => {
+      const newValue = typeof value === 'function' ? value(prev) : value;
+
+      // Dispatch custom event for same-page components
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('detailPaneChange', { detail: newValue }));
+      }
+
+      return newValue;
+    });
+  };
+
+  return { isOpen, setIsOpen: setIsOpenWithEvent };
 }

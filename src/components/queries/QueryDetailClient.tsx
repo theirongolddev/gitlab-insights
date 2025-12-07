@@ -254,7 +254,7 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
   }
 
   return (
-    <div className="flex-1 p-6">
+    <div className="flex flex-col h-screen">
       {/* Delete Confirmation Dialog - HeroUI Modal */}
       <Modal
         isOpen={isDeleteDialogOpen}
@@ -295,7 +295,7 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
       </Modal>
 
       {/* Query header */}
-      <div className="mb-6 pb-4 border-b border-gray-200 dark:border-gray-700/50">
+      <div className="flex-shrink-0 p-6 pb-4 border-b border-gray-200 dark:border-gray-700/50">
         <div className="flex items-center gap-1">
           {isEditingName ? (
             <>
@@ -400,17 +400,18 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
       </div>
 
       {/* Story 4.1: Search results with SplitView */}
-      {isSearchLoading ? (
-        <div className="space-y-2">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div
-              key={i}
-              className="h-[52px] animate-pulse rounded bg-gray-100 dark:bg-gray-800"
-            />
-          ))}
-        </div>
-      ) : searchData?.events && searchData.events.length > 0 ? (
-        <SplitView
+      <div className="flex-1 overflow-hidden">
+        {isSearchLoading ? (
+          <div className="space-y-2 p-6">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div
+                key={i}
+                className="h-[52px] animate-pulse rounded bg-gray-100 dark:bg-gray-800"
+              />
+            ))}
+          </div>
+        ) : searchData?.events && searchData.events.length > 0 ? (
+          <SplitView
           listContent={
             <EventTable
               events={searchData.events as DashboardEvent[]}
@@ -445,14 +446,15 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
           }
           selectedEventId={selectedEventId}
         />
-      ) : (
-        <div className="text-center py-12">
-          <p className="text-lg text-gray-500 dark:text-gray-400">No matching events</p>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">
-            Try syncing your GitLab projects or adjusting your search terms
-          </p>
-        </div>
-      )}
+        ) : (
+          <div className="text-center py-12 p-6">
+            <p className="text-lg text-gray-500 dark:text-gray-400">No matching events</p>
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">
+              Try syncing your GitLab projects or adjusting your search terms
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
