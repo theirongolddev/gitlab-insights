@@ -14,8 +14,14 @@ interface EventDetailClientProps {
  * Displays event details in a full-screen layout for mobile devices.
  * Includes a back button to return to the previous page.
  *
- * Note: This is a placeholder implementation for Story 4.1.
- * Full event details fetching will be implemented in a future story.
+ * TODO(Story 4.2): Implement actual event detail rendering with:
+ * - Event title, body, metadata display
+ * - tRPC query: events.getById
+ * - Keyword highlighting support
+ * - "Open in GitLab" button
+ * - Proper loading and error states
+ *
+ * Note: This is a placeholder implementation for Story 4.1 AC7 (mobile navigation).
  */
 export function EventDetailClient({ eventId }: EventDetailClientProps) {
   const router = useRouter();

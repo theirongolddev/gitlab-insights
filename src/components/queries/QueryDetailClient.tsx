@@ -32,6 +32,50 @@ import { useMediaQuery } from "~/hooks/useMediaQuery";
 // Story 4.1: Storage key for detail pane state (must match useDetailPane.ts)
 const STORAGE_KEY = 'gitlab-insights-split-view-open';
 
+/**
+ * Helper: Get last selected event from localStorage for a query
+ * Returns null if not found or error accessing localStorage
+ */
+function getLastSelectedEvent(queryId: string): string | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    return localStorage.getItem(`gitlab-insights-last-event-${queryId}`);
+  } catch (error) {
+    console.warn('Failed to read last selected event from localStorage:', error);
+    return null;
+  }
+}
+
+/**
+ * Helper: Get initial selected event ID
+ * Priority 1: URL param (deep linking)
+ * Priority 2: Last selected event from localStorage (AC4 - restore on reopen)
+ */
+function getInitialEventId(queryId: string): string | null {
+  if (typeof window === 'undefined') return null;
+
+  // Priority 1: URL param for deep linking
+  const params = new URLSearchParams(window.location.search);
+  const detailParam = params.get('detail');
+  if (detailParam) return detailParam;
+
+  // Priority 2: Restore last selected event if pane was open
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const isOpen = JSON.parse(stored) as boolean;
+      if (isOpen) {
+        return getLastSelectedEvent(queryId);
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to restore initial event state:', error);
+  }
+
+  return null;
+}
+
 interface QueryDetailClientProps {
   queryId: string;
 }
@@ -48,30 +92,11 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
   // Story 4.1: Split pane state
   const { isOpen: isDetailPaneOpen, setIsOpen: setDetailPaneOpen } = useDetailPane();
   const isMobile = useMediaQuery('(max-width: 767px)');
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(() => {
-    // Initialize from URL ?detail param if present, otherwise from localStorage (AC4)
-    if (typeof window === 'undefined') return null;
-    const params = new URLSearchParams(window.location.search);
-    const detailParam = params.get('detail');
-    if (detailParam) return detailParam;
 
-    // AC4: If no URL param and pane is open, try to restore last selected event
-    // Check localStorage for last event (will be used if pane opens on mount)
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const isOpen = JSON.parse(stored);
-        if (isOpen) {
-          const lastEventId = localStorage.getItem(`gitlab-insights-last-event-${queryId}`);
-          return lastEventId;
-        }
-      }
-    } catch (error) {
-      console.warn('Failed to restore last selected event on mount:', error);
-    }
-
-    return null;
-  });
+  // Story 4.1 AC4: Initialize selected event from URL (deep linking) or localStorage (restore last)
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(() =>
+    getInitialEventId(queryId)
+  );
 
   // State for inline editing
   const [isEditingName, setIsEditingName] = useState(false);
@@ -137,36 +162,35 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
     },
   });
 
-  // Story 4.1: Deep linking support - open detail pane if ?detail param present
-  // Use ref to avoid synchronous setState on initial mount (selectedEventId already initialized from URL)
-  const initializedFromUrlRef = useRef(false);
-  const hasUrlSyncedRef = useRef(false);
-
+  // Story 4.1: Deep linking initialization (runs once on mount)
+  // Open detail pane if ?detail param present, or sync URL if event was restored from localStorage
+  const hasInitializedRef = useRef(false);
   useEffect(() => {
-    if (!searchParams) return;
+    if (!searchParams || hasInitializedRef.current) return;
+    hasInitializedRef.current = true;
 
-    // Skip first run since selectedEventId is already initialized from URL in useState
-    if (!initializedFromUrlRef.current) {
-      initializedFromUrlRef.current = true;
-      // Open pane if we have a detail param on mount
-      const detailParam = searchParams.get('detail');
-      if (detailParam) {
-        setDetailPaneOpen(true);
-        hasUrlSyncedRef.current = true;
-      } else if (isDetailPaneOpen && selectedEventId && !hasUrlSyncedRef.current) {
-        // AC4: Selected event was restored from localStorage - sync URL once
-        router.push(`/queries/${queryId}?detail=${selectedEventId}`, { scroll: false });
-        hasUrlSyncedRef.current = true;
-      }
-      return;
+    const detailParam = searchParams.get('detail');
+    if (detailParam) {
+      // URL has ?detail param - open pane (selectedEventId already initialized from URL)
+      setDetailPaneOpen(true);
+    } else if (isDetailPaneOpen && selectedEventId) {
+      // AC4: Event was restored from localStorage - sync URL to match state
+      router.push(`/queries/${queryId}?detail=${selectedEventId}`, { scroll: false });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run once on mount
 
-    // On subsequent runs (e.g., browser back/forward), update state
+  // Story 4.1: URL synchronization (browser back/forward navigation)
+  // When URL changes, update detail pane state to match
+  useEffect(() => {
+    if (!searchParams || !hasInitializedRef.current) return;
+
     const detailParam = searchParams.get('detail');
     if (detailParam && detailParam !== selectedEventId) {
+      // URL changed to different event - open pane
       setDetailPaneOpen(true);
     }
-  }, [searchParams, selectedEventId, setDetailPaneOpen, isDetailPaneOpen, queryId, router]);
+  }, [searchParams, selectedEventId, setDetailPaneOpen]);
 
   // Story 4.1: Handle row click - open in split pane on desktop/tablet, navigate to full page on mobile
   const handleRowClick = (event: DashboardEvent) => {

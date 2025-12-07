@@ -34,6 +34,12 @@
 
 This story implements the foundational split pane component that enables users to view event details side-by-side with the event list. The split pane provides a seamless way to explore multiple events without losing context or opening multiple tabs.
 
+**Architectural Decision:** The implementation uses React Context API (`DetailPaneContext`) instead of the originally planned standalone custom hook (`useDetailPane`). This decision was made because:
+- Split pane state needs to be shared across multiple components (Header toggle button + SplitView display)
+- Context API provides single source of truth and avoids prop drilling
+- Aligns with existing project patterns (SearchContext, ShortcutContext, ToastContext already use Context API)
+- Enables cross-tab synchronization via localStorage storage events
+
 ### Architecture Context
 
 **Component Library:** HeroUI (built on React Aria Components)
@@ -487,16 +493,17 @@ To be filled during implementation
 
 ### File List
 
-**Files to Create:**
-- `src/components/layout/SplitView.tsx`
-- `src/hooks/useDetailPane.ts`
-- `src/hooks/useMediaQuery.ts` (if not exists)
-- `src/app/events/[id]/page.tsx` (mobile full-screen)
+**Files Created:**
+- `src/components/layout/SplitView.tsx` - Split pane container component with transitions
+- `src/contexts/DetailPaneContext.tsx` - Context API for split pane state management (replaces planned useDetailPane hook)
+- `src/hooks/useMediaQuery.ts` - Responsive media query detection hook
+- `src/app/(auth)/events/[id]/page.tsx` - Mobile full-screen event detail page (server component)
+- `src/components/events/EventDetailClient.tsx` - Mobile event detail client component (placeholder for Story 4.2)
 
-**Files to Modify:**
-- `src/app/queries/[id]/page.tsx`
-- `src/components/dashboard/EventTable.tsx`
-- `src/components/layout/Header.tsx`
+**Files Modified:**
+- `src/app/(auth)/queries/[id]/page.tsx` - Integrated SplitView component
+- `src/components/layout/Header.tsx` - Added split pane toggle button
+- `src/app/providers.tsx` - Added DetailPaneProvider to app providers
 
 ---
 

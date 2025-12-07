@@ -615,8 +615,22 @@ return new Response(JSON.stringify({ error: 'Invalid signature' }), { status: 40
 
 **Client State:**
 - Server state: tRPC + React Query (automatic caching, refetching)
-- UI state: React useState for ephemeral (view toggle, sidebar open)
+- UI state (local): React useState for ephemeral (view toggle, sidebar open)
+- UI state (shared): React Context API for cross-component state (see pattern below)
 - No global state library needed (tRPC handles server state)
+
+**Context API Pattern (Story 4.1):**
+For UI state that needs to be shared across multiple unrelated components, use React Context API:
+- `DetailPaneContext` - Split pane open/closed state (shared between Header toggle + SplitView)
+- `SearchContext` - Search keywords state (shared between Header SearchBar + query pages)
+- `ShortcutContext` - Keyboard shortcut handlers (global event delegation)
+- `ToastContext` - Toast notification system (global notification queue)
+
+**Pattern Benefits:**
+- Single source of truth for shared UI state
+- Avoids prop drilling through component trees
+- Enables localStorage persistence with cross-tab synchronization
+- Consistent with existing codebase patterns
 
 **Real-Time State:**
 - SSE connection maintains event stream

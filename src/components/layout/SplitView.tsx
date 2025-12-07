@@ -38,7 +38,13 @@ export function SplitView({ listContent, detailContent, selectedEventId }: Split
   const shouldShowPane = isOpen && !isMobile && selectedEventId;
 
   return (
-    <div className="flex h-full overflow-hidden">
+    <>
+      {/* Screen reader announcement for detail pane state changes */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {shouldShowPane ? 'Detail pane opened' : 'Detail pane closed'}
+      </div>
+
+      <div className="flex h-full overflow-hidden">
       {/* List/Table Section - Independently Scrollable */}
       <div
         className={cn(
@@ -60,6 +66,7 @@ export function SplitView({ listContent, detailContent, selectedEventId }: Split
           {detailContent}
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
