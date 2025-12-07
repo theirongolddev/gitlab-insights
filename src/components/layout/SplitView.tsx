@@ -40,8 +40,8 @@ export function SplitView({ listContent, detailContent, selectedEventId }: Split
     shouldShowPane ? "w-3/5" : "w-full"
   }`;
 
-  const detailClassName = `w-2/5 border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-y-auto flex-shrink-0 transition-transform duration-200 ease-out ${
-    shouldShowPane ? "translate-x-0" : "translate-x-full"
+  const detailClassName = `border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-y-auto flex-shrink-0 transition-all duration-200 ease-out ${
+    shouldShowPane ? "w-2/5 translate-x-0" : "w-0 translate-x-full"
   }`;
 
   return (
