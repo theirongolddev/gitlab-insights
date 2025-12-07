@@ -22,6 +22,8 @@ import { ThemeToggle } from "~/components/theme/ThemeToggle";
 import { SyncIndicator } from "~/components/sync/SyncIndicator";
 import { RefreshButton } from "~/components/sync/RefreshButton";
 import { useManualRefresh } from "~/hooks/useManualRefresh";
+import { useDetailPane } from "~/hooks/useDetailPane";
+import { PanelRightClose, PanelRightOpen } from "lucide-react";
 
 export function Header() {
   const { data: session } = useSession();
@@ -34,6 +36,9 @@ export function Header() {
   // Story 3.7: Manual refresh logic (extracted to custom hook)
   const { isSyncing, triggerRefresh } = useManualRefresh();
   const utils = api.useUtils();
+
+  // Story 4.1: Split pane toggle state
+  const { isOpen: isDetailPaneOpen, setIsOpen: setDetailPaneOpen } = useDetailPane();
 
   // Story 2.6: Search state from context - now uses keywords array
   const { keywords, addKeyword, removeKeyword, clearSearch, setKeywords, isSearchLoading } = useSearch();
@@ -196,6 +201,22 @@ export function Header() {
 
           {/* Story 3.7: Manual refresh button */}
           <RefreshButton onRefresh={triggerRefresh} isLoading={isSyncing} />
+
+          {/* Story 4.1: Split pane toggle button (desktop/tablet only) */}
+          <Button
+            isIconOnly
+            variant="light"
+            size="sm"
+            onPress={() => setDetailPaneOpen(!isDetailPaneOpen)}
+            aria-label={isDetailPaneOpen ? "Close detail pane" : "Open detail pane"}
+            className="hidden md:flex"
+          >
+            {isDetailPaneOpen ? (
+              <PanelRightClose className="h-5 w-5" />
+            ) : (
+              <PanelRightOpen className="h-5 w-5" />
+            )}
+          </Button>
 
           {/* Story 1.5.6: Theme toggle button */}
           <ThemeToggle />

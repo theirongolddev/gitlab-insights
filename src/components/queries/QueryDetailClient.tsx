@@ -11,7 +11,7 @@
  */
 
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "~/trpc/react";
 import { EventTable } from "~/components/dashboard/EventTable";
 import type { DashboardEvent } from "~/components/dashboard/ItemRow";
@@ -25,6 +25,9 @@ import {
 } from "@heroui/react";
 import { useSearch } from "~/components/search/SearchContext";
 import { useToast } from "~/components/ui/Toast/ToastContext";
+import { SplitView } from "~/components/layout/SplitView";
+import { useDetailPane } from "~/hooks/useDetailPane";
+import { useMediaQuery } from "~/hooks/useMediaQuery";
 
 interface QueryDetailClientProps {
   queryId: string;
@@ -32,11 +35,17 @@ interface QueryDetailClientProps {
 
 export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const utils = api.useUtils();
   const { showToast } = useToast();
 
   // Story 2.10: Use live keywords from SearchContext instead of saved query
   const { keywords: liveKeywords } = useSearch();
+
+  // Story 4.1: Split pane state
+  const { isOpen: isDetailPaneOpen, setIsOpen: setDetailPaneOpen } = useDetailPane();
+  const isMobile = useMediaQuery('(max-width: 767px)');
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
   // State for inline editing
   const [isEditingName, setIsEditingName] = useState(false);
@@ -102,9 +111,26 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
     },
   });
 
-  // Handle row click - open in new tab
+  // Story 4.1: Deep linking support - open detail pane if ?detail param present
+  useEffect(() => {
+    const detailParam = searchParams.get('detail');
+    if (detailParam) {
+      setSelectedEventId(detailParam);
+      setDetailPaneOpen(true);
+    }
+  }, [searchParams, setDetailPaneOpen]);
+
+  // Story 4.1: Handle row click - open in split pane on desktop/tablet, navigate to full page on mobile
   const handleRowClick = (event: DashboardEvent) => {
-    window.open(event.gitlabUrl, "_blank");
+    if (isMobile) {
+      // Mobile: Navigate to full-screen detail page
+      router.push(`/events/${event.id}`);
+    } else {
+      // Desktop/Tablet: Open in split pane and update URL
+      setSelectedEventId(event.id);
+      setDetailPaneOpen(true);
+      router.push(`/queries/${queryId}?detail=${event.id}`, { scroll: false });
+    }
   };
 
   // Auto-focus input when entering edit mode
@@ -342,7 +368,7 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
         </div>
       </div>
 
-      {/* Search results */}
+      {/* Story 4.1: Search results with SplitView */}
       {isSearchLoading ? (
         <div className="space-y-2">
           {[1, 2, 3, 4, 5].map((i) => (
@@ -353,9 +379,40 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
           ))}
         </div>
       ) : searchData?.events && searchData.events.length > 0 ? (
-        <EventTable
-          events={searchData.events as DashboardEvent[]}
-          onRowClick={handleRowClick}
+        <SplitView
+          listContent={
+            <EventTable
+              events={searchData.events as DashboardEvent[]}
+              onRowClick={handleRowClick}
+            />
+          }
+          detailContent={
+            selectedEventId ? (
+              <div className="p-6">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50 mb-4">
+                  Event Details
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Event ID: {selectedEventId}
+                </p>
+                <div className="mt-4">
+                  <a
+                    href={searchData.events.find(e => e.id === selectedEventId)?.gitlabUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-olive dark:text-olive-light hover:underline"
+                  >
+                    View in GitLab →
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+                Select an event to view details
+              </div>
+            )
+          }
+          selectedEventId={selectedEventId}
         />
       ) : (
         <div className="text-center py-12">
