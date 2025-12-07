@@ -29,6 +29,7 @@ import { SplitView } from "~/components/layout/SplitView";
 import { useDetailPane } from "~/contexts/DetailPaneContext";
 import { useMediaQuery } from "~/hooks/useMediaQuery";
 import { EventDetail } from "~/components/events/EventDetail";
+import { Check, Pencil, Trash2 } from "lucide-react";
 
 // Story 4.1: Storage key for detail pane state (must match useDetailPane.ts)
 const STORAGE_KEY = 'gitlab-insights-split-view-open';
@@ -43,6 +44,8 @@ function getLastSelectedEvent(queryId: string): string | null {
   try {
     return localStorage.getItem(`gitlab-insights-last-event-${queryId}`);
   } catch (error) {
+    // Client-side graceful degradation for localStorage failures (private browsing, quota exceeded)
+    // Using console.warn (not logger) as this is non-critical client-side edge case
     console.warn('Failed to read last selected event from localStorage:', error);
     return null;
   }
@@ -71,6 +74,7 @@ function getInitialEventId(queryId: string): string | null {
       }
     }
   } catch (error) {
+    // Client-side graceful degradation for localStorage failures
     console.warn('Failed to restore initial event state:', error);
   }
 
@@ -208,7 +212,8 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
         try {
           localStorage.setItem(`gitlab-insights-last-event-${queryId}`, event.id);
         } catch (error) {
-          // localStorage unavailable - ignore (AC4 degrades gracefully)
+          // Client-side graceful degradation - localStorage unavailable (AC4 degrades gracefully)
+          // No user-facing error needed; feature simply won't restore selection on return
           console.warn('Failed to save last selected event:', error);
         }
       }
@@ -361,76 +366,43 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
                 onBlur={cancelEdit}
                 className="text-xl font-semibold text-gray-900 dark:text-gray-50 bg-transparent border-b-2 border-olive-light focus:outline-none w-100"
               />
-              <button
-                onPointerDown={(e) => {
-                  e.preventDefault();
-                  saveEdit();
-                }}
-                disabled={updateMutation.isPending}
-                className="p-1.5 text-olive dark:text-olive-light hover:bg-olive-light/10 rounded transition-colors disabled:opacity-50 cursor-pointer"
+              <Button
+                onPress={() => saveEdit()}
+                isIconOnly
+                variant="light"
+                size="sm"
+                isDisabled={updateMutation.isPending}
+                className="text-olive dark:text-olive-light"
                 aria-label="Save name"
               >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              </button>
+                <Check className="h-5 w-5" />
+              </Button>
             </>
           ) : (
             <>
               <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">
                 {query.name}
               </h1>
-              <button
-                onClick={startEditing}
-                className="p-1 text-gray-400 hover:text-olive dark:hover:text-olive-light hover:bg-olive-light/10 rounded transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-olive-light focus-visible:ring-offset-2"
+              <Button
+                onPress={startEditing}
+                isIconOnly
+                variant="light"
+                size="sm"
+                className="text-gray-400 hover:text-olive dark:hover:text-olive-light"
                 aria-label="Edit query name"
               >
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                  />
-                </svg>
-              </button>
-              <button
-                onClick={() => setIsDeleteDialogOpen(true)}
-                className="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-olive-light focus-visible:ring-offset-2"
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                onPress={() => setIsDeleteDialogOpen(true)}
+                isIconOnly
+                variant="light"
+                size="sm"
+                className="text-gray-400 hover:text-red-600 dark:hover:text-red-500"
                 aria-label="Delete query"
               >
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                  />
-                </svg>
-              </button>
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </>
           )}
         </div>

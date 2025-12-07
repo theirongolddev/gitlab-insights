@@ -1,10 +1,11 @@
 # Story 4.2: Detail Pane Content Rendering
 
-**Status:** review
+**Status:** done
 **Epic:** 4 - Split View & Detail Navigation
 **Story ID:** 4.2
 **Created:** 2025-12-07
 **Completed:** 2025-12-07
+**Re-reviewed:** 2025-12-07
 **Priority:** Must Have
 **Story Points:** 3
 **Actual Effort:** 3 points
@@ -191,7 +192,7 @@ export function EventDetail({ eventId }: EventDetailProps) {
           <dl className="grid grid-cols-2 gap-2 text-sm">
             <dt className="text-gray-600 dark:text-gray-400">Project:</dt>
             <dd className="font-medium text-text-primary dark:text-text-primary-dark">
-              {event.project.name}
+              {event.project}
             </dd>
 
             <dt className="text-gray-600 dark:text-gray-400">Type:</dt>
@@ -245,19 +246,31 @@ export function EventDetail({ eventId }: EventDetailProps) {
 
 ```typescript
 // server/api/routers/events.ts
-// Verify events.getById includes:
+// events.getById query implementation:
 events: {
   getById: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
-      return ctx.db.event.findUnique({
-        where: { id: input.id },
-        include: {
-          project: true, // REQUIRED for project.name
+      const event = await ctx.db.event.findUnique({
+        where: {
+          id: input.id,
+          userId: ctx.session.user.id, // User authorization check
         },
       });
+
+      if (!event) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Event not found",
+        });
+      }
+
+      return event;
     }),
 }
+
+// Note: event.project is a string field in the schema, not a relation
+// The EventDetail component renders it directly: {event.project}
 ```
 
 ### Design Token Usage
@@ -372,19 +385,24 @@ const timestamp = formatRelativeTime(event.createdAt);
 - `src/components/events/EventDetail.tsx` - Main event detail component with full layout
 
 **Files Modified:**
-- `src/server/api/routers/events.ts` - Added `events.getById` query
-- `src/components/events/EventDetailClient.tsx` - Integrated EventDetail component
-- `src/components/queries/QueryDetailClient.tsx` - Replaced placeholder with EventDetail
+- `src/server/api/routers/events.ts` - Added `events.getById` query with user authorization
+- `src/components/events/EventDetailClient.tsx` - Integrated EventDetail component for mobile view
+- `src/components/queries/QueryDetailClient.tsx` - Integrated EventDetail into split pane
+- `src/lib/utils.ts` - Added `formatRelativeTime` and `formatEventType` utilities using date-fns
+- `src/components/dashboard/ItemRow.tsx` - Updated to use shared `formatRelativeTime` utility
 
 **Implementation Notes:**
-- Added `events.getById` tRPC query that fetches event by ID with user authorization
-- Created EventDetail component with three-section layout (sticky header, scrollable content, footer)
-- Component handles all states: empty, loading, not found, and full event data
-- Uses existing `formatRelativeTime` utility pattern from ItemRow
-- All design tokens used (gray-*, primary-*, no hardcoded hex values)
+- Added `events.getById` tRPC query that fetches event by ID with user authorization check
+- Created EventDetail component with two-section layout (sticky header, scrollable content, footer)
+  - Removed redundant #title section (sticky header shows title, avoiding duplication)
+  - Section IDs: #body (description), #metadata (project details, labels, timestamps)
+  - Ready for Story 4.5 section navigation (chips can scroll: top, #body, #metadata)
+- Component handles all states: empty, loading, error, not found, and full event data
+- Refactored time formatting to use date-fns library via shared utilities
+- All design tokens used (gray-*, primary-*, olive colors, no hardcoded hex values)
 - HeroUI Button component for "Open in GitLab" action
-- Section IDs (#title, #body, #metadata) ready for future navigation (Story 4.5)
 - Component works standalone for both desktop split pane and mobile full-screen views
+- Schema note: event.project is a string field, not a relation (renders directly in UI)
 
 **Test Coverage:**
 - Type checking: ✅ Passed
@@ -400,23 +418,26 @@ const timestamp = formatRelativeTime(event.createdAt);
 
 ## Review Follow-ups (AI Code Review - 2025-12-07)
 
-**Review Summary:** 7 issues found (3 High, 2 Medium, 2 Low)
+**Review Summary - Initial:** 7 issues found (3 High, 2 Medium, 2 Low) - **ALL RESOLVED** ✅
+**Review Summary - Re-review:** 5 new issues found (1 High, 2 Medium, 2 Low) - **ALL RESOLVED** ✅
 
-### High Priority Issues
+### Initial Review Issues (All Resolved)
 
-- [ ] [AI-Review][HIGH] Add type formatting for event.type display - currently shows "merge_request" instead of "Merge Request" [src/components/events/EventDetail.tsx:129]
-- [ ] [AI-Review][HIGH] Add error state handling for tRPC query failures - no user feedback when query fails [src/components/events/EventDetail.tsx:42-44]
-- [ ] [AI-Review][HIGH] Review necessity of duplicate title in #title section vs header - consider removing redundant title display [src/components/events/EventDetail.tsx:92-98]
+- [x] [AI-Review][HIGH] Add type formatting for event.type display ✅ **RESOLVED:** Added `formatEventType()` utility
+- [x] [AI-Review][HIGH] Add error state handling for tRPC query failures ✅ **RESOLVED:** Added comprehensive error state
+- [x] [AI-Review][HIGH] Review necessity of duplicate title in #title section ✅ **RESOLVED:** Removed #title section, kept sticky header
+- [x] [AI-Review][MEDIUM] Extract formatRelativeTime to shared utility ✅ **RESOLVED:** Extracted to `~/lib/utils` using date-fns
+- [x] [AI-Review][MEDIUM] Git commit - EventDetail.tsx is untracked ✅ **RESOLVED:** Committed in b1a9c48
+- [x] [AI-Review][LOW] Add accessibility label to loading spinner ✅ **RESOLVED:** Added role="status" and aria-label
+- [x] [AI-Review][LOW] Consider consistent timestamp formatting ✅ **RESOLVED:** Appropriate use of relative (header) and absolute (metadata)
 
-### Medium Priority Issues
+### Re-Review Issues (All Resolved - 2025-12-07)
 
-- [ ] [AI-Review][MEDIUM] Extract formatRelativeTime to shared utility - duplicated in ItemRow.tsx and EventDetail.tsx [src/components/events/EventDetail.tsx:14-25]
-- [ ] [AI-Review][MEDIUM] Git commit - EventDetail.tsx is untracked, run: git add src/components/events/EventDetail.tsx [git]
-
-### Low Priority Issues
-
-- [ ] [AI-Review][LOW] Add accessibility label to loading spinner - add role="status" and aria-label [src/components/events/EventDetail.tsx:60]
-- [ ] [AI-Review][LOW] Consider consistent timestamp formatting - header uses relative, metadata uses absolute [src/components/events/EventDetail.tsx:85,134]
+- [x] [AI-Review][HIGH] Story specification mismatch - project field ✅ **RESOLVED:** Updated Technical Notes to reflect project as string field
+- [x] [AI-Review][MEDIUM] Inconsistent button components in QueryDetailClient ✅ **RESOLVED:** Replaced raw buttons with HeroUI Button components
+- [x] [AI-Review][MEDIUM] Inconsistent icon usage - inline SVG ✅ **RESOLVED:** Replaced with lucide-react icons (Check, Pencil, Trash2)
+- [x] [AI-Review][LOW] Missing architectural decision comment ✅ **RESOLVED:** Added comment explaining two-section layout
+- [x] [AI-Review][LOW] Client-side console.warn usage ✅ **RESOLVED:** Added documentation comments explaining graceful degradation
 
 ---
 

@@ -3,26 +3,11 @@
 import { Button } from "@heroui/react";
 import { ExternalLink } from "lucide-react";
 import { api } from "~/trpc/react";
+import { formatRelativeTime, formatEventType } from "~/lib/utils";
 
 interface EventDetailProps {
   eventId: string | null;
 }
-
-/**
- * Format relative time (e.g., "5m ago", "2h ago", "3d ago")
- */
-const formatRelativeTime = (date: Date) => {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return "just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  return `${diffDays}d ago`;
-};
 
 /**
  * Story 4.2: Event Detail Component
@@ -39,7 +24,7 @@ const formatRelativeTime = (date: Date) => {
  * AC4: Empty body placeholder when event has no body text
  */
 export function EventDetail({ eventId }: EventDetailProps) {
-  const { data: event, isLoading } = api.events.getById.useQuery(
+  const { data: event, isLoading, error } = api.events.getById.useQuery(
     { id: eventId! },
     { enabled: !!eventId }
   );
@@ -57,7 +42,20 @@ export function EventDetail({ eventId }: EventDetailProps) {
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-primary-500 dark:border-gray-700 dark:border-t-primary-500" />
+        <div
+          className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-primary-500 dark:border-gray-700 dark:border-t-primary-500"
+          role="status"
+          aria-label="Loading event details"
+        />
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex h-full items-center justify-center text-gray-400 dark:text-gray-600">
+        <p>Failed to load event details. Please try again.</p>
       </div>
     );
   }
@@ -87,17 +85,11 @@ export function EventDetail({ eventId }: EventDetailProps) {
       </div>
 
       {/* Scrollable Content */}
+      {/* Layout: Two-section structure (Title section removed to avoid duplication with sticky header - Code Review Issue #3)
+          - #body: Event description with empty state placeholder
+          - #metadata: Project details, type, labels, timestamps
+          Ready for Story 4.5 section navigation (chips can scroll: top for title, #body, #metadata) */}
       <div className="flex-1 space-y-6 overflow-y-auto p-4">
-        {/* Title Section */}
-        <section id="title">
-          <h3 className="mb-2 font-medium text-gray-700 dark:text-gray-300">
-            Title
-          </h3>
-          <p className="text-gray-900 dark:text-gray-50">
-            {event.title}
-          </p>
-        </section>
-
         {/* Body Section */}
         <section id="body">
           <h3 className="mb-2 font-medium text-gray-700 dark:text-gray-300">
@@ -126,7 +118,7 @@ export function EventDetail({ eventId }: EventDetailProps) {
 
             <dt className="text-gray-600 dark:text-gray-400">Type:</dt>
             <dd className="font-medium text-gray-900 dark:text-gray-50">
-              {event.type}
+              {formatEventType(event.type)}
             </dd>
 
             <dt className="text-gray-600 dark:text-gray-400">Created:</dt>
