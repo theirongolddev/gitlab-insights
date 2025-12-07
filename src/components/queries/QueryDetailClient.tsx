@@ -134,9 +134,35 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
       // Desktop/Tablet: Open in split pane and update URL
       setSelectedEventId(event.id);
       setDetailPaneOpen(true);
+
+      // AC4: Store last selected event in localStorage for this query
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`gitlab-insights-last-event-${queryId}`, event.id);
+      }
+
       router.push(`/queries/${queryId}?detail=${event.id}`, { scroll: false });
     }
   };
+
+  // Story 4.1 AC4: Handle toggle - when reopening, load last selected event
+  const handleTogglePaneFromHeader = () => {
+    if (!isDetailPaneOpen && !selectedEventId && typeof window !== 'undefined') {
+      // Opening pane without selection - try to load last selected event
+      const lastEventId = localStorage.getItem(`gitlab-insights-last-event-${queryId}`);
+      if (lastEventId) {
+        setSelectedEventId(lastEventId);
+        router.push(`/queries/${queryId}?detail=${lastEventId}`, { scroll: false });
+      }
+    }
+  };
+
+  // Story 4.1: Listen to detail pane state changes from Header toggle
+  useEffect(() => {
+    if (isDetailPaneOpen && !selectedEventId) {
+      handleTogglePaneFromHeader();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDetailPaneOpen]);
 
   // Auto-focus input when entering edit mode
   useEffect(() => {
