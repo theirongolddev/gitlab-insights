@@ -16,9 +16,8 @@
  * AC 3.4.7: Badge replaces total count; total count moves to tooltip
  */
 
-import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useShortcuts } from "~/components/keyboard/ShortcutContext";
+import { useShortcutHandler } from "~/hooks/useShortcutHandler";
 import { useNewItems } from "~/contexts/NewItemsContext";
 import { NewItemsBadge } from "~/components/sidebar/NewItemsBadge";
 import { Sidebar } from "~/components/ui/Sidebar";
@@ -101,20 +100,17 @@ function LoadingSkeleton() {
 export function QuerySidebar({ className = "" }: QuerySidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { setNavigateToQuery } = useShortcuts();
 
   // Code Review Fix: Consume queries from shared context (AC 3.4.8)
   // This eliminates duplicate queries.list fetch and inherits staleTime/refetchOnWindowFocus settings
   const { queries, queriesWithNewCounts, isQueriesLoading: isLoading } = useNewItems();
 
   // AC 2.8.4: Register keyboard shortcut handler for 1-9 navigation
-  useEffect(() => {
-    setNavigateToQuery((index: number) => {
-      if (queries?.[index]) {
-        router.push(`/queries/${queries[index].id}`);
-      }
-    });
-  }, [queries, router, setNavigateToQuery]);
+  useShortcutHandler('navigateToQuery', (index: number) => {
+    if (queries?.[index]) {
+      router.push(`/queries/${queries[index].id}`);
+    }
+  });
 
   // Extract current query ID from pathname (for active state)
   const currentQueryId = pathname?.startsWith("/queries/")

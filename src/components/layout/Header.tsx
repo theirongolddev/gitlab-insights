@@ -12,7 +12,7 @@ import {
   DropdownMenu,
   DropdownItem,
 } from "@heroui/react";
-import { useShortcuts } from "~/components/keyboard/ShortcutContext";
+import { useShortcutHandler } from "~/hooks/useShortcutHandler";
 import { useSearch } from "~/components/search/SearchContext";
 import { SearchBar } from "~/components/search/SearchBar";
 import { CreateQueryModal } from "~/components/queries/CreateQueryModal";
@@ -30,7 +30,6 @@ export function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const { setFocusSearch, setClearFocusAndModals, setOpenSaveModal } = useShortcuts();
   const { showToast } = useToast();
 
   // Story 3.7: Manual refresh logic (extracted to custom hook)
@@ -114,29 +113,28 @@ export function Header() {
     }
   };
 
-  // Register keyboard shortcut handlers (non-refresh shortcuts)
-  useEffect(() => {
-    // AC 2.4.1: `/` focuses search input
-    setFocusSearch(() => {
-      searchInputRef.current?.focus();
-    });
+  // Register keyboard shortcut handlers using React 19's useEffectEvent pattern
+  // No useEffect or useCallback needed in consuming code!
+  useShortcutHandler('focusSearch', () => {
+    searchInputRef.current?.focus();
+  });
 
-    setClearFocusAndModals(() => {
-      // Blur any focused element
-      if (document.activeElement instanceof HTMLElement) {
-        document.activeElement.blur();
-      }
-    });
-  }, [setFocusSearch, setClearFocusAndModals]);
+  useShortcutHandler('clearFocusAndModals', () => {
+    // Blur any focused element
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  });
 
-  // Story 2.8.5: Separate effect for save modal (depends on keywords)
-  useEffect(() => {
-    setOpenSaveModal(() => {
-      if (keywords.length > 0) {
-        setIsModalOpen(true);
-      }
-    });
-  }, [setOpenSaveModal, keywords.length]);
+  useShortcutHandler('openSaveModal', () => {
+    if (keywords.length > 0) {
+      setIsModalOpen(true);
+    }
+  });
+
+  useShortcutHandler('toggleDetailPane', () => {
+    setDetailPaneOpen(!isDetailPaneOpen);
+  });
 
   if (!session?.user) {
     // Return header skeleton to prevent layout shift during initial load

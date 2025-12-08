@@ -91,7 +91,7 @@ development_status:
   4-2-detail-pane-content-rendering: done  # Re-review PASSED 2025-12-07: All 12 review issues resolved (7 initial + 5 re-review), architecture compliance verified
   4-3-auto-update-detail-on-row-click: done  # Completed 2025-12-08: Code review issues resolved, useEventDetailPane hook refactored, browser nav fixed
   4-4-keyword-highlighting-in-detail-view: done  # Completed 2025-12-09: Code review + manual testing complete, reveals Story 2.6 case-sensitivity limitation
-  4-5-section-navigation-with-clickable-headers: ready-for-dev
+  4-5-section-navigation-with-clickable-headers: done  # Completed 2025-12-09: Code review passed, all ACs verified, bug fixes documented
   4-6-query-metadata-page: backlog
   4-7-scroll-position-persistence: backlog
   epic-4-retrospective: optional

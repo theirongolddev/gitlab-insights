@@ -11,7 +11,7 @@ import {
   type Selection,
 } from "@heroui/react";
 import { ItemRow, type DashboardEvent } from "./ItemRow";
-import { useShortcuts } from "../keyboard/ShortcutContext";
+import { useShortcutHandler } from "~/hooks/useShortcutHandler";
 
 interface EventTableProps {
   events: DashboardEvent[];
@@ -38,19 +38,6 @@ export function EventTable({ events, onRowClick, selectedEventId, scopeId, showN
   // Task 3: Ref for focus management - use wrapper div since React Aria Table
   // doesn't expose onKeyDown directly
   const wrapperRef = useRef<HTMLDivElement>(null);
-
-  // Task 3: Get shortcut handlers from context
-  // Story 3.2: Added unregister functions for scoped handler cleanup
-  const {
-    setMoveSelectionDown,
-    setMoveSelectionUp,
-    setJumpHalfPageDown,
-    setJumpHalfPageUp,
-    unregisterMoveSelectionDown,
-    unregisterMoveSelectionUp,
-    unregisterJumpHalfPageDown,
-    unregisterJumpHalfPageUp,
-  } = useShortcuts();
 
   /**
    * Number of rows to jump for half-page navigation (Ctrl+d/Ctrl+u).
@@ -138,61 +125,37 @@ export function EventTable({ events, onRowClick, selectedEventId, scopeId, showN
     [getSelectedIndex, onRowClick]
   );
 
+  // Helper to ensure table has focus before navigation
+  const ensureFocus = useCallback(() => {
+    if (
+      wrapperRef.current &&
+      !wrapperRef.current.contains(document.activeElement)
+    ) {
+      wrapperRef.current.focus();
+    }
+  }, []);
+
   // Task 3: Focus Router Pattern - register handlers with ShortcutContext
-  // Story 3.2: Pass scopeId for scoped handlers, cleanup on unmount
-  useEffect(() => {
-    // Helper to ensure table has focus before navigation
-    const ensureFocus = () => {
-      if (
-        wrapperRef.current &&
-        !wrapperRef.current.contains(document.activeElement)
-      ) {
-        wrapperRef.current.focus();
-      }
-    };
+  // Story 3.2: Pass scopeId for scoped handlers (cleanup handled by hook)
+  useShortcutHandler('moveSelectionDown', () => {
+    ensureFocus();
+    moveSelection("down");
+  }, scopeId);
 
-    // Register handlers with optional scopeId
-    setMoveSelectionDown(() => {
-      ensureFocus();
-      moveSelection("down");
-    }, scopeId);
+  useShortcutHandler('moveSelectionUp', () => {
+    ensureFocus();
+    moveSelection("up");
+  }, scopeId);
 
-    setMoveSelectionUp(() => {
-      ensureFocus();
-      moveSelection("up");
-    }, scopeId);
+  useShortcutHandler('jumpHalfPageDown', () => {
+    ensureFocus();
+    moveSelection("down", HALF_PAGE_JUMP);
+  }, scopeId);
 
-    setJumpHalfPageDown(() => {
-      ensureFocus();
-      moveSelection("down", HALF_PAGE_JUMP);
-    }, scopeId);
-
-    setJumpHalfPageUp(() => {
-      ensureFocus();
-      moveSelection("up", HALF_PAGE_JUMP);
-    }, scopeId);
-
-    // Cleanup scoped handlers on unmount
-    return () => {
-      if (scopeId) {
-        unregisterMoveSelectionDown(scopeId);
-        unregisterMoveSelectionUp(scopeId);
-        unregisterJumpHalfPageDown(scopeId);
-        unregisterJumpHalfPageUp(scopeId);
-      }
-    };
-  }, [
-    setMoveSelectionDown,
-    setMoveSelectionUp,
-    setJumpHalfPageDown,
-    setJumpHalfPageUp,
-    unregisterMoveSelectionDown,
-    unregisterMoveSelectionUp,
-    unregisterJumpHalfPageDown,
-    unregisterJumpHalfPageUp,
-    moveSelection,
-    scopeId,
-  ]);
+  useShortcutHandler('jumpHalfPageUp', () => {
+    ensureFocus();
+    moveSelection("up", HALF_PAGE_JUMP);
+  }, scopeId);
 
 
   // Task 6.4: Empty state handling

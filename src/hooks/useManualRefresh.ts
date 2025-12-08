@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import { api } from "~/trpc/react";
 import { useToast } from "~/components/ui/Toast/ToastContext";
-import { useShortcuts } from "~/components/keyboard/ShortcutContext";
+import { useShortcutHandler } from "~/hooks/useShortcutHandler";
 
 /**
  * Custom hook for manual refresh functionality
@@ -21,7 +21,6 @@ export function useManualRefresh() {
   const [isSyncing, setIsSyncing] = useState(false);
   const isSyncingRef = useRef(false); // Synchronous check to prevent race condition
   const { showToast } = useToast();
-  const { setTriggerManualRefresh } = useShortcuts();
   const utils = api.useUtils();
 
   // Manual refresh mutation
@@ -56,26 +55,14 @@ export function useManualRefresh() {
   const triggerRefresh = useCallback(() => {
     // AC 3.7.8: Prevent double-trigger with synchronous ref check
     if (isSyncingRef.current) return;
-    
+
     isSyncingRef.current = true;
     setIsSyncing(true);
     manualRefresh.mutate();
   }, [manualRefresh]);
 
-  // Register keyboard shortcut (r key) with proper cleanup
-  useEffect(() => {
-    setTriggerManualRefresh(triggerRefresh);
-
-    // Cleanup: unregister handler when component unmounts
-    return () => {
-      setTriggerManualRefresh(() => {
-        // No-op cleanup handler
-        if (process.env.NODE_ENV === "development") {
-          console.debug("[useManualRefresh] Cleanup: shortcut handler unregistered");
-        }
-      });
-    };
-  }, [setTriggerManualRefresh, triggerRefresh]);
+  // Register keyboard shortcut (r key) - cleanup handled by hook
+  useShortcutHandler('triggerManualRefresh', triggerRefresh);
 
   return {
     isSyncing,

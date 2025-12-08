@@ -42,6 +42,29 @@ export function EventDetail({ eventId }: EventDetailProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [keywordsString]);
 
+  // Story 4.5: Section navigation scroll function
+  const scrollToSection = (sectionId: string) => {
+    if (sectionId === 'title') {
+      // Scroll to top to show main title header
+      const scrollContainer = document.querySelector('.overflow-y-auto');
+      if (scrollContainer) {
+        scrollContainer.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        });
+      }
+    } else {
+      // Scroll to specific section by ID
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }
+    }
+  };
+
   const { data: event, isLoading, error } = api.events.getById.useQuery(
     {
       id: eventId!,
@@ -108,6 +131,37 @@ export function EventDetail({ eventId }: EventDetailProps) {
           <span>•</span>
           <span>{formatRelativeTime(event.createdAt)}</span>
         </div>
+      </div>
+
+      {/* Story 4.5: Sticky Section Navigation */}
+      <div className="sticky top-0 z-10 flex gap-2 border-b border-gray-200 bg-white p-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <Button
+          size="sm"
+          variant="flat"
+          radius="full"
+          onPress={() => scrollToSection('title')}
+          aria-label="Jump to title section"
+        >
+          Title
+        </Button>
+        <Button
+          size="sm"
+          variant="flat"
+          radius="full"
+          onPress={() => scrollToSection('body')}
+          aria-label="Jump to body section"
+        >
+          Body
+        </Button>
+        <Button
+          size="sm"
+          variant="flat"
+          radius="full"
+          onPress={() => scrollToSection('metadata')}
+          aria-label="Jump to details section"
+        >
+          Details
+        </Button>
       </div>
 
       {/* Scrollable Content */}

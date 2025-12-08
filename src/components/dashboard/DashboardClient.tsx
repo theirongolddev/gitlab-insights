@@ -14,7 +14,7 @@ import { type DashboardEvent } from "~/components/dashboard/ItemRow";
 import { EventTable } from "~/components/dashboard/EventTable";
 import { useSearch } from "~/components/search/SearchContext";
 import { CatchUpView, CatchUpModeToggle } from "~/components/catchup";
-import { useShortcuts } from "~/components/keyboard/ShortcutContext";
+import { useShortcutHandler } from "~/hooks/useShortcutHandler";
 import { LoadingSpinner } from "~/components/ui/LoadingSpinner";
 import { useNewItems } from "~/contexts/NewItemsContext";
 import { api } from "~/trpc/react";
@@ -51,8 +51,6 @@ export function DashboardClient() {
 
   const { searchResults, isSearchActive, clearSearch } = useSearch();
 
-  const { setToggleCatchUpMode } = useShortcuts();
-
   const toggleCatchUpMode = useCallback(() => {
     if (isCatchUpMode) {
       router.push("/dashboard");
@@ -64,9 +62,7 @@ export function DashboardClient() {
     }
   }, [isCatchUpMode, router, isSearchActive, clearSearch]);
 
-  useEffect(() => {
-    setToggleCatchUpMode(toggleCatchUpMode);
-  }, [setToggleCatchUpMode, toggleCatchUpMode]);
+  useShortcutHandler('toggleCatchUpMode', toggleCatchUpMode);
 
   useEffect(() => {
     if (!isCatchUpMode || !isSearchActive) return;

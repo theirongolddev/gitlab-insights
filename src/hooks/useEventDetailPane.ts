@@ -82,8 +82,10 @@ export function useEventDetailPane({
     return null;
   }, [STORAGE_KEY]);
 
-  // Initialize selected event from URL or localStorage
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(
+  // Visual selection state (source of truth for rendering)
+  // This state updates instantly on keyboard navigation (no lag)
+  // URL updates are debounced (200ms) to prevent blocking operations
+  const [visualSelectedEventId, setVisualSelectedEventId] = useState<string | null>(
     getInitialEventId
   );
 
@@ -97,46 +99,62 @@ export function useEventDetailPane({
     if (detailParam) {
       // URL has ?detail param - open pane
       setDetailPaneOpen(true);
-    } else if (isDetailPaneOpen && selectedEventId && STORAGE_KEY) {
+    } else if (isDetailPaneOpen && visualSelectedEventId && STORAGE_KEY) {
       // Event was restored from localStorage - sync URL to match state
       const params = new URLSearchParams(window.location.search);
-      params.set("detail", selectedEventId);
+      params.set("detail", visualSelectedEventId);
       router.push(`${baseUrl}?${params.toString()}`, { scroll: false });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run once on mount
 
+  // Track last committed URL param to detect URL changes (browser back/forward)
+  const lastCommittedUrlParamRef = useRef<string | null>(null);
+
   // URL synchronization (browser back/forward navigation)
+  // This is one-way: URL changes → update visual state
+  // Only triggers on searchParams changes (not on visual state changes)
   useEffect(() => {
     if (!searchParams || !hasInitializedRef.current) return;
 
     const detailParam = searchParams.get("detail");
-    if (detailParam && detailParam !== selectedEventId) {
-      // URL changed to different event - sync state and open pane
-      setSelectedEventId(detailParam);
-      setDetailPaneOpen(true);
+
+    // Only update if URL actually changed (not triggered by our own commit)
+    if (detailParam !== lastCommittedUrlParamRef.current) {
+      lastCommittedUrlParamRef.current = detailParam;
+
+      if (detailParam) {
+        // URL changed to different event - sync state and open pane
+        setVisualSelectedEventId(detailParam);
+        setDetailPaneOpen(true);
+      } else {
+        // URL no longer has detail param - close pane and clear selection
+        setVisualSelectedEventId(null);
+        setDetailPaneOpen(false);
+      }
     }
-  }, [searchParams, selectedEventId, setDetailPaneOpen]);
+  }, [searchParams, setDetailPaneOpen]);
 
   /**
-   * Handle row click - open in split pane on desktop/tablet, navigate to full page on mobile
+   * Ref to store pending debounce timeout ID
+   * Using ref instead of closure variable ensures timeout is properly shared across calls
    */
-  const handleRowClick = useCallback(
-    (event: DashboardEvent) => {
-      const eventId = event.id;
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
-      // Mobile: Navigate to full-screen detail page
-      if (isMobile) {
-        router.push(`/events/${eventId}`);
-        return;
-      }
+  /**
+   * Debounced commit function for expensive operations (localStorage + URL update)
+   * Uses useCallback with ref to ensure proper cancellation of pending commits
+   * Debounce delay: 200ms (user preference for responsive feel)
+   */
+  const debouncedCommit = useCallback((eventId: string) => {
+    // Cancel previous pending commit
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
 
-      // Desktop/Tablet: Update URL only - state derives from URL (single source of truth)
-      // Bug Fix (Story 4.4 regression): Removed direct setSelectedEventId() call
-      // to eliminate dual source of truth. URL sync effect (line 116) handles state update.
-      setDetailPaneOpen(true); // Open pane immediately for UX
-
-      // Store last selected event in localStorage (if persistence enabled)
+    // Schedule new commit after 200ms
+    debounceTimeoutRef.current = setTimeout(() => {
+      // Store last selected event in localStorage (non-blocking, happens after delay)
       if (STORAGE_KEY && typeof window !== "undefined") {
         try {
           localStorage.setItem(STORAGE_KEY, eventId);
@@ -145,8 +163,7 @@ export function useEventDetailPane({
         }
       }
 
-      // Update URL with detail param, preserving specified params
-      // The URL sync effect will call setSelectedEventId(detailParam)
+      // Update URL with detail param (triggers EventDetail data fetch)
       const params = new URLSearchParams(window.location.search);
       params.set("detail", eventId);
 
@@ -159,19 +176,48 @@ export function useEventDetailPane({
       });
 
       router.push(`${baseUrl}?${params.toString()}`, { scroll: false });
+      lastCommittedUrlParamRef.current = eventId;  // Track committed URL
+      debounceTimeoutRef.current = undefined;  // Clear ref after commit
+    }, 200);
+  }, [STORAGE_KEY, baseUrl, preserveParams, router]);
+
+  // Cleanup: Cancel pending debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  /**
+   * Handle row click - open in split pane on desktop/tablet, navigate to full page on mobile
+   *
+   * Performance optimization: Split into instant visual update + debounced side effects
+   * - Visual state updates immediately (smooth navigation, no lag)
+   * - URL update + localStorage write debounced (200ms after last navigation)
+   * - Prevents blocking main thread during rapid j/k navigation
+   */
+  const handleRowClick = useCallback(
+    (event: DashboardEvent) => {
+      const eventId = event.id;
+
+      // Mobile: Navigate to full-screen detail page immediately (no debounce)
+      if (isMobile) {
+        router.push(`/events/${eventId}`);
+        return;
+      }
+
+      // Desktop/Tablet: Split into instant visual + debounced commit
+      setVisualSelectedEventId(eventId);  // Instant visual feedback (no lag)
+      debouncedCommit(eventId);            // Debounced side effects (200ms)
+      setDetailPaneOpen(true);             // Open pane immediately for UX
     },
-    [
-      isMobile,
-      router,
-      setDetailPaneOpen,
-      STORAGE_KEY,
-      baseUrl,
-      preserveParams,
-    ]
+    [isMobile, router, debouncedCommit, setDetailPaneOpen]
   );
 
   return {
-    selectedEventId,
+    selectedEventId: visualSelectedEventId,  // Return visual state for rendering
     handleRowClick,
     isDetailPaneOpen,
     isMobile,

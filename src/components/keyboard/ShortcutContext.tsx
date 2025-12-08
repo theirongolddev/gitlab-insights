@@ -31,13 +31,17 @@ type ScopedHandlerMap = Map<string | null, () => void>;
  * - Global handlers (no scopeId) are used as fallback
  */
 interface ShortcutContextValue {
-  // Global-only handler setters
+  // Modern registration API (useShortcutHandler hook)
+  registerHandler: (name: string, handler: () => void, scopeId?: string) => () => void;
+
+  // Legacy: Global-only handler setters (deprecated, use registerHandler instead)
   setFocusSearch: (handler: () => void) => void;
   setClearFocusAndModals: (handler: () => void) => void;
   setNavigateToQuery: (handler: (index: number) => void) => void;
   setOpenSaveModal: (handler: () => void) => void;
   setToggleCatchUpMode: (handler: () => void) => void;
   setTriggerManualRefresh: (handler: () => void) => void;
+  setToggleDetailPane: (handler: () => void) => void;
 
   // Scoped handler setters - optional scopeId for section-specific handlers
   setMoveSelectionDown: (handler: () => void, scopeId?: string) => void;
@@ -66,6 +70,7 @@ interface ShortcutContextValue {
   openSaveModal: () => void;
   toggleCatchUpMode: () => void;
   triggerManualRefresh: () => void;
+  toggleDetailPane: () => void;
 }
 
 const ShortcutContext = createContext<ShortcutContextValue | null>(null);
@@ -86,6 +91,7 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
   const openSaveModalRef = useRef<(() => void) | null>(null);
   const toggleCatchUpModeRef = useRef<(() => void) | null>(null);
   const triggerManualRefreshRef = useRef<(() => void) | null>(null);
+  const toggleDetailPaneRef = useRef<(() => void) | null>(null);
 
   // Scoped handler refs - Map of scopeId to handler (null key = global)
   const moveSelectionDownRef = useRef<ScopedHandlerMap>(new Map());
@@ -119,6 +125,99 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
 
   const setTriggerManualRefresh = useCallback((handler: () => void) => {
     triggerManualRefreshRef.current = handler;
+  }, []);
+
+  const setToggleDetailPane = useCallback((handler: () => void) => {
+    toggleDetailPaneRef.current = handler;
+  }, []);
+
+  // Modern registration API - name-based registration for useShortcutHandler hook
+  const registerHandler = useCallback((
+    name: string,
+    handler: () => void,
+    scopeId?: string
+  ) => {
+    // Map handler name to appropriate ref
+    switch (name) {
+      case 'focusSearch':
+        focusSearchRef.current = handler;
+        break;
+      case 'clearFocusAndModals':
+        clearFocusAndModalsRef.current = handler;
+        break;
+      case 'openSaveModal':
+        openSaveModalRef.current = handler;
+        break;
+      case 'toggleCatchUpMode':
+        toggleCatchUpModeRef.current = handler;
+        break;
+      case 'triggerManualRefresh':
+        triggerManualRefreshRef.current = handler;
+        break;
+      case 'toggleDetailPane':
+        toggleDetailPaneRef.current = handler;
+        break;
+      case 'navigateToQuery':
+        navigateToQueryRef.current = handler as (index: number) => void;
+        break;
+      // Scoped handlers
+      case 'moveSelectionDown':
+        moveSelectionDownRef.current.set(scopeId ?? null, handler);
+        break;
+      case 'moveSelectionUp':
+        moveSelectionUpRef.current.set(scopeId ?? null, handler);
+        break;
+      case 'jumpHalfPageDown':
+        jumpHalfPageDownRef.current.set(scopeId ?? null, handler);
+        break;
+      case 'jumpHalfPageUp':
+        jumpHalfPageUpRef.current.set(scopeId ?? null, handler);
+        break;
+      default:
+        if (process.env.NODE_ENV === "development") {
+          console.warn(`[ShortcutContext] Unknown handler name: ${name}`);
+        }
+    }
+
+    // Return cleanup function
+    return () => {
+      switch (name) {
+        case 'focusSearch':
+          focusSearchRef.current = null;
+          break;
+        case 'clearFocusAndModals':
+          clearFocusAndModalsRef.current = null;
+          break;
+        case 'openSaveModal':
+          openSaveModalRef.current = null;
+          break;
+        case 'toggleCatchUpMode':
+          toggleCatchUpModeRef.current = null;
+          break;
+        case 'triggerManualRefresh':
+          triggerManualRefreshRef.current = null;
+          break;
+        case 'toggleDetailPane':
+          toggleDetailPaneRef.current = null;
+          break;
+        case 'navigateToQuery':
+          navigateToQueryRef.current = null;
+          break;
+        // Scoped handlers
+        case 'moveSelectionDown':
+          if (scopeId) moveSelectionDownRef.current.delete(scopeId);
+          break;
+        case 'moveSelectionUp':
+          if (scopeId) moveSelectionUpRef.current.delete(scopeId);
+          break;
+        case 'jumpHalfPageDown':
+          if (scopeId) jumpHalfPageDownRef.current.delete(scopeId);
+          break;
+        case 'jumpHalfPageUp':
+          if (scopeId) jumpHalfPageUpRef.current.delete(scopeId);
+          break;
+      }
+    };
   }, []);
 
   // Scoped setter functions - register handler with optional scopeId
@@ -298,14 +397,28 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
     }
   }, []);
 
+  // Epic 5: Invoke detail pane toggle handler (d key)
+  const toggleDetailPane = useCallback(() => {
+    if (toggleDetailPaneRef.current) {
+      toggleDetailPaneRef.current();
+    } else if (process.env.NODE_ENV === "development") {
+      console.debug(
+        "[Shortcuts] toggleDetailPane() called - no handler registered (d key)",
+      );
+    }
+  }, []);
+
   const value: ShortcutContextValue = {
-    // Global-only setters
+    // Modern API
+    registerHandler,
+    // Legacy setters (deprecated)
     setFocusSearch,
     setClearFocusAndModals,
     setNavigateToQuery,
     setOpenSaveModal,
     setToggleCatchUpMode,
     setTriggerManualRefresh,
+    setToggleDetailPane,
     // Scoped setters
     setMoveSelectionDown,
     setMoveSelectionUp,
@@ -330,6 +443,7 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
     openSaveModal,
     toggleCatchUpMode,
     triggerManualRefresh,
+    toggleDetailPane,
   };
 
   return (

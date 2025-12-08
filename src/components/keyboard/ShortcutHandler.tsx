@@ -45,6 +45,7 @@ export function ShortcutHandler() {
     openSaveModal,
     toggleCatchUpMode,
     triggerManualRefresh,
+    toggleDetailPane,
   } = useShortcuts();
 
   const handleKeyDown = useCallback(
@@ -78,6 +79,9 @@ export function ShortcutHandler() {
           if (event.ctrlKey) {
             event.preventDefault(); // Prevent browser bookmark dialog
             jumpHalfPageDown();
+          } else {
+            // Epic 5: Plain 'd' toggles detail pane
+            toggleDetailPane();
           }
           break;
         case "u":
@@ -113,7 +117,7 @@ export function ShortcutHandler() {
           break;
       }
     },
-    [focusSearch, moveSelectionDown, moveSelectionUp, jumpHalfPageDown, jumpHalfPageUp, clearFocusAndModals, navigateToQuery, openSaveModal, toggleCatchUpMode, triggerManualRefresh],
+    [focusSearch, moveSelectionDown, moveSelectionUp, jumpHalfPageDown, jumpHalfPageUp, clearFocusAndModals, navigateToQuery, openSaveModal, toggleCatchUpMode, triggerManualRefresh, toggleDetailPane],
   );
 
   useEffect(() => {
