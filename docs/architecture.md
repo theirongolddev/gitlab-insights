@@ -893,56 +893,80 @@ useEffect(() => {
 
 ### Split Pane Pattern
 
-**Component:** `src/components/dashboard/SplitPane.tsx`
+**Current Implementation (Epic 4):**
+- **Component:** `src/components/layout/SplitView.tsx`
+- **State Management:** `src/contexts/DetailPaneContext.tsx`
+- **Custom Hook:** `src/hooks/useEventDetailPane.ts` (Story 4.3 refactoring)
+- **Detail Content:** `src/components/events/EventDetail.tsx`
 
-**Toggle:** Press `d` key or click detail button
+**Toggle:** Press `d` key or click detail pane toggle button in header
 
-**Animation:** 200ms ease-out slide animation
-- Closed → Opening: Detail pane slides in from right
-- Open → Closing: Detail pane slides out to right
+**Responsive Behavior:**
+- **Desktop/Tablet (≥768px):** Split pane view with detail on right
+- **Mobile (<768px):** Navigate to full-screen `/events/:id` page
 
-**Layout:**
-- **Closed (default 1080p):** Full-width table
-- **Open:** List pane (480px) + Detail pane (remaining space)
-- **1440p+:** Split pane defaults to ON, can toggle OFF
+**State Management:**
+- Split pane open/closed state managed by `DetailPaneContext`
+- User preference persisted in localStorage
+- Shared across all pages (Dashboard, Query views)
 
-**Persistent Setting:**
-- User preference saved in localStorage
-- Checkbox in settings: "Always show detail pane"
-- Responsive: <1600px width = overlay mode instead
+**URL Synchronization:**
+- Row click updates URL with `?detail=:eventId` parameter
+- Deep linking supported: `/queries/:id?detail=:eventId` auto-opens detail pane
+- Browser back/forward buttons work correctly (shallow routing)
+- Query-specific localStorage persistence (optional)
 
-**Detail Pane Contents (DetailPane.tsx):**
-- Header: Badge, title, NEW badge, item number (!456)
-- Matched Query: Shows which query matched and why
-- Content: Full description with highlighted keywords (olive background)
-- Metadata Grid: Author, project, labels, time, stats
-- Actions: "Open in GitLab (o)", "Mark as Reviewed (m)", "Next (j/k)"
+**Custom Hook Pattern (useEventDetailPane):**
 
-**Implementation:**
+**Purpose:** Reusable hook for implementing split pane functionality across multiple pages
+
+**Features:**
+- State management (selectedEventId)
+- Deep linking from URL params
+- Mobile vs desktop/tablet navigation
+- URL synchronization with shallow routing
+- Optional localStorage persistence per page
+- Configurable URL param preservation
+
+**Usage Example:**
 ```typescript
-const [splitPaneOpen, setSplitPaneOpen] = useState(defaultOpen);
+// Dashboard page
+const { selectedEventId, handleRowClick } = useEventDetailPane({
+  baseUrl: '/dashboard',
+  preserveParams: ['mode'], // Preserve ?mode=catchup
+});
 
-// 'd' key handler in ShortcutHandler
-const toggleSplitPane = () => {
-  setSplitPaneOpen(prev => !prev);
-  localStorage.setItem('splitPanePreference', !splitPaneOpen);
-};
+// Query page
+const { selectedEventId, handleRowClick } = useEventDetailPane({
+  baseUrl: `/queries/${queryId}`,
+  persistenceKey: `query-${queryId}`, // Enable last-selected restoration
+});
 
-// Layout
-<div className="flex">
-  <div className={cn(
-    "transition-all duration-200",
-    splitPaneOpen ? "w-[480px]" : "w-full"
-  )}>
-    <ItemTable />
-  </div>
-  {splitPaneOpen && (
-    <div className="flex-1 border-l animate-slide-in">
-      <DetailPane item={selectedItem} />
-    </div>
-  )}
-</div>
+// In render
+<SplitView
+  listContent={
+    <EventTable
+      events={events}
+      selectedEventId={selectedEventId}
+      onRowClick={handleRowClick}
+    />
+  }
+  detailContent={<EventDetail eventId={selectedEventId} />}
+  selectedEventId={selectedEventId}
+/>
 ```
+
+**Hook Options:**
+- `baseUrl`: Base URL path for the page (e.g., "/dashboard" or "/queries/:id")
+- `persistenceKey`: Optional localStorage key for restoring last selected event
+- `preserveParams`: Array of URL params to preserve (e.g., ["mode"])
+
+**Implementation Benefits:**
+- Single source of truth for split pane logic
+- Consistent behavior across Dashboard and Query pages
+- Eliminates ~45 lines of duplicated code per page
+- Easy to add split pane to new pages (3 lines of code)
+- Fully tested and type-safe
 
 ### Progressive Disclosure Pattern
 

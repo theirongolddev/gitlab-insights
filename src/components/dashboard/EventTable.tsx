@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback, useMemo } from "react";
 import {
   Table,
   TableHeader,
@@ -16,6 +16,8 @@ import { useShortcuts } from "../keyboard/ShortcutContext";
 interface EventTableProps {
   events: DashboardEvent[];
   onRowClick?: (event: DashboardEvent) => void;
+  /** Selected event ID for visual highlighting (Story 4.3) */
+  selectedEventId?: string | null;
   /** Optional scope ID for scoped keyboard handlers (Story 3.2: Catch-Up Mode sections) */
   scopeId?: string;
   /** Mark all items as new (Story 3.2: Catch-Up Mode shows NEW badges) */
@@ -32,10 +34,7 @@ interface EventTableProps {
  * - Maintains WCAG 2.1 Level AA accessibility compliance
  * - Integrates with existing ItemRow component (Epic 1)
  */
-export function EventTable({ events, onRowClick, scopeId, showNewBadges = false }: EventTableProps) {
-  // Task 1.4: selectedKeys state for single-selection mode
-  const [selectedKeys, setSelectedKeys] = useState<Selection>(new Set());
-
+export function EventTable({ events, onRowClick, selectedEventId, scopeId, showNewBadges = false }: EventTableProps) {
   // Task 3: Ref for focus management - use wrapper div since React Aria Table
   // doesn't expose onKeyDown directly
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -61,11 +60,18 @@ export function EventTable({ events, onRowClick, scopeId, showNewBadges = false 
    */
   const HALF_PAGE_JUMP = 10;
 
+  // Story 4.3: Derive selectedKeys from selectedEventId prop (controlled component)
+  // Parent manages state, component derives display from props
+  const selectedKeys: Selection = useMemo(
+    () => (selectedEventId ? new Set([selectedEventId]) : new Set()),
+    [selectedEventId]
+  );
+
   // Use refs to avoid stale closure issues with selection state
   const eventsRef = useRef(events);
   const selectedKeysRef = useRef(selectedKeys);
 
-  // Keep refs in sync with state
+  // Keep refs in sync with props/derived values
   useEffect(() => {
     eventsRef.current = events;
   }, [events]);
@@ -74,8 +80,9 @@ export function EventTable({ events, onRowClick, scopeId, showNewBadges = false 
     selectedKeysRef.current = selectedKeys;
 
     // Scroll selected row into view
-    if (selectedKeys !== "all" && (selectedKeys as Set<string>).size > 0) {
-      const selectedId = Array.from(selectedKeys as Set<string>)[0];
+    // Story 4.3: selectedKeys is always a Set (never "all")
+    if (selectedKeys.size > 0) {
+      const selectedId = Array.from(selectedKeys)[0];
       // Find the row element by its data-key attribute (React Aria sets this)
       const rowElement = wrapperRef.current?.querySelector(
         `[data-key="${selectedId}"]`
@@ -91,14 +98,14 @@ export function EventTable({ events, onRowClick, scopeId, showNewBadges = false 
     const currentEvents = eventsRef.current;
     const currentSelectedKeys = selectedKeysRef.current;
 
-    if (currentSelectedKeys === "all" || currentEvents.length === 0) return -1;
-    const selectedSet = currentSelectedKeys as Set<string>;
-    if (selectedSet.size === 0) return -1;
-    const selectedId = Array.from(selectedSet)[0];
+    // Story 4.3: currentSelectedKeys is always a Set (never "all")
+    if (currentEvents.length === 0 || currentSelectedKeys.size === 0) return -1;
+    const selectedId = Array.from(currentSelectedKeys)[0];
     return currentEvents.findIndex((e) => e.id === selectedId);
   }, []);
 
   // Task 2.4: Selection movement logic - uses refs for current values
+  // Story 4.3: Notify parent via onRowClick when keyboard navigation changes selection
   const moveSelection = useCallback(
     (direction: "up" | "down", count: number = 1) => {
       const currentEvents = eventsRef.current;
@@ -123,11 +130,12 @@ export function EventTable({ events, onRowClick, scopeId, showNewBadges = false 
       }
 
       const newEvent = currentEvents[newIndex];
-      if (newEvent) {
-        setSelectedKeys(new Set([newEvent.id]));
+      if (newEvent && onRowClick) {
+        // Story 4.3: Notify parent - parent will update selectedEventId prop
+        onRowClick(newEvent);
       }
     },
-    [getSelectedIndex]
+    [getSelectedIndex, onRowClick]
   );
 
   // Task 3: Focus Router Pattern - register handlers with ShortcutContext
@@ -223,7 +231,18 @@ export function EventTable({ events, onRowClick, scopeId, showNewBadges = false 
         className="w-full"
         selectionMode="single"
         selectedKeys={selectedKeys}
-        onSelectionChange={setSelectedKeys}
+        onSelectionChange={(keys) => {
+          // Story 4.3: Notify parent when row selection changes
+          // Parent manages state and will update selectedEventId prop
+          const newKeys = keys as Set<string>;
+          if (onRowClick && newKeys.size > 0) {
+            const eventId = Array.from(newKeys)[0];
+            const event = events.find((e) => e.id === eventId);
+            if (event) {
+              onRowClick(event);
+            }
+          }
+        }}
         color="primary" // HeroUI: Olive theme color for selection
         classNames={{
           wrapper: "p-0 shadow-none bg-transparent",
@@ -248,10 +267,7 @@ export function EventTable({ events, onRowClick, scopeId, showNewBadges = false 
               <TableCell>
                 <ItemRow
                   item={event}
-                  isSelected={
-                    selectedKeys !== "all" &&
-                    (selectedKeys as Set<string>).has(event.id)
-                  }
+                  isSelected={selectedKeys.has(event.id)}
                   isNew={showNewBadges}
                   onClick={() => onRowClick?.(event)}
                 />

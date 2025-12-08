@@ -8,7 +8,7 @@
  * AC 3.4.8: Data fetched once at AuthenticatedLayout level
  */
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type DashboardEvent } from "~/components/dashboard/ItemRow";
 import { EventTable } from "~/components/dashboard/EventTable";
@@ -18,12 +18,21 @@ import { useShortcuts } from "~/components/keyboard/ShortcutContext";
 import { LoadingSpinner } from "~/components/ui/LoadingSpinner";
 import { useNewItems } from "~/contexts/NewItemsContext";
 import { api } from "~/trpc/react";
+import { SplitView } from "~/components/layout/SplitView";
+import { EventDetail } from "~/components/events/EventDetail";
+import { useEventDetailPane } from "~/hooks/useEventDetailPane";
 
 export function DashboardClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const isCatchUpMode = searchParams?.get("mode") === "catchup";
+
+  // Split pane state for event details
+  const { selectedEventId, handleRowClick } = useEventDetailPane({
+    baseUrl: '/dashboard',
+    preserveParams: ['mode'], // Preserve ?mode=catchup in URLs
+  });
 
   const prevCatchUpModeRef = useRef(isCatchUpMode);
 
@@ -77,10 +86,6 @@ export function DashboardClient() {
   // AC 3.4.8: Data fetched once at AuthenticatedLayout level in NewItemsProvider
   const { totalNewCount } = useNewItems();
 
-  const handleRowClick = (event: DashboardEvent) => {
-    window.open(event.gitlabUrl, "_blank", "noopener,noreferrer");
-  };
-
   const issues: DashboardEvent[] = (dashboardData?.issues ?? []).map((e) => ({
     ...e,
     type: e.type as DashboardEvent["type"],
@@ -130,8 +135,8 @@ export function DashboardClient() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+    <div className="flex flex-col" style={{ height: 'calc(100vh - var(--header-height))' }}>
+      <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50">
@@ -148,15 +153,27 @@ export function DashboardClient() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6">
+      <div className="flex-1 overflow-hidden">
         {isCatchUpMode ? (
-          <CatchUpView />
+          <div className="container mx-auto px-4 py-6">
+            <CatchUpView />
+          </div>
         ) : eventsLoading && !isSearchActive ? (
           <div className="flex items-center justify-center py-12">
             <p className="text-lg text-gray-400">Loading events...</p>
           </div>
         ) : (
-          <EventTable events={displayEvents} onRowClick={handleRowClick} />
+          <SplitView
+            listContent={
+              <EventTable
+                events={displayEvents}
+                selectedEventId={selectedEventId}
+                onRowClick={handleRowClick}
+              />
+            }
+            detailContent={<EventDetail eventId={selectedEventId} />}
+            selectedEventId={selectedEventId}
+          />
         )}
       </div>
     </div>

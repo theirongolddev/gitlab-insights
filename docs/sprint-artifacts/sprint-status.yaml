@@ -89,7 +89,7 @@ development_status:
   epic-4: in-progress
   4-1-split-pane-component-with-toggle-button: done  # Completed 2025-12-07: Code review approved with minor improvements
   4-2-detail-pane-content-rendering: done  # Re-review PASSED 2025-12-07: All 12 review issues resolved (7 initial + 5 re-review), architecture compliance verified
-  4-3-auto-update-detail-on-row-click: backlog
+  4-3-auto-update-detail-on-row-click: done  # Completed 2025-12-08: Code review issues resolved, useEventDetailPane hook refactored, browser nav fixed
   4-4-keyword-highlighting-in-detail-view: backlog
   4-5-section-navigation-with-clickable-headers: backlog
   4-6-query-metadata-page: backlog
