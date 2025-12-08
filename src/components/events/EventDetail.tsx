@@ -1,9 +1,12 @@
 "use client";
 
+import { useMemo } from "react";
 import { Button } from "@heroui/react";
 import { ExternalLink } from "lucide-react";
 import { api } from "~/trpc/react";
 import { formatRelativeTime, formatEventType } from "~/lib/utils";
+import { useSearch } from "~/components/search/SearchContext";
+import { HighlightedText } from "~/components/ui/HighlightedText";
 
 interface EventDetailProps {
   eventId: string | null;
@@ -18,14 +21,32 @@ interface EventDetailProps {
  * - "Open in GitLab" button
  * - Proper empty states and loading states
  *
+ * Story 4.4: Keyword highlighting in detail view
+ * - Highlights search keywords in title and body
+ * - Uses SearchContext to get active search terms
+ * - Conditionally renders HighlightedText when highlights available
+ *
  * AC1: Display full event data (title, body, author, timestamp, project, labels, GitLab link)
  * AC2: GitLab link button opens event URL in new tab
  * AC3: Empty state when no event selected
  * AC4: Empty body placeholder when event has no body text
  */
 export function EventDetail({ eventId }: EventDetailProps) {
+  const { keywords } = useSearch(); // Story 4.4: Get active search terms
+
+  // Bug Fix (Story 4.4 regression): Stabilize searchTerms for React Query cache key
+  // Defense-in-depth to prevent cache fragmentation if SearchContext keywords change
+  const keywordsString = JSON.stringify(keywords); // Extract for ESLint compliance
+  const searchTerms = useMemo(() => {
+    return keywords.length > 0 ? keywords : undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keywordsString]);
+
   const { data: event, isLoading, error } = api.events.getById.useQuery(
-    { id: eventId! },
+    {
+      id: eventId!,
+      searchTerms, // Use memoized version
+    },
     { enabled: !!eventId }
   );
 
@@ -75,7 +96,12 @@ export function EventDetail({ eventId }: EventDetailProps) {
       {/* Sticky Header */}
       <div className="border-b border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-50">
-          {event.title}
+          {/* Story 4.4: Render highlighted title if available */}
+          {"titleHighlighted" in event && event.titleHighlighted ? (
+            <HighlightedText html={event.titleHighlighted} />
+          ) : (
+            event.title
+          )}
         </h2>
         <div className="mt-2 flex gap-2 text-sm text-gray-600 dark:text-gray-400">
           <span>{event.author}</span>
@@ -96,8 +122,12 @@ export function EventDetail({ eventId }: EventDetailProps) {
             Description
           </h3>
           <div className="prose prose-sm max-w-none whitespace-pre-wrap text-gray-900 dark:prose-invert dark:text-gray-50">
-            {/* AC4: Empty body placeholder */}
-            {event.body || (
+            {/* Story 4.4: Render highlighted body if available, otherwise plain text */}
+            {"bodyHighlighted" in event && event.bodyHighlighted ? (
+              <HighlightedText html={event.bodyHighlighted} />
+            ) : event.body ? (
+              event.body
+            ) : (
               <em className="text-gray-400 dark:text-gray-600">
                 (No description)
               </em>

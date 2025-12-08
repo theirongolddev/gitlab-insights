@@ -5,6 +5,7 @@ import {
   useContext,
   useState,
   useCallback,
+  useMemo,
   type ReactNode,
 } from "react";
 import { useSession } from "~/lib/auth-client";
@@ -63,8 +64,17 @@ export function SearchProvider({ children }: SearchProviderProps) {
   const { data: session } = useSession();
   const [keywords, setKeywords] = useState<string[]>([]);
 
+  // Bug Fix (Story 4.4 regression): Memoize keywords array to prevent reference changes
+  // when content is identical. This prevents React Query cache fragmentation in EventDetail.
+  const keywordsString = JSON.stringify(keywords); // Extract for ESLint compliance
+  const memoizedKeywords = useMemo(
+    () => keywords,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [keywordsString] // Only change when content changes
+  );
+
   // Only search when authenticated AND has at least one keyword
-  const isSearchActive = keywords.length > 0;
+  const isSearchActive = memoizedKeywords.length > 0;
 
   // tRPC search query - AC 2.4.4: Results in <1s
   const {
@@ -72,7 +82,7 @@ export function SearchProvider({ children }: SearchProviderProps) {
     isLoading: isSearchLoading,
     isFetching: isSearchFetching,
   } = api.events.search.useQuery(
-    { keywords },
+    { keywords: memoizedKeywords },
     {
       enabled: !!session && isSearchActive,
       // Keep previous data while fetching new results
@@ -107,7 +117,7 @@ export function SearchProvider({ children }: SearchProviderProps) {
   }, []);
 
   const value: SearchContextValue = {
-    keywords,
+    keywords: memoizedKeywords, // Export memoized version for stable references
     addKeyword,
     removeKeyword,
     setKeywords: setKeywordsCallback,

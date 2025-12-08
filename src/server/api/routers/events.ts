@@ -278,9 +278,15 @@ export const eventsRouter = createTRPCRouter({
    * GET /api/trpc/events.getById
    *
    * Returns a single event with full details for the detail pane (Story 4.2)
+   * Story 4.4: Extended to support keyword highlighting in detail view
    */
   getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
+    .input(
+      z.object({
+        id: z.string(),
+        searchTerms: z.array(z.string()).optional(), // Story 4.4: Highlight support
+      })
+    )
     .query(async ({ ctx, input }) => {
       const event = await ctx.db.event.findUnique({
         where: {
@@ -296,6 +302,25 @@ export const eventsRouter = createTRPCRouter({
         });
       }
 
+      // Story 4.4: Apply highlighting if search terms provided
+      if (input.searchTerms && input.searchTerms.length > 0) {
+        const { highlightEventContent } = await import(
+          "~/lib/search/highlight-event"
+        );
+        const highlighted = await highlightEventContent(
+          ctx.db,
+          event.id,
+          input.searchTerms
+        );
+
+        return {
+          ...event,
+          titleHighlighted: highlighted.titleHighlighted,
+          bodyHighlighted: highlighted.bodyHighlighted,
+        };
+      }
+
+      // No search terms → return event without highlights
       return event;
     }),
 

@@ -131,9 +131,10 @@ export function useEventDetailPane({
         return;
       }
 
-      // Desktop/Tablet: Open in split pane and update URL
-      setSelectedEventId(eventId);
-      setDetailPaneOpen(true);
+      // Desktop/Tablet: Update URL only - state derives from URL (single source of truth)
+      // Bug Fix (Story 4.4 regression): Removed direct setSelectedEventId() call
+      // to eliminate dual source of truth. URL sync effect (line 116) handles state update.
+      setDetailPaneOpen(true); // Open pane immediately for UX
 
       // Store last selected event in localStorage (if persistence enabled)
       if (STORAGE_KEY && typeof window !== "undefined") {
@@ -145,6 +146,7 @@ export function useEventDetailPane({
       }
 
       // Update URL with detail param, preserving specified params
+      // The URL sync effect will call setSelectedEventId(detailParam)
       const params = new URLSearchParams(window.location.search);
       params.set("detail", eventId);
 
