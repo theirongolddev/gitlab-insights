@@ -40,29 +40,54 @@ const handleUnauthorizedError = async (error: unknown) => {
   }
 };
 
+/**
+ * Determine if a tRPC error should be retried.
+ *
+ * Client errors (4xx) are deterministic and should not be retried.
+ * Server errors (5xx) and network failures may be transient and can be retried.
+ */
+const shouldRetryError = (failureCount: number, error: unknown): boolean => {
+  // Max 3 retries for any retryable error
+  if (failureCount >= 3) {
+    return false;
+  }
+
+  // Only handle tRPC errors with error codes
+  if (!(error instanceof TRPCClientError)) {
+    // Network errors (fetch failures, etc.) should retry
+    return true;
+  }
+
+  const errorCode = error.data?.code;
+
+  // Client errors (4xx) - deterministic, don't retry
+  const nonRetryableErrors = [
+    "UNAUTHORIZED",      // 401 - triggers logout flow
+    "FORBIDDEN",         // 403 - permission denied
+    "NOT_FOUND",         // 404 - resource doesn't exist
+    "BAD_REQUEST",       // 400 - validation error
+    "CONFLICT",          // 409 - duplicate/constraint
+    "TOO_MANY_REQUESTS", // 429 - rate limit
+  ];
+
+  if (errorCode && nonRetryableErrors.includes(errorCode)) {
+    return false;
+  }
+
+  // Server errors (5xx) and other errors - retry
+  // Includes: INTERNAL_SERVER_ERROR, SERVICE_UNAVAILABLE, TIMEOUT
+  return true;
+};
+
 const createQueryClient = () =>
   new QueryClient({
     defaultOptions: {
       queries: {
-        // Don't retry on UNAUTHORIZED errors (user logged out)
-        retry: (failureCount, error) => {
-          if (error instanceof TRPCClientError && error.data?.code === "UNAUTHORIZED") {
-            return false;
-          }
-          return failureCount < 3;
-        },
-        // Don't refetch on window focus during logout transition
+        retry: shouldRetryError,
         refetchOnWindowFocus: false,
       },
       mutations: {
-        // Don't retry mutations on UNAUTHORIZED
-        retry: (failureCount, error) => {
-          if (error instanceof TRPCClientError && error.data?.code === "UNAUTHORIZED") {
-            return false;
-          }
-          return failureCount < 3;
-        },
-        // Handle auth errors on mutations
+        retry: shouldRetryError,
         onError: handleUnauthorizedError,
       },
     },

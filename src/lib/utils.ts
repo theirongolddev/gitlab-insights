@@ -29,6 +29,24 @@ export function formatRelativeTime(date: Date): string {
 }
 
 /**
+ * Format date for display
+ *
+ * @param date - The date to format
+ * @returns Formatted date string (e.g., "Nov 26, 2024")
+ *
+ * @example
+ * formatDate(new Date('2024-11-26'))
+ * // => "Nov 26, 2024"
+ */
+export function formatDate(date: Date): string {
+  return new Date(date).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+/**
  * Format GitLab event type for display (converts snake_case to Title Case)
  *
  * @param type - The event type in snake_case (e.g., "merge_request", "issue")

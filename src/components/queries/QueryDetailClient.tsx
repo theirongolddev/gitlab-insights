@@ -300,6 +300,14 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
           <span className="text-sm text-gray-500 dark:text-gray-400">
             {searchData?.events.length ?? 0} {(searchData?.events.length ?? 0) === 1 ? "result" : "results"}
           </span>
+          <Button
+            onPress={() => router.push(`/queries/${queryId}/details`)}
+            variant="light"
+            size="sm"
+            className="text-gray-600 hover:text-olive dark:text-gray-400 dark:hover:text-olive-light"
+          >
+            Query Details →
+          </Button>
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-gray-500 dark:text-gray-500">Keywords:</span>
             {liveKeywords.map((keyword) => (
