@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useCallback, useMemo } from "react";
+import { useRef, useEffect, useCallback, useMemo, useId } from "react";
 import {
   Table,
   TableHeader,
@@ -12,6 +12,7 @@ import {
 } from "@heroui/react";
 import { ItemRow, type DashboardEvent } from "./ItemRow";
 import { useShortcutHandler } from "~/hooks/useShortcutHandler";
+import { useScrollRestoration } from "~/hooks/useScrollRestoration";
 
 interface EventTableProps {
   events: DashboardEvent[];
@@ -22,6 +23,8 @@ interface EventTableProps {
   scopeId?: string;
   /** Mark all items as new (Story 3.2: Catch-Up Mode shows NEW badges) */
   showNewBadges?: boolean;
+  /** Query ID for scroll restoration (Story 4.7) - Optional, falls back to unique instance ID */
+  queryId?: string;
 }
 
 /**
@@ -34,10 +37,19 @@ interface EventTableProps {
  * - Maintains WCAG 2.1 Level AA accessibility compliance
  * - Integrates with existing ItemRow component (Epic 1)
  */
-export function EventTable({ events, onRowClick, selectedEventId, scopeId, showNewBadges = false }: EventTableProps) {
+export function EventTable({ events, onRowClick, selectedEventId, scopeId, showNewBadges = false, queryId }: EventTableProps) {
   // Task 3: Ref for focus management - use wrapper div since React Aria Table
   // doesn't expose onKeyDown directly
   const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // Story 4.7: Generate unique instance ID when no queryId provided
+  // This ensures each EventTable instance has its own scroll state
+  const instanceId = useId();
+
+  // Story 4.7: Scroll restoration with sessionStorage
+  const { scrollContainerRef, handleScroll, isRestoring } = useScrollRestoration(
+    queryId ? `table-scroll-${queryId}` : `table-scroll-${instanceId}`
+  );
 
   /**
    * Number of rows to jump for half-page navigation (Ctrl+d/Ctrl+u).
@@ -66,9 +78,10 @@ export function EventTable({ events, onRowClick, selectedEventId, scopeId, showN
   useEffect(() => {
     selectedKeysRef.current = selectedKeys;
 
-    // Scroll selected row into view
+    // Scroll selected row into view (but not during scroll restoration to avoid conflicts)
     // Story 4.3: selectedKeys is always a Set (never "all")
-    if (selectedKeys.size > 0) {
+    // Story 4.7: Skip scrollIntoView during scroll restoration to prevent race condition
+    if (selectedKeys.size > 0 && !isRestoring()) {
       const selectedId = Array.from(selectedKeys)[0];
       // Find the row element by its data-key attribute (React Aria sets this)
       const rowElement = wrapperRef.current?.querySelector(
@@ -78,7 +91,7 @@ export function EventTable({ events, onRowClick, selectedEventId, scopeId, showN
         rowElement.scrollIntoView({ block: "nearest", behavior: "smooth" });
       }
     }
-  }, [selectedKeys]);
+  }, [selectedKeys, isRestoring]);
 
   // Helper to get current selected index - uses refs for current values
   const getSelectedIndex = useCallback((): number => {
@@ -171,25 +184,31 @@ export function EventTable({ events, onRowClick, selectedEventId, scopeId, showN
   }
 
   return (
-    // Task 3.3: Wrapper div for focus management (j/k handled by global ShortcutHandler)
+    // Story 4.7: Scroll container with position restoration
     <div
-      ref={wrapperRef}
-      tabIndex={0}
-      className="outline-none"
-      onKeyDown={(e) => {
-        // Handle Enter key on selected row
-        if (e.key === "Enter") {
-          const currentIndex = getSelectedIndex();
-          if (currentIndex >= 0 && currentIndex < events.length) {
-            const event = events[currentIndex];
-            if (event && onRowClick) {
-              onRowClick(event);
+      ref={scrollContainerRef}
+      onScroll={handleScroll}
+      className="h-full overflow-y-auto"
+    >
+      {/* Task 3.3: Wrapper div for focus management (j/k handled by global ShortcutHandler) */}
+      <div
+        ref={wrapperRef}
+        tabIndex={0}
+        className="outline-none"
+        onKeyDown={(e) => {
+          // Handle Enter key on selected row
+          if (e.key === "Enter") {
+            const currentIndex = getSelectedIndex();
+            if (currentIndex >= 0 && currentIndex < events.length) {
+              const event = events[currentIndex];
+              if (event && onRowClick) {
+                onRowClick(event);
+              }
             }
           }
-        }
-      }}
-    >
-      <Table
+        }}
+      >
+        <Table
         aria-label="Events table"
         className="w-full"
         selectionMode="single"
@@ -239,6 +258,7 @@ export function EventTable({ events, onRowClick, selectedEventId, scopeId, showN
           ))}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }

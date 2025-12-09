@@ -333,6 +333,13 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
               />
             ))}
           </div>
+        ) : liveKeywords.length === 0 ? (
+          <div className="text-center py-12 p-6">
+            <p className="text-lg text-gray-500 dark:text-gray-400">No search keywords active</p>
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">
+              Use the search bar above to add keywords and filter events
+            </p>
+          </div>
         ) : searchData?.events && searchData.events.length > 0 ? (
           <SplitView
           listContent={
@@ -340,6 +347,7 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
               events={searchData.events as DashboardEvent[]}
               selectedEventId={selectedEventId}
               onRowClick={handleRowClick}
+              queryId={queryId}
             />
           }
           detailContent={<EventDetail eventId={selectedEventId} />}

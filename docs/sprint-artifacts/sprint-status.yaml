@@ -93,7 +93,7 @@ development_status:
   4-4-keyword-highlighting-in-detail-view: done  # Completed 2025-12-09: Code review + manual testing complete, reveals Story 2.6 case-sensitivity limitation
   4-5-section-navigation-with-clickable-headers: done  # Completed 2025-12-09: Code review passed, all ACs verified, bug fixes documented
   4-6-query-metadata-page: done  # Completed 2025-12-09: Code review passed, all ACs verified, documentation issues resolved
-  4-7-scroll-position-persistence: ready-for-dev  # Ultimate context engine analysis completed 2025-12-09: Scroll restoration hook with sessionStorage
+  4-7-scroll-position-persistence: done  # Re-review PASSED 2025-12-09: All 13 review issues resolved, all 8 ACs verified
   epic-4-retrospective: optional
 
   # Epic 5: Keyboard Foundation (No detailed stories yet)
