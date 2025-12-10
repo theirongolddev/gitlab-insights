@@ -21,6 +21,7 @@ import { api } from "~/trpc/react";
 import { SplitView } from "~/components/layout/SplitView";
 import { EventDetail } from "~/components/events/EventDetail";
 import { useEventDetailPane } from "~/hooks/useEventDetailPane";
+import { useToast } from "~/components/ui/Toast/ToastContext";
 
 export function DashboardClient() {
   const router = useRouter();
@@ -63,6 +64,8 @@ export function DashboardClient() {
   }, [isCatchUpMode, router, isSearchActive, clearSearch]);
 
   useShortcutHandler('toggleCatchUpMode', toggleCatchUpMode);
+
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (!isCatchUpMode || !isSearchActive) return;
@@ -121,6 +124,32 @@ export function DashboardClient() {
   }));
 
   const displayEvents = isSearchActive ? searchEventsAsDashboard : allDashboardEvents;
+
+  // Story 5.1 (AC 5.1.1): 'o' key opens selected event in GitLab
+  // Fixed: Moved after displayEvents definition to avoid closure bug
+  useShortcutHandler('openInGitLab', () => {
+    if (!selectedEventId) {
+      showToast("No event selected", "error");
+      return;
+    }
+    const selectedEvent = displayEvents.find(e => e.id === selectedEventId);
+    if (!selectedEvent) {
+      showToast("Event not found", "error");
+      return;
+    }
+    const result = window.open(selectedEvent.gitlabUrl, '_blank');
+    if (!result) {
+      showToast("Failed to open link. Please check popup blocker settings.", "error");
+    }
+  });
+
+  // Story 5.1 (AC 5.1.6): 1/2/3 keys scroll to sections in detail pane
+  useShortcutHandler('scrollToSection', (sectionId: 'title' | 'body' | 'metadata') => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
 
   if (isLoadingMonitored) {
     return <LoadingSpinner size="lg" label="Loading..." className="min-h-screen" />;

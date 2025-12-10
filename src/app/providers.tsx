@@ -24,11 +24,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <RouterProvider navigate={router.push}>
         <TRPCReactProvider>
           <ShortcutProvider>
-            <ShortcutHandler />
             {/* Story 2.4: SearchProvider for global search state */}
             <SearchProvider>
               {/* DetailPaneProvider for split pane state */}
               <DetailPaneProvider>
+                {/* Story 5.1: ShortcutHandler needs access to DetailPaneProvider */}
+                <ShortcutHandler />
                 {/* Story 2.10: ToastProvider for error/success notifications */}
                 <ToastProvider>
                   {children}

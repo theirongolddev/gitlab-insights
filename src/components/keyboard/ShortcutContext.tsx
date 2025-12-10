@@ -7,6 +7,25 @@ import {
   useRef,
   type ReactNode,
 } from "react";
+import { logger } from "~/lib/logger";
+
+/**
+ * Valid shortcut handler names for type safety
+ */
+export type ShortcutHandlerName =
+  | 'focusSearch'
+  | 'clearFocusAndModals'
+  | 'openSaveModal'
+  | 'toggleCatchUpMode'
+  | 'triggerManualRefresh'
+  | 'toggleDetailPane'
+  | 'openInGitLab'
+  | 'scrollToSection'
+  | 'navigateToQuery'
+  | 'moveSelectionDown'
+  | 'moveSelectionUp'
+  | 'jumpHalfPageDown'
+  | 'jumpHalfPageUp';
 
 /**
  * Configuration for a registered shortcut handler
@@ -32,7 +51,7 @@ type ScopedHandlerMap = Map<string | null, () => void>;
  */
 interface ShortcutContextValue {
   // Modern registration API (useShortcutHandler hook)
-  registerHandler: (name: string, handler: () => void, scopeId?: string) => () => void;
+  registerHandler: (name: ShortcutHandlerName, handler: () => void, scopeId?: string) => () => void;
 
   // Legacy: Global-only handler setters (deprecated, use registerHandler instead)
   setFocusSearch: (handler: () => void) => void;
@@ -42,6 +61,8 @@ interface ShortcutContextValue {
   setToggleCatchUpMode: (handler: () => void) => void;
   setTriggerManualRefresh: (handler: () => void) => void;
   setToggleDetailPane: (handler: () => void) => void;
+  setOpenInGitLab: (handler: () => void) => void;
+  setScrollToSection: (handler: (sectionId: 'title' | 'body' | 'metadata') => void) => void;
 
   // Scoped handler setters - optional scopeId for section-specific handlers
   setMoveSelectionDown: (handler: () => void, scopeId?: string) => void;
@@ -71,6 +92,8 @@ interface ShortcutContextValue {
   toggleCatchUpMode: () => void;
   triggerManualRefresh: () => void;
   toggleDetailPane: () => void;
+  openInGitLab: () => void;
+  scrollToSection: (sectionId: 'title' | 'body' | 'metadata') => void;
 }
 
 const ShortcutContext = createContext<ShortcutContextValue | null>(null);
@@ -92,6 +115,8 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
   const toggleCatchUpModeRef = useRef<(() => void) | null>(null);
   const triggerManualRefreshRef = useRef<(() => void) | null>(null);
   const toggleDetailPaneRef = useRef<(() => void) | null>(null);
+  const openInGitLabRef = useRef<(() => void) | null>(null);
+  const scrollToSectionRef = useRef<((sectionId: 'title' | 'body' | 'metadata') => void) | null>(null);
 
   // Scoped handler refs - Map of scopeId to handler (null key = global)
   const moveSelectionDownRef = useRef<ScopedHandlerMap>(new Map());
@@ -131,6 +156,14 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
     toggleDetailPaneRef.current = handler;
   }, []);
 
+  const setOpenInGitLab = useCallback((handler: () => void) => {
+    openInGitLabRef.current = handler;
+  }, []);
+
+  const setScrollToSection = useCallback((handler: (sectionId: 'title' | 'body' | 'metadata') => void) => {
+    scrollToSectionRef.current = handler;
+  }, []);
+
   // Modern registration API - name-based registration for useShortcutHandler hook
   const registerHandler = useCallback((
     name: string,
@@ -157,6 +190,12 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
       case 'toggleDetailPane':
         toggleDetailPaneRef.current = handler;
         break;
+      case 'openInGitLab':
+        openInGitLabRef.current = handler;
+        break;
+      case 'scrollToSection':
+        scrollToSectionRef.current = handler as (sectionId: 'title' | 'body' | 'metadata') => void;
+        break;
       case 'navigateToQuery':
         navigateToQueryRef.current = handler as (index: number) => void;
         break;
@@ -175,7 +214,7 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
         break;
       default:
         if (process.env.NODE_ENV === "development") {
-          console.warn(`[ShortcutContext] Unknown handler name: ${name}`);
+          logger.warn(`[ShortcutContext] Unknown handler name: ${name}`);
         }
     }
 
@@ -199,6 +238,12 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
           break;
         case 'toggleDetailPane':
           toggleDetailPaneRef.current = null;
+          break;
+        case 'openInGitLab':
+          openInGitLabRef.current = null;
+          break;
+        case 'scrollToSection':
+          scrollToSectionRef.current = null;
           break;
         case 'navigateToQuery':
           navigateToQueryRef.current = null;
@@ -270,7 +315,7 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
     if (focusSearchRef.current) {
       focusSearchRef.current();
     } else if (process.env.NODE_ENV === "development") {
-      console.debug("[Shortcuts] focusSearch() called - no handler registered");
+      logger.debug("[Shortcuts] focusSearch() called - no handler registered");
     }
   }, []);
 
@@ -288,7 +333,7 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
       return;
     }
     if (process.env.NODE_ENV === "development") {
-      console.debug("[Shortcuts] moveSelectionDown() - no handler registered (j key)");
+      logger.debug("[Shortcuts] moveSelectionDown() - no handler registered (j key)");
     }
   }, []);
 
@@ -305,7 +350,7 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
       return;
     }
     if (process.env.NODE_ENV === "development") {
-      console.debug("[Shortcuts] moveSelectionUp() - no handler registered (k key)");
+      logger.debug("[Shortcuts] moveSelectionUp() - no handler registered (k key)");
     }
   }, []);
 
@@ -322,7 +367,7 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
       return;
     }
     if (process.env.NODE_ENV === "development") {
-      console.debug("[Shortcuts] jumpHalfPageDown() - no handler registered (Ctrl+d)");
+      logger.debug("[Shortcuts] jumpHalfPageDown() - no handler registered (Ctrl+d)");
     }
   }, []);
 
@@ -339,7 +384,7 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
       return;
     }
     if (process.env.NODE_ENV === "development") {
-      console.debug("[Shortcuts] jumpHalfPageUp() - no handler registered (Ctrl+u)");
+      logger.debug("[Shortcuts] jumpHalfPageUp() - no handler registered (Ctrl+u)");
     }
   }, []);
 
@@ -347,7 +392,7 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
     if (clearFocusAndModalsRef.current) {
       clearFocusAndModalsRef.current();
     } else if (process.env.NODE_ENV === "development") {
-      console.debug(
+      logger.debug(
         "[Shortcuts] clearFocusAndModals() called - no handler registered",
       );
     }
@@ -358,7 +403,7 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
     if (navigateToQueryRef.current) {
       navigateToQueryRef.current(index);
     } else if (process.env.NODE_ENV === "development") {
-      console.debug(
+      logger.debug(
         `[Shortcuts] navigateToQuery(${index}) called - no handler registered`,
       );
     }
@@ -369,7 +414,7 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
     if (openSaveModalRef.current) {
       openSaveModalRef.current();
     } else if (process.env.NODE_ENV === "development") {
-      console.debug(
+      logger.debug(
         "[Shortcuts] openSaveModal() called - no handler registered (s key)",
       );
     }
@@ -380,7 +425,7 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
     if (toggleCatchUpModeRef.current) {
       toggleCatchUpModeRef.current();
     } else if (process.env.NODE_ENV === "development") {
-      console.debug(
+      logger.debug(
         "[Shortcuts] toggleCatchUpMode() called - no handler registered (c key)",
       );
     }
@@ -391,7 +436,7 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
     if (triggerManualRefreshRef.current) {
       triggerManualRefreshRef.current();
     } else if (process.env.NODE_ENV === "development") {
-      console.debug(
+      logger.debug(
         "[Shortcuts] triggerManualRefresh() called - no handler registered (r key)",
       );
     }
@@ -402,8 +447,30 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
     if (toggleDetailPaneRef.current) {
       toggleDetailPaneRef.current();
     } else if (process.env.NODE_ENV === "development") {
-      console.debug(
+      logger.debug(
         "[Shortcuts] toggleDetailPane() called - no handler registered (d key)",
+      );
+    }
+  }, []);
+
+  // Story 5.1: Invoke open in GitLab handler (o key)
+  const openInGitLab = useCallback(() => {
+    if (openInGitLabRef.current) {
+      openInGitLabRef.current();
+    } else if (process.env.NODE_ENV === "development") {
+      logger.debug(
+        "[Shortcuts] openInGitLab() called - no handler registered (o key)",
+      );
+    }
+  }, []);
+
+  // Story 5.1: Invoke scroll to section handler (1/2/3 keys)
+  const scrollToSection = useCallback((sectionId: 'title' | 'body' | 'metadata') => {
+    if (scrollToSectionRef.current) {
+      scrollToSectionRef.current(sectionId);
+    } else if (process.env.NODE_ENV === "development") {
+      logger.debug(
+        `[Shortcuts] scrollToSection(${sectionId}) called - no handler registered (1/2/3 keys)`,
       );
     }
   }, []);
@@ -419,6 +486,8 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
     setToggleCatchUpMode,
     setTriggerManualRefresh,
     setToggleDetailPane,
+    setOpenInGitLab,
+    setScrollToSection,
     // Scoped setters
     setMoveSelectionDown,
     setMoveSelectionUp,
@@ -444,6 +513,8 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
     toggleCatchUpMode,
     triggerManualRefresh,
     toggleDetailPane,
+    openInGitLab,
+    scrollToSection,
   };
 
   return (

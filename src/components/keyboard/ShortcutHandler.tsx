@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback } from "react";
 import { useShortcuts } from "./ShortcutContext";
+import { useDetailPane } from "~/contexts/DetailPaneContext";
 
 /**
  * Checks if the event target is an input element where typing should be allowed.
@@ -46,7 +47,12 @@ export function ShortcutHandler() {
     toggleCatchUpMode,
     triggerManualRefresh,
     toggleDetailPane,
+    openInGitLab,
+    scrollToSection,
   } = useShortcuts();
+
+  // Story 5.1: Check if detail pane is open for 1/2/3 section navigation
+  const { isOpen: isDetailPaneOpen } = useDetailPane();
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
@@ -75,6 +81,11 @@ export function ShortcutHandler() {
         case "k":
           moveSelectionUp();
           break;
+        // Story 5.1 (AC 5.1.1): 'o' key opens selected event in GitLab
+        case "o":
+          event.preventDefault(); // Prevent browser conflicts (Quick Find in Firefox)
+          openInGitLab();
+          break;
         case "d":
           if (event.ctrlKey) {
             event.preventDefault(); // Prevent browser bookmark dialog
@@ -102,22 +113,41 @@ export function ShortcutHandler() {
         case "r":
           triggerManualRefresh();
           break;
-        // Story 2.8 (AC 2.8.4): Number keys 1-9 navigate to query by position
+        // Story 5.1 (AC 5.1.6): Keys 1/2/3 navigate sections when detail pane open
+        // Story 2.8 (AC 2.8.4): Otherwise navigate to query by position
         case "1":
+          if (isDetailPaneOpen) {
+            scrollToSection("title");
+          } else {
+            navigateToQuery(0);
+          }
+          break;
         case "2":
+          if (isDetailPaneOpen) {
+            scrollToSection("body");
+          } else {
+            navigateToQuery(1);
+          }
+          break;
         case "3":
+          if (isDetailPaneOpen) {
+            scrollToSection("metadata");
+          } else {
+            navigateToQuery(2);
+          }
+          break;
         case "4":
         case "5":
         case "6":
         case "7":
         case "8":
         case "9":
-          // Convert key to 0-based index (key "1" = index 0)
+          // Convert key to 0-based index (key "4" = index 3, etc.)
           navigateToQuery(parseInt(event.key) - 1);
           break;
       }
     },
-    [focusSearch, moveSelectionDown, moveSelectionUp, jumpHalfPageDown, jumpHalfPageUp, clearFocusAndModals, navigateToQuery, openSaveModal, toggleCatchUpMode, triggerManualRefresh, toggleDetailPane],
+    [focusSearch, moveSelectionDown, moveSelectionUp, jumpHalfPageDown, jumpHalfPageUp, clearFocusAndModals, navigateToQuery, openSaveModal, toggleCatchUpMode, triggerManualRefresh, toggleDetailPane, openInGitLab, scrollToSection, isDetailPaneOpen],
   );
 
   useEffect(() => {

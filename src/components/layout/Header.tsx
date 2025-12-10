@@ -201,19 +201,20 @@ export function Header() {
           <RefreshButton onRefresh={triggerRefresh} isLoading={isSyncing} />
 
           {/* Story 4.1: Split pane toggle button (desktop/tablet only) */}
+          {/* Story 5.1 (AC 5.1.9): Added keyboard hint (d) */}
           <Button
-            isIconOnly
             variant="light"
             size="sm"
             onPress={() => setDetailPaneOpen(!isDetailPaneOpen)}
             aria-label={isDetailPaneOpen ? "Close detail pane" : "Open detail pane"}
-            className="hidden md:flex text-gray-600 dark:text-gray-400"
+            className="hidden md:flex text-gray-600 dark:text-gray-400 gap-2"
           >
             {isDetailPaneOpen ? (
               <PanelRightClose className="h-5 w-5" />
             ) : (
               <PanelRightOpen className="h-5 w-5" />
             )}
+            <kbd className="hidden sm:inline text-xs text-gray-400 dark:text-gray-500">d</kbd>
           </Button>
 
           {/* Story 1.5.6: Theme toggle button */}

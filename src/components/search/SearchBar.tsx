@@ -10,6 +10,7 @@ import {
   Text,
 } from "react-aria-components";
 import { Button, Spinner } from "@heroui/react";
+import { logger } from "~/lib/logger";
 
 /**
  * SearchBar Props Interface
@@ -145,7 +146,7 @@ export function SearchBar({
       onSave();
     } else {
       // Placeholder behavior until Story 2.9 implements modal
-      console.log(`Save as Query: "${keywords.join(", ")}"`);
+      logger.debug(`Save as Query: "${keywords.join(", ")}"`);
     }
   };
 
@@ -290,14 +291,19 @@ export function SearchBar({
       {/* Save/Update Button - HeroUI Button with olive primary color */}
       {/* AC 2.6.3, 2.6.4 | Story 2.10: Context-aware label */}
       {/* AC 2.10.7: Hidden when on query page with no changes */}
+      {/* Story 5.1 (AC 5.1.9): Added keyboard hint (s) */}
       {shouldShowButton && (
         <Button
           onPress={handleSave}
           color="primary"
           size="sm"
-          className="flex-shrink-0"
+          className="flex-shrink-0 gap-2"
+          aria-label={isOnQueryPage ? "Update Query (s)" : "Save as Query (s)"}
         >
-          {isOnQueryPage ? "Update Query" : "Save"}
+          <span>{isOnQueryPage ? "Update Query" : "Save"}</span>
+          <kbd className="hidden sm:inline text-xs opacity-70 px-1 py-0.5 rounded bg-white/20 dark:bg-white/30 font-mono">
+            s
+          </kbd>
         </Button>
       )}
     </div>

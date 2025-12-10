@@ -29,6 +29,7 @@ import { SplitView } from "~/components/layout/SplitView";
 import { EventDetail } from "~/components/events/EventDetail";
 import { Check, Pencil, Trash2 } from "lucide-react";
 import { useEventDetailPane } from "~/hooks/useEventDetailPane";
+import { useShortcutHandler } from "~/hooks/useShortcutHandler";
 
 interface QueryDetailClientProps {
   queryId: string;
@@ -157,6 +158,36 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
     deleteMutation.mutate({ id: queryId });
     setIsDeleteDialogOpen(false);
   };
+
+  // Story 5.1 (AC 5.1.1): 'o' key opens selected event in GitLab
+  // Fixed: Added popup blocker error handling
+  useShortcutHandler('openInGitLab', () => {
+    if (!selectedEventId) {
+      showToast("No event selected", "error");
+      return;
+    }
+    if (!searchData?.events) {
+      showToast("No events loaded", "error");
+      return;
+    }
+    const selectedEvent = searchData.events.find(e => e.id === selectedEventId);
+    if (!selectedEvent) {
+      showToast("Event not found", "error");
+      return;
+    }
+    const result = window.open(selectedEvent.gitlabUrl, '_blank');
+    if (!result) {
+      showToast("Failed to open link. Please check popup blocker settings.", "error");
+    }
+  });
+
+  // Story 5.1 (AC 5.1.6): 1/2/3 keys scroll to sections in detail pane
+  useShortcutHandler('scrollToSection', (sectionId: 'title' | 'body' | 'metadata') => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
 
   // Loading state for query
   if (isQueryLoading) {

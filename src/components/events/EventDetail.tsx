@@ -7,6 +7,7 @@ import { api } from "~/trpc/react";
 import { formatRelativeTime, formatEventType } from "~/lib/utils";
 import { useSearch } from "~/components/search/SearchContext";
 import { HighlightedText } from "~/components/ui/HighlightedText";
+import { useToast } from "~/components/ui/Toast/ToastContext";
 
 interface EventDetailProps {
   eventId: string | null;
@@ -33,6 +34,7 @@ interface EventDetailProps {
  */
 export function EventDetail({ eventId }: EventDetailProps) {
   const { keywords } = useSearch(); // Story 4.4: Get active search terms
+  const { showToast } = useToast(); // Story 5.1: Toast notifications
 
   // Bug Fix (Story 4.4 regression): Stabilize searchTerms for React Query cache key
   // Defense-in-depth to prevent cache fragmentation if SearchContext keywords change
@@ -42,8 +44,17 @@ export function EventDetail({ eventId }: EventDetailProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [keywordsString]);
 
+  // Story 5.1: Helper to open GitLab URL with popup blocker error handling
+  const openGitLabUrl = (url: string) => {
+    const result = window.open(url, '_blank');
+    if (!result) {
+      showToast("Failed to open link. Please check popup blocker settings.", "error");
+    }
+  };
+
   // Story 4.5: Section navigation scroll function
-  const scrollToSection = (sectionId: string) => {
+  // Story 5.1: Added type safety for sectionId parameter
+  const scrollToSection = (sectionId: 'title' | 'body' | 'metadata') => {
     if (sectionId === 'title') {
       // Scroll to top to show main title header
       const scrollContainer = document.querySelector('.overflow-y-auto');
@@ -134,34 +145,54 @@ export function EventDetail({ eventId }: EventDetailProps) {
       </div>
 
       {/* Story 4.5: Sticky Section Navigation */}
+      {/* Story 5.1 (AC 5.1.9): Added keyboard hints (1/2/3) */}
       <div className="sticky top-0 z-10 flex gap-2 border-b border-gray-200 bg-white p-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">
         <Button
           size="sm"
           variant="flat"
           radius="full"
           onPress={() => scrollToSection('title')}
-          aria-label="Jump to title section"
+          aria-label="Jump to title section (1)"
+          className="gap-1"
         >
-          Title
+          <span>Title</span>
+          <kbd className="text-xs opacity-70 px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800 font-mono">1</kbd>
         </Button>
         <Button
           size="sm"
           variant="flat"
           radius="full"
           onPress={() => scrollToSection('body')}
-          aria-label="Jump to body section"
+          aria-label="Jump to body section (2)"
+          className="gap-1"
         >
-          Body
+          <span>Body</span>
+          <kbd className="text-xs opacity-70 px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800 font-mono">2</kbd>
         </Button>
         <Button
           size="sm"
           variant="flat"
           radius="full"
           onPress={() => scrollToSection('metadata')}
-          aria-label="Jump to details section"
+          aria-label="Jump to details section (3)"
+          className="gap-1"
         >
-          Details
+          <span>Details</span>
+          <kbd className="text-xs opacity-70 px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800 font-mono">3</kbd>
         </Button>
+        <div className="ml-auto">
+          <Button
+            size="sm"
+            variant="flat"
+            color="primary"
+            onPress={() => openGitLabUrl(event.gitlabUrl)}
+            aria-label="Open in GitLab (o)"
+            className="gap-1"
+          >
+            <span>Open in GitLab</span>
+            <kbd className="text-xs opacity-70 px-1 py-0.5 rounded bg-white/20 dark:bg-white/30 font-mono">o</kbd>
+          </Button>
+        </div>
       </div>
 
       {/* Scrollable Content */}
@@ -234,7 +265,7 @@ export function EventDetail({ eventId }: EventDetailProps) {
         <Button
           color="primary"
           className="w-full"
-          onPress={() => window.open(event.gitlabUrl, '_blank')}
+          onPress={() => openGitLabUrl(event.gitlabUrl)}
           endContent={<ExternalLink className="h-4 w-4" />}
         >
           Open in GitLab

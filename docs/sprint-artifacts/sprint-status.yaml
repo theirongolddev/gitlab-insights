@@ -1,5 +1,5 @@
 # Sprint Status Tracking File
-# Generated: 2025-12-04
+# Generated: 2025-12-09
 # Project: gitlab-insights
 # Tracking System: file-system
 # Story Location: docs/sprint-artifacts
@@ -7,16 +7,20 @@
 # STATUS DEFINITIONS:
 # ==================
 # Epic Status:
-#   - backlog: Epic exists in epic file but not contexted
-#   - contexted: Epic tech context created (required before drafting stories)
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
 #   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
 #
 # Story Status:
 #   - backlog: Story only exists in epic file
 #   - drafted: Story file created in stories folder
 #   - ready-for-dev: Draft approved and story context created
 #   - in-progress: Developer actively working on implementation
-#   - review: Under SM review (via code-review workflow)
+#   - review: Ready for code review (via Dev's code-review workflow)
 #   - done: Story completed
 #
 # Retrospective Status:
@@ -25,13 +29,14 @@
 #
 # WORKFLOW NOTES:
 # ===============
-# - Epics should be 'contexted' before stories can be 'drafted'
+# - Epic transitions to 'in-progress' automatically when first story is created
 # - Stories can be worked in parallel if team capacity allows
 # - SM typically drafts next story after previous one is 'done' to incorporate learnings
-# - Dev moves story to 'review', SM reviews, then Dev moves to 'done'
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: 2025-12-04
+generated: 2025-12-09
 project: gitlab-insights
+project_key: gitlab-insights
 tracking_system: file-system
 story_location: docs/sprint-artifacts
 
@@ -77,35 +82,64 @@ development_status:
   # Epic 3: Catch-Up Mode & Background Sync - COMPLETE
   epic-3: done
   3-1-catch-up-mode-backend-new-since-last-visit-logic: done
-  3-2-catch-up-mode-view-with-toggle: done  # Re-review PASSED: All findings resolved 2025-12-04
-  3-3-mark-query-as-reviewed: done  # Re-review PASSED 2025-12-05: All issues resolved
-  3-4-sidebar-new-item-badges: done  # Re-review PASSED 2025-12-05: All ACs verified, all issues resolved
-  3-5-inngest-background-polling-job: done  # Completed 2025-12-07: Review passed
-  3-6-last-sync-indicator: done  # Completed 2025-12-07: Review passed
-  3-7-manual-refresh-button-with-r-shortcut: done  # Completed 2025-12-07: All 9 review issues resolved, added useManualRefresh hook
+  3-2-catch-up-mode-view-with-toggle: done
+  3-3-mark-query-as-reviewed: done
+  3-4-sidebar-new-item-badges: done
+  3-5-inngest-background-polling-job: done
+  3-6-last-sync-indicator: done
+  3-7-manual-refresh-button-with-r-shortcut: done
   epic-3-retrospective: optional
 
   # Epic 4: Split View & Detail Navigation - COMPLETE
   epic-4: done
-  4-1-split-pane-component-with-toggle-button: done  # Completed 2025-12-07: Code review approved with minor improvements
-  4-2-detail-pane-content-rendering: done  # Re-review PASSED 2025-12-07: All 12 review issues resolved (7 initial + 5 re-review), architecture compliance verified
-  4-3-auto-update-detail-on-row-click: done  # Completed 2025-12-08: Code review issues resolved, useEventDetailPane hook refactored, browser nav fixed
-  4-4-keyword-highlighting-in-detail-view: done  # Completed 2025-12-09: Code review + manual testing complete, reveals Story 2.6 case-sensitivity limitation
-  4-5-section-navigation-with-clickable-headers: done  # Completed 2025-12-09: Code review passed, all ACs verified, bug fixes documented
-  4-6-query-metadata-page: done  # Completed 2025-12-09: Code review passed, all ACs verified, documentation issues resolved
-  4-7-scroll-position-persistence: done  # Re-review PASSED 2025-12-09: All 13 review issues resolved, all 8 ACs verified
-  epic-4-retrospective: completed  # Completed 2025-12-09: All 3 immediate action items completed (keyboard docs, React 19 guide, story template update)
+  4-1-split-pane-component-with-toggle-button: done
+  4-2-detail-pane-content-rendering: done
+  4-3-auto-update-detail-on-row-click: done
+  4-4-keyword-highlighting-in-detail-view: done
+  4-5-section-navigation-with-clickable-headers: done
+  4-6-query-metadata-page: done
+  4-7-scroll-position-persistence: done
+  epic-4-retrospective: completed
 
-  # Epic 5: Keyboard Foundation (No detailed stories yet)
-  epic-5: backlog
+  # Epic 5: Keyboard Foundation
+  epic-5: in-progress
+  5-1-global-keyboard-handler-with-typing-detection: review
+  5-2-wire-shortcuts-to-existing-handlers: backlog
+  5-3-help-modal-with-shortcut-reference: backlog
+  5-4-visual-keyboard-indicators: backlog
   epic-5-retrospective: optional
 
   # Epic 6: Reliability & Error Handling
-  epic-6: contexted
-  6-x-session-token-refresh: done  # Implemented 2025-12-05: OAuth token auto-refresh via better-auth
-  6-2-route-architecture-refactor: done  # Implemented 2025-12-05: Clean route separation for auth/public
+  epic-6: backlog
+  6-1-gitlab-api-rate-limiting-with-exponential-backoff: backlog
+  6-2-route-architecture-refactor: done
+  6-3-api-polling-reliability-with-retry-logic: backlog
+  6-4-graceful-api-unavailability-handling: backlog
+  6-5-error-boundaries-for-react-components: backlog
+  6-6-toast-notifications-for-errors: backlog
+  6-7-contextual-error-messages: backlog
+  6-8-api-sync-status-indicator: backlog
+  6-9-loading-states-and-skeleton-loaders: backlog
+  6-10-data-integrity-deduplication-pagination: backlog
+  6-11-filter-validation-before-saving: backlog
+  6-12-settings-page-ui: backlog
+  6-13-user-preferences-persistence: backlog
+  6-14-polling-interval-configuration: backlog
+  6-15-view-preferences: backlog
+  6-x-session-token-refresh: done
   epic-6-retrospective: optional
 
-  # Epic 7: Production Readiness & Polish (No detailed stories yet)
+  # Epic 7: Production Readiness & Polish
   epic-7: backlog
+  7-1-monitoring-and-observability-setup: backlog
+  7-2-health-check-endpoint: backlog
+  7-3-custom-metrics-tracking: backlog
+  7-4-onboarding-flow-polish: backlog
+  7-5-empty-states-with-helpful-guidance: backlog
+  7-6-accessibility-audit-wcag-compliance: backlog
+  7-7-focus-indicators-polish: backlog
+  7-8-dark-mode-refinements: backlog
+  7-9-animation-polish-micro-interactions: backlog
+  7-10-performance-optimization-pass: backlog
+  7-11-documentation-readme-setup-guide: backlog
   epic-7-retrospective: optional

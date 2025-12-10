@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent } from "react";
-import { useShortcuts } from "~/components/keyboard/ShortcutContext";
+import { useShortcuts, type ShortcutHandlerName } from "~/components/keyboard/ShortcutContext";
 
 /**
  * Custom hook for registering keyboard shortcut handlers
@@ -8,7 +8,7 @@ import { useShortcuts } from "~/components/keyboard/ShortcutContext";
  * Uses React 19's useEffectEvent to create stable handler references that always
  * have access to latest props/state without causing re-registration.
  *
- * @param name - Shortcut name (e.g., 'focusSearch', 'toggleDetailPane')
+ * @param name - Shortcut name (type-safe union of valid handler names)
  * @param handler - Function to call when shortcut is triggered
  * @param scopeId - Optional scope ID for section-specific handlers (Catch-Up Mode)
  *
@@ -40,7 +40,7 @@ import { useShortcuts } from "~/components/keyboard/ShortcutContext";
  * ```
  */
 export function useShortcutHandler(
-  name: string,
+  name: ShortcutHandlerName,
   handler: (...args: any[]) => void,
   scopeId?: string
 ) {
