@@ -246,6 +246,57 @@ npm install better-auth
 
 **Established:** 2025-11-26 (Epic 2 Retrospective action item)
 
+### React 19 Development Patterns
+
+**Reference Documents:** 
+- **Skill:** `.opencode/skills/react-19-patterns.md` (Quick reference for agents)
+- **Full Guide:** [`docs/react-19-best-practices.md`](./react-19-best-practices.md) (Comprehensive examples)
+
+**Critical Standards:**
+1. **Controlled Components > Semi-Controlled** - Default to controlled components (parent owns state, child stateless)
+2. **Derived State with useMemo** - Prefer derived state over useState + useEffect synchronization
+3. **useEffectEvent for Stable Callbacks** - Use React 19's useEffectEvent for event handlers needing latest state
+4. **No Synchronous setState in useEffect** - ESLint rule `react-hooks/set-state-in-effect` prevents race conditions
+
+**Quick Reference:**
+- ✅ CORRECT: `const derivedValue = useMemo(() => compute(props), [props]);`
+- ❌ WRONG: `useEffect(() => { setState(props.value); }, [props.value]);`
+
+- ✅ CORRECT: `const stable = useEffectEvent(handler);` (React 19)
+- ❌ WRONG: `const handler = useCallback(() => { /* stale closure */ }, []);`
+
+**Rationale:** Prevents stale closures, race conditions, and unnecessary re-renders. Ensures React 19 strict mode compliance.
+
+**Established:** 2025-12-09 (Epic 4 Retrospective action item)
+
+### Keyboard Shortcut System
+
+**Reference Document:** [`docs/keyboard-handler-architecture.md`](./keyboard-handler-architecture.md)
+
+**Architecture:**
+- **ShortcutContext** - Global state management for shortcut handlers
+- **ShortcutHandler** - Document-level key event listener and router
+- **useShortcutHandler** - Modern hook for component-level shortcut registration
+
+**Quick Reference:**
+```typescript
+// ✅ CORRECT - Modern pattern
+import { useShortcutHandler } from '~/hooks/useShortcutHandler';
+
+function MyComponent() {
+  useShortcutHandler('myAction', () => {
+    // Handler always has access to latest state
+    performAction();
+  });
+}
+```
+
+**Active Shortcuts:** `/` (search), `j/k` (navigation), `1-9` (query nav), `s` (save), `c` (catch-up), `r` (refresh), `d` (detail pane), `Esc` (clear)
+
+**Rationale:** Centralized keyboard handling with context awareness, scoped handlers, and stable references via useEffectEvent.
+
+**Established:** 2025-12-09 (Epic 4 Retrospective action item)
+
 ### Error Handling Strategy
 - **API/Backend (tRPC):** Throw `TRPCError` with typed codes (`BAD_REQUEST`, `UNAUTHORIZED`, `INTERNAL_SERVER_ERROR`, `NOT_FOUND`)
 - **Frontend:** React Error Boundaries catch component errors, toast notifications for user-facing errors

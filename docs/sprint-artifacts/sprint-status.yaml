@@ -85,8 +85,8 @@ development_status:
   3-7-manual-refresh-button-with-r-shortcut: done  # Completed 2025-12-07: All 9 review issues resolved, added useManualRefresh hook
   epic-3-retrospective: optional
 
-  # Epic 4: Split View & Detail Navigation
-  epic-4: in-progress
+  # Epic 4: Split View & Detail Navigation - COMPLETE
+  epic-4: done
   4-1-split-pane-component-with-toggle-button: done  # Completed 2025-12-07: Code review approved with minor improvements
   4-2-detail-pane-content-rendering: done  # Re-review PASSED 2025-12-07: All 12 review issues resolved (7 initial + 5 re-review), architecture compliance verified
   4-3-auto-update-detail-on-row-click: done  # Completed 2025-12-08: Code review issues resolved, useEventDetailPane hook refactored, browser nav fixed
@@ -94,7 +94,7 @@ development_status:
   4-5-section-navigation-with-clickable-headers: done  # Completed 2025-12-09: Code review passed, all ACs verified, bug fixes documented
   4-6-query-metadata-page: done  # Completed 2025-12-09: Code review passed, all ACs verified, documentation issues resolved
   4-7-scroll-position-persistence: done  # Re-review PASSED 2025-12-09: All 13 review issues resolved, all 8 ACs verified
-  epic-4-retrospective: optional
+  epic-4-retrospective: completed  # Completed 2025-12-09: All 3 immediate action items completed (keyboard docs, React 19 guide, story template update)
 
   # Epic 5: Keyboard Foundation (No detailed stories yet)
   epic-5: backlog
