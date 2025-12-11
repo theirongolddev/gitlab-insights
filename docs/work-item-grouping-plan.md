@@ -94,8 +94,11 @@ model Event {
   // NEW: MR → Issue relationships
   closesIssueIds  Int[]     // Array of GitLab issue IIDs this MR closes
 
-  // NEW: Cross-references
+  // NEW: Cross-references (parsed from descriptions/comments for #123 and !456 patterns)
   mentionedInIds  Int[]     // GitLab IIDs mentioned in this item
+
+  // NEW: System note flag
+  isSystemNote    Boolean   @default(false)  // True for GitLab system notes (status changes, etc.)
 
   // NEW: People involvement
   assignees       String[]  // Array of assignee usernames
@@ -118,6 +121,26 @@ model Event {
   @@index([gitlabParentId])
   @@index([status, lastActivityAt])
   @@index([userId, type, status])
+}
+
+// NEW: Track which events each user has read (for NEW badges)
+model ReadEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  eventId   String
+  readAt    DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+  @@index([userId, readAt])
+}
+
+// UPDATE: Add to existing User model
+model User {
+  // ... existing fields ...
+  dashboardView   String   @default("grouped")  // "grouped" | "flat" - user preference
 }
 ```
 
@@ -242,6 +265,9 @@ transformer.transformMergeRequests() => {
   - Light mode: `text-olive` (#5e6b24)
   - Dark mode: `text-olive-light` (#9DAA5F)
 - Example: "NEW" badge, "3 new comments" indicator
+- **Position**: Far right of header row (aligned with chevron)
+- **Style**: Small rounded pill with olive background, white text
+- **Animation**: Brief pulse/glow when badge first appears (after refresh reveals new activity)
 
 **Status Indicators:**
 - Open: Default text color
@@ -255,17 +281,61 @@ transformer.transformMergeRequests() => {
 **Collapsed (default):**
 - Shows: type badge, ID, title, status, author, timestamp
 - Activity summary: "X new comments", participant avatars
-- Latest comment preview (first ~60 chars, gray-500/gray-300)
+- Latest activity preview: "Bob commented: 'I think the issue is...'" (~50 chars)
 - Related items: MRs that close (for issues), Issues closed (for MRs)
-- Visual indicators: NEW badge, status color
+- Visual indicators: NEW badge if has unread activity, status color
 
 **Expanded (click ▼):**
-- Full description with highlighted keywords
-- Complete comment thread (chronological)
-- All related items with context
-- Full participant list
-- "Open in GitLab" link
-- Option to mark as reviewed
+Cards show an **activity log** (what happened), NOT full content. Full content is in the detail pane.
+
+- Chronological list of activity items (all items shown, card scrolls with max-height ~1000px)
+- Each activity item: one-liner + short preview
+  - User comment: "Bob commented: 'I think the root cause is...'"
+  - System note: "Alice changed status: Open → Closed"
+- When query is active: preview centers on matching/highlighted text instead of first 50 chars
+- Click on activity item → opens detail pane scrolled to that specific item
+- Expanding card marks work item as read (creates ReadEvent record)
+
+**Multiple cards can be expanded simultaneously** (not accordion style).
+
+**Selected State:**
+- Card currently shown in detail pane displays a **ring/outline** around it
+- Provides clear visual connection between card list and detail pane
+
+**Card Interaction Specifications:**
+
+| Region Clicked | Action |
+|----------------|--------|
+| Header row (title, status, metadata) | Toggle expand/collapse |
+| Chevron icon | Toggle expand/collapse |
+| Activity item (in expanded card) | Open detail pane scrolled to that item |
+| Related item link (e.g., "MR !456") | Scroll to that card, expand it, select it, show in detail |
+| Participant avatars | Show tooltip with full participant list |
+
+**Expand/Collapse Behavior:**
+- **Click target**: Entire header row toggles expand (not just chevron) - larger touch target
+- **Animation**: Subtle height transition (~150ms ease-out)
+- **Overflow**: Internal scroll when activity exceeds ~1000px max-height
+- **Overflow indicator**: Subtle fade gradient at bottom indicates more content below
+- **Expanded styling**: Card height increases; existing border/shadow treatment is sufficient (no additional visual change needed)
+
+**Participant Avatars:**
+- **Size**: 24px diameter
+- **Arrangement**: Overlapping stack with -8px overlap
+- **Hover behavior**: Animate to spread out and show each avatar individually (framer-motion)
+- **Overflow**: Show 3 avatars max, then `+N more` indicator
+- **Click/hover**: Tooltip displays full participant list with names
+
+**Labels Display:**
+- **Count**: Show up to 3 label chips, then `+N more` overflow
+- **Colors**: Use GitLab label colors if included in API response
+- **Style**: Small rounded chips matching existing design system
+
+**Section Headers (Issues / Merge Requests):**
+- **Display format**: `Issues (12) • 3 new` - name + total count + unread count
+- **Collapsible**: Click section header to collapse/expand all cards in that section
+- **Sticky**: Headers stick to top when scrolling within that section
+- **Sort control**: Dropdown in header for sort options (Latest Activity, Most Comments, etc.)
 
 **Noise Reduction Strategies:**
 1. **Collapsed by default** - only summary visible
@@ -275,9 +345,31 @@ transformer.transformMergeRequests() => {
 5. **Comment preview** - only first line of latest comment
 6. **System activity compression** - "Status: open → closed" as single line in gray
 
-### Tier 4: Enhanced Detail View
+**Empty States:**
 
-**When work item card is selected, detail pane shows:**
+| Scenario | Display |
+|----------|---------|
+| No open issues | Subtle centered text: "No open issues" |
+| No open merge requests | Subtle centered text: "No open merge requests" |
+| Search returns no results | "No items match your search. Try adjusting your query or clearing filters." |
+| Section collapsed with 0 items | Section header shows count as `(0)`, collapsed by default |
+
+**Loading States:**
+
+| Component | Loading Pattern |
+|-----------|-----------------|
+| Card list | Skeleton cards mimicking card layout (title bar, metadata row, activity summary) |
+| Detail pane | Skeleton content (title, metadata grid, description block, activity items) |
+| Individual card expansion | Skeleton activity items within the card |
+| Related items | Skeleton chips/links |
+
+Skeleton patterns provide structure hints while loading, making the UI feel faster than spinners.
+
+### Tier 4: Enhanced Detail View (Full Content)
+
+The detail pane shows **full content** of the selected work item (while cards show just the activity log).
+
+**When work item card is clicked (or activity item within card clicked), detail pane shows:**
 
 ```
 ┌───────────────────────────────────────────────┐
@@ -330,15 +422,33 @@ transformer.transformMergeRequests() => {
 ```
 
 **Key features:**
-1. **Unified activity timeline** - comments + system changes merged chronologically
-2. **Visual distinction** (from Design Decisions):
-   - **User comments**: 💬 icon, full contrast text
-   - **System activity**: ⚙️ icon, reduced opacity (gray-500/gray-300)
-   - System activities shown: status changes, label changes, assignment changes
-3. **NEW badges** - olive accent color highlights unread activity
-4. **Related work section** - shows relationships prominently
-5. **People context** - author, assignees visible at top
-6. **Progressive disclosure** - "Load more" for long threads
+1. **Full content display** - Complete description text, full comment bodies (markdown rendered)
+2. **Unified activity timeline** - comments + system changes merged chronologically
+3. **Visual distinction** (from Design Decisions):
+   - **User comments**: 💬 icon, full contrast text, complete body
+   - **System activity**: ⚙️ icon, reduced opacity (gray-500/gray-300), single line
+   - System activities from GitLab system notes (store raw body, parse for display)
+4. **NEW badges** - olive accent color highlights unread activity (items without ReadEvent record)
+5. **Related work section** - shows relationships prominently
+6. **People context** - author, assignees visible at top
+7. **Scroll to item** - when clicking activity item in card, detail pane scrolls to that item
+8. **Viewing marks as read** - selecting item in detail pane creates ReadEvent record
+
+**Navigation History (Breadcrumb Trail):**
+When clicking related item links, users can navigate between connected work items. The detail pane header shows a breadcrumb trail for navigation history:
+
+```
+┌───────────────────────────────────────────────┐
+│  Issue #123 → MR !456                    [×]  │
+│  ═════════════════════════════════════════════│
+```
+
+- **Format**: `Issue #123 → MR !456 → Issue #789` (clickable breadcrumbs)
+- **History depth**: Full session history (can navigate back through all visited items)
+- **Click behavior**: Click any breadcrumb item to return to it
+- **Clear**: Session history clears on page refresh or when manually selecting a new card from the list
+
+**Reading = Reviewed**: Expanding a card or viewing in detail pane marks the item as "read". No separate "mark as reviewed" button needed.
 
 **Activity Timeline Visual Design:**
 
@@ -370,30 +480,31 @@ timeout is set to 5 minutes but...
 
 **Dashboard enhancements for scanning/triaging:**
 
-1. **Sort options:**
-   - Latest activity (default)
+**Main Dashboard (default view):**
+- **Shows OPEN items only** - closed/merged items are excluded from the main triage view
+- Closed items are only accessible via search (they become archived content)
+
+1. **Default sort:** Unread items first, then by lastActivityAt
+   - Items with unread activity float to top
+   - Within each group, sorted by most recent activity
+
+2. **Additional sort options:**
    - Most comments
-   - Oldest unread
    - Your assignments
    - Your mentions
 
-2. **Filter options:**
-   - Has new activity
-   - Assigned to me
-   - I'm participating in
-   - Mentioned me
-   - Status: open/closed/merged
-
-3. **Bulk actions:**
-   - "Mark all as reviewed" per section
-   - "Hide items with no activity"
-   - "Show only my work items"
-
-4. **Quick scan indicators:**
+3. **Quick scan indicators:**
    - 🔴 Red dot: mentions you
    - 🟡 Yellow highlight: assigned to you
-   - 🟢 Green badge: new comments (count)
+   - NEW badge: has unread activity (items without ReadEvent)
    - Gray text: no new activity
+
+**Search (for finding closed/archived items):**
+- Search shows **all items by default** (open + closed)
+- "Hide closed" filter available to focus on open items
+- This is where users find historical/closed work items
+
+**Re-unread behavior:** When new activity happens on a previously-read item, it becomes "unread" again (NEW badge reappears, floats to top).
 
 ## Implementation Strategy
 
@@ -451,11 +562,12 @@ timeout is set to 5 minutes but...
 
 **API Optimization Notes:**
 - **Closes Issues**: Call `/projects/:id/merge_requests/:mr_iid/closes_issues` during MR fetch
-  - This is a separate endpoint, might add one API call per MR
-  - Consider: Fetch only for MRs with "closes" keyword in description to optimize
+  - This is a separate endpoint, adds one API call per MR
+  - **Decision**: Call for every MR (most accurate - catches issues linked via GitLab UI, not just keyword patterns)
 - **Comment Count**: Already included in issue/MR response, no extra call needed
 - **Updated At**: Already included, no extra call needed
 - **Assignees**: Already included, no extra call needed
+- **System Notes**: GitLab's `note.system` boolean distinguishes system notes from user comments - map to `isSystemNote` field
 
 **Testing:**
 - Run migration in dev environment
@@ -497,13 +609,13 @@ timeout is set to 5 minutes but...
 **Goal**: Build work item card components
 
 1. Create new components:
-   - `WorkItemCard` - Collapsed/expanded card
-   - `WorkItemList` - List of cards with grouping
-   - `ActivityTimeline` - Unified timeline in detail pane
-   - `RelatedItems` - Show relationships
+   - `WorkItemCard` - Collapsed/expanded card showing activity log
+   - `WorkItemList` - List of cards with grouping (Issues section, MRs section)
+   - `ActivityTimeline` - Full content timeline in detail pane
+   - `RelatedItems` - Show relationships (closes, mentioned in)
 2. Update `DashboardClient` to use new components
-3. Preserve existing keyboard navigation
-4. Add expand/collapse interactions
+3. Add expand/collapse interactions (multiple cards can expand simultaneously)
+4. **Keyboard navigation (j/k) deferred** to future phase - simplifies implementation
 
 **Files to modify:**
 - Create new: `src/app/(authenticated)/dashboard/_components/WorkItemCard.tsx`
@@ -512,47 +624,50 @@ timeout is set to 5 minutes but...
 - Update: `src/app/(authenticated)/dashboard/_components/DashboardClient.tsx`
 - Update: `src/app/(authenticated)/dashboard/_components/EventDetail.tsx`
 
-**Design decisions needed:**
-- Card expand/collapse animation
-- How much detail in collapsed state
-- System activity compression rules
-- "New" badge persistence logic
+**Design decisions (resolved):**
+- Cards show activity log (what happened), detail pane shows full content
+- All activity items shown in card, scrollable with max-height ~1000px
+- System notes parsed from raw body at display time
+- NEW badge based on ReadEvent table - disappears when card expanded or item viewed in detail
 
 ---
 
-### Phase 4: Noise Reduction
-**Goal**: Implement filtering and smart defaults
+### Phase 4: Read Tracking & Filtering
+**Goal**: Implement read tracking and smart defaults
 
-1. Add sort/filter controls
-2. Implement "new activity" detection
-3. Add "hide no activity" toggle
-4. Create bulk mark-as-reviewed
-5. Persist user preferences
+1. Create `events.markAsRead` endpoint - creates ReadEvent records
+2. Update `getWorkItemsGrouped` to include unread status (join with ReadEvent)
+3. Implement default sort: unread first, then by lastActivityAt
+4. Dashboard shows open items only by default
+5. Add "Hide closed" filter to search results
+
+**Read tracking behavior:**
+- Expanding card marks work item as read
+- Viewing in detail pane marks item as read
+- New activity on previously-read item makes it "unread" again
+- No separate "mark as reviewed" button - viewing = reviewed
 
 **Files to modify:**
-- Update: `WorkItemList.tsx` - Add filter UI
-- Create new: `src/app/(authenticated)/dashboard/_components/WorkItemFilters.tsx`
-- Update: `src/server/api/routers/events.ts` - Add filter query params
-- Consider: User preferences table in Prisma
+- Update: `src/server/api/routers/events.ts` - Add markAsRead endpoint, unread status in queries
+- Update: `WorkItemList.tsx` - Sort controls
+- Update: Search components - Add "Hide closed" filter
 
 ---
 
 ### Phase 5: Migration Path
 **Goal**: Smooth transition from old to new UI
 
-**Option A: Feature flag**
-- Add toggle to switch between old and new view
-- Let users opt-in to new UI
-- Collect feedback before full migration
-- Remove old UI after validation
+**Approach: User preference in database**
+- Add `dashboardView` field to User model (default: "grouped")
+- Toggle in UI to switch between "grouped" (new) and "flat" (old) views
+- Each user's preference persists across sessions/devices
+- After validation period, consider removing flat view option
 
-**Option B: Parallel pages**
-- Keep old dashboard at `/dashboard`
-- New dashboard at `/dashboard/v2`
-- Migrate users incrementally
-- Redirect after confidence built
-
-**Recommendation**: Option A (feature flag) for faster iteration
+**Implementation:**
+1. Add `dashboardView` to User model in Prisma schema
+2. Create settings toggle in dashboard header
+3. Conditionally render WorkItemList (grouped) vs EventTable (flat)
+4. After confidence built, remove flat view and toggle
 
 ## Critical Files Reference
 
@@ -609,10 +724,12 @@ These will be visually distinguished from user comments and collapsed by default
 - Keywords can match against: title, description, comments, labels
 
 **UI indicators**:
-- Yellow highlight border on matching cards
+- **Match highlight**: Subtle olive left border accent on matching cards (uses design system olive color)
+  - Light mode: `#5e6b24`
+  - Dark mode: `#9DAA5F`
 - "X matches" badge on card
 - Matching text highlighted within expanded content
-- Option to "Show only matches" (hide non-matching)
+- **"Show only matches" toggle**: Positioned near the search/query bar, allows hiding non-matching cards
 
 ### 4. Comment Threading: Parent-Child Sufficient
 **Decision**: Capture comment → issue/MR relationship only.
@@ -630,22 +747,57 @@ These will be visually distinguished from user comments and collapsed by default
 **Implementation**:
 - For < 500 items: Render all cards with collapse/expand
 - For 500+ items: Use `@tanstack/react-virtual` for viewport rendering
-- Maintain keyboard navigation in both modes
-- Paginate activity timeline within cards (load more comments)
+- Handle variable card heights (expanded cards are taller)
+- Paginate activity timeline within cards if needed (load more for 50+ items)
 
 **Rationale**: Most users have < 100 active work items. 500 threshold provides cushion before performance degrades.
+
+### 7. UI/UX Interaction Specifications ✓
+**Decision**: Comprehensive interaction patterns for work item cards.
+
+**Card Interactions:**
+| Element | Behavior |
+|---------|----------|
+| Header row click | Toggle expand/collapse (entire row is click target) |
+| Activity item click | Open detail pane scrolled to that item |
+| Related item link click | Scroll to related card, expand it, select it, show in detail |
+| Participant avatars hover | Animate to spread out; tooltip shows full list |
+
+**Visual States:**
+| State | Visual Treatment |
+|-------|------------------|
+| Default card | Border + shadow (elevated surface) |
+| Expanded card | Height increases, internal scroll at ~1000px with fade gradient |
+| Selected card (in detail) | Ring/outline around card |
+| Query match | Olive left border accent |
+| NEW activity | Olive pill badge, far right of header, pulse/glow on appear |
+
+**Navigation:**
+- Breadcrumb trail in detail pane header for navigation history
+- Full session history (can navigate back through all visited items)
+- Click any breadcrumb to return to that item
+
+**Section Headers:**
+- Sticky when scrolling within section
+- Collapsible (click to collapse/expand all cards)
+- Display: `Issues (12) • 3 new`
+
+**Loading/Empty:**
+- Skeleton patterns for cards and detail pane
+- Subtle text messages for empty states
+- Helpful suggestion text for no search results
 
 ## Success Criteria
 
 After implementation, users should be able to:
 1. ✅ See all comments grouped under their parent issue/MR
-2. ✅ Identify which MRs close which issues
-3. ✅ Scan for work items with new activity
-4. ✅ Drill into specific items for full context
-5. ✅ Reduce noise by collapsing/filtering
-6. ✅ Triage efficiently with visual indicators
-7. ✅ Navigate with keyboard (preserve existing UX)
-8. ✅ Mark items as reviewed to track progress
+2. ✅ Identify which MRs close which issues (and cross-references via mentionedInIds)
+3. ✅ Scan for work items with new activity (unread items float to top)
+4. ✅ Drill into specific items for full context (detail pane)
+5. ✅ Reduce noise by collapsing/filtering (main dashboard = open only)
+6. ✅ Triage efficiently with visual indicators (NEW badges, status colors)
+7. ✅ Find closed/archived items via search
+8. ✅ Track progress via read state (viewing = reviewed, auto-tracks)
 
 ## Non-Goals (Future Enhancements)
 
@@ -653,8 +805,9 @@ After implementation, users should be able to:
 - In-app commenting (read-only for now)
 - Advanced visualizations (graphs, charts)
 - Multi-user collaboration features
-- Mobile responsive design (desktop-first)
+- Mobile responsive design (desktop-first, target 1440p)
 - Custom grouping rules (project, assignee, label)
+- Keyboard navigation (j/k) - deferred to simplify initial implementation
 
 ## Estimated Complexity
 
