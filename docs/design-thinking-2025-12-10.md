@@ -300,15 +300,178 @@ Given a production issue area:
 
 ### Prototype Approach
 
-{{prototype_approach}}
+**Focus:** Query Engine data model and scoring algorithms - the foundation everything else builds on.
+
+**Method:** Sketch data structures, entity relationships, and weighted scoring formulas before building UI.
 
 ### Prototype Description
 
-{{prototype_description}}
+#### Core Entities (from GitLab)
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   PERSON    │     │    FILE     │     │   BRANCH    │
+├─────────────┤     ├─────────────┤     ├─────────────┤
+│ gitlab_id   │     │ path        │     │ name        │
+│ username    │     │ project_id  │     │ project_id  │
+│ name        │     │ directory   │     │ is_default  │
+│ email       │     │ extension   │     │ is_protected│
+└─────────────┘     │ module*     │     └─────────────┘
+                    └─────────────┘     
+
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   ISSUE     │     │  MERGE_REQ  │     │   COMMIT    │
+├─────────────┤     ├─────────────┤     ├─────────────┤
+│ iid         │     │ iid         │     │ sha         │
+│ title       │     │ title       │     │ message     │
+│ description │     │ description │     │ authored_at │
+│ state       │     │ state       │     │ files[]     │
+│ labels      │     │ source_branch│    └─────────────┘
+│ created_at  │     │ target_branch│    
+│ updated_at  │     │ created_at  │     ┌─────────────┐
+└─────────────┘     │ merged_at   │     │  COMMENT    │
+                    └─────────────┘     ├─────────────┤
+                                        │ id          │
+                                        │ body        │
+                                        │ noteable_id │
+                                        │ noteable_type│
+                                        │ created_at  │
+                                        └─────────────┘
+```
+
+#### Connection Types (Edges)
+
+```
+PERSON ──commits──► COMMIT ──touches──► FILE
+   │                   │
+   │                   ├──belongs_to──► MERGE_REQ
+   │                   └──on_branch──► BRANCH
+   │
+   ├──authors──► ISSUE
+   ├──authors──► MERGE_REQ
+   ├──comments_on──► ISSUE / MERGE_REQ
+   ├──reviews──► MERGE_REQ
+   └──assigned_to──► ISSUE / MERGE_REQ
+
+ISSUE ──relates_to──► ISSUE (linked issues)
+ISSUE ──closed_by──► MERGE_REQ
+ISSUE ──mentioned_in──► MERGE_REQ (referenced in MR description/comments)
+ISSUE ──mentions──► FILE (parsed from description/comments)
+
+MERGE_REQ ──touches──► FILE (from diff)
+MERGE_REQ ──closes──► ISSUE (explicit closes/fixes #)
+MERGE_REQ ──references──► ISSUE (mentions without closing)
+MERGE_REQ ──source──► BRANCH
+MERGE_REQ ──target──► BRANCH
+
+BRANCH ──contains──► COMMIT
+BRANCH ──diverges_from──► BRANCH (parent/base)
+
+COMMENT ──mentions──► PERSON (@username)
+COMMENT ──mentions──► FILE (path references)
+COMMENT ──mentions──► ISSUE (#123 references)
+COMMENT ──belongs_to──► ISSUE / MERGE_REQ
+```
+
+#### Weighted Scoring Algorithms
+
+**1. Expertise Scoring (Person → File/Directory)**
+
+Independent decay rates per signal type:
+
+```
+expertise_score = (
+    commits × 3.0 × decay(days, τ=90) +       # Slow decay - authorship sticks
+    mrs_authored × 4.0 × decay(days, τ=120) + # Slowest - you remember MRs longest
+    mrs_reviewed × 2.0 × decay(days, τ=60) +  # Medium - reviewing less memorable
+    issues_assigned × 2.0 × decay(days, τ=45) + # Faster - task memory fades
+    comments × 0.5 × decay(days, τ=30)         # Fastest - conversation details fade
+)
+
+decay(days, τ) = e^(-days / τ)
+```
+
+**2. Similarity Scoring (Issue → Issue, MR → MR)**
+
+Uses sentence embeddings for semantic matching:
+
+```
+similarity_score = (
+    title_embedding_cosine × 0.35 +
+    description_embedding_cosine × 0.35 +
+    label_jaccard × 0.15 +
+    file_overlap × 0.15
+)
+
+threshold_similar = 0.7   # Surface as "potentially related"
+threshold_duplicate = 0.85 # Flag as "likely duplicate"
+```
+
+How embeddings work:
+- Convert text to fixed-size vectors (384 or 768 dimensions)
+- Semantically similar text → similar vectors (even with different words)
+- Cosine similarity measures angle between vectors (1.0 = identical, 0.0 = unrelated)
+- Enables matching "Login crashes on Safari" with "Authentication fails in Safari browser"
+
+**3. Territory Overlap Scoring (MR → MR)**
+
+```
+territory_collision = (
+    file_overlap_score × 0.7 +
+    directory_overlap_score × 0.3
+)
+
+collision_severity = territory_collision × (
+    your_expertise + their_expertise
+) / 2
+
+alert_threshold = 0.3
+```
+
+**4. Connection Depth Scoring**
+
+```
+depth_1_score = direct_score × 1.0
+depth_2_score = direct_score × 0.4
+depth_3_score = direct_score × 0.15
+max_depth = 3  # Beyond this is noise
+```
+
+**5. Activity Relevance Scoring (Email Digest)**
+
+```
+event_relevance = (
+    territory_match × 0.4 +
+    person_match × 0.3 +
+    topic_match × 0.2 +
+    recency × 0.1
+)
+
+digest_threshold = 0.5
+daily_limit = 15
+```
+
+#### Query Patterns Supported
+
+| Query | Input | Output | Use Case |
+|-------|-------|--------|----------|
+| `experts(path)` | `/src/auth/*` | Ranked Person + scores | Expert View |
+| `decisions(topic)` | "OAuth" | Ranked Issues/Comments | Decision View |
+| `territory(person)` | "taylor" | Files + recency | Territory View |
+| `overlaps(files[])` | MR diff files | Other MRs/Issues | Collision alerts |
+| `similar(issue)` | Issue #123 | Similar Issues | Duplicate detection |
+| `activity(range, filters)` | Last 24h, auth/* | Events | Activity View |
+| `related(entity)` | Any entity | All connections | Entity Cards |
 
 ### Key Features to Test
 
-{{features_to_test}}
+1. **Expertise decay rates** - Are τ values (30/45/60/90/120 days) calibrated correctly?
+2. **Similarity thresholds** - Is 0.7 the right cutoff for "related"? Is 0.85 right for "duplicate"?
+3. **Collision sensitivity** - Does 0.3 threshold catch real conflicts without false positives?
+4. **Digest relevance** - Do the weights surface what you actually care about?
+5. **Depth cutoff** - Is depth 3 useful or just noise?
+
+All parameters should be tunable based on real usage feedback.
 
 ---
 
@@ -316,15 +479,62 @@ Given a production issue area:
 
 ### Testing Plan
 
-{{testing_plan}}
+**Context:** Primary user is Taylor (building for self first). "Testing" means self-validation, intervention tracking, and observing colleague reactions.
+
+**Phase 1: Personal Validation (Weeks 1-8)**
+
+| What to Test | How to Measure | Success Threshold |
+|--------------|----------------|-------------------|
+| Daily usage habit | Days per week you open the tool | 5+ days/week |
+| Expertise accuracy | Do suggested experts actually know the answer? | 70%+ accuracy |
+| Decision retrieval | Does archaeology surface relevant past discussions? | Find useful context 3+ times/week |
+| Collision detection | Does territory radar catch real overlaps? | 2+ catches/week, <20% false positives |
+| Digest value | Do you open and act on email digest? | Open rate >80%, act on 2+ items/week |
+
+**Phase 2: Intervention Validation (Weeks 8-16)**
+
+| What to Test | How to Measure | Success Threshold |
+|--------------|----------------|-------------------|
+| Intervention rate | High-value interventions per week | 5+/week |
+| Intervention reception | Did the person find it helpful? | 70%+ positive reception |
+| Time saved | Estimated hours saved per intervention | 200+ cumulative hours by week 16 |
+| Organic interest | Unsolicited requests for tool access | 3-5 colleagues ask |
+
+**Phase 3: Secondary User Validation (Week 16+)**
+
+| What to Test | How to Measure | Success Threshold |
+|--------------|----------------|-------------------|
+| Early adopter usage | Do they use it weekly? | 2+ early adopters active |
+| Early adopter interventions | Do THEY make interventions? | At least 1 adopter makes interventions |
+| Word of mouth | Do they tell others? | Tool spreads beyond your direct shares |
 
 ### User Feedback
 
-{{user_feedback}}
+**Weekly self-reflection (5 min):**
+- What insights did the tool surface that I wouldn't have found?
+- What did I search for that returned poor results?
+- What intervention did I make? What was the outcome?
+- What's missing that would have helped this week?
+
+**Intervention log template:**
+```
+Date: 
+Type: [expertise routing / duplicate prevention / decision surfacing / unblocking]
+Action taken: 
+Outcome: 
+Estimated time saved: 
+Reception: [positive / neutral / ignored]
+```
 
 ### Key Learnings
 
-{{key_learnings}}
+Watch for these signals during testing:
+
+1. **Which view gets used most?** - Invest more there
+2. **Which scoring feels wrong?** - Tune decay rates and thresholds
+3. **What queries return noise?** - Improve relevance filtering
+4. **What's missing entirely?** - New feature candidates
+5. **What feels like a chore?** - Friction to eliminate
 
 ---
 
