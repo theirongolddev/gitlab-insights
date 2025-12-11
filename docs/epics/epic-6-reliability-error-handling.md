@@ -1,6 +1,6 @@
 # Epic 6: Reliability & Error Handling
-**Status:** 90% Complete - See [AC Gap Analysis](./epic-6-7-acceptance-criteria-gap-analysis.md) for details  
-**Timeline:** 5-7 days (Phase 2, post-keyboard foundation) → **Actual: 0.5-1 day remaining**
+**Status:** Complete  
+**Timeline:** 5-7 days (Phase 2, post-keyboard foundation) → **Actual: Complete**
 
 **Goal:** Ensure production-grade reliability with graceful error handling
 
@@ -27,40 +27,31 @@ The following requirements are **fully implemented** with all acceptance criteri
 - ✅ **Filter validation before saving (FR77)** - Zod schema validation in queries router
 - ✅ **Settings page UI (FR61-62, FR66)** - Project management settings (Story 1-8)
 - ✅ **User preferences persistence (FR66)** - Database persistence implemented
+- ✅ **GitLab API rate limiting with exponential backoff (FR6)** - Story 6-3 complete
+- ✅ **Toast notifications for rate limits (FR88 complete)** - Retry countdown UI implemented
 
 **Verification:** See [Epic 6 Verification Report](./epic-6-verification-report.md) for detailed audit
 
 ---
 
-## ⚠️ REMAINING WORK
-
-### Story 6-3: GitLab API Rate Limiting & Retry Logic (P0 - REQUIRED)
+## ✅ Story 6-3: GitLab API Rate Limiting & Retry Logic - COMPLETE
 **Estimated Effort:** 4-6 hours  
-**Status:** Not started  
+**Status:** Complete  
 **Priority:** P0 (blocking for production)
 
-**Problem:** Direct API calls (manual refresh, save operations) don't have retry logic or rate limit handling. Only background Inngest jobs have automatic retry.
-
-**Scope:**
-- ✅ **GitLab API rate limiting with exponential backoff (FR6)** - Inngest done, direct calls need implementation
-- ✅ **Toast notifications for rate limits (FR88 complete)** - Add retry countdown UI
-
-**Requirements:**
-1. Add exponential backoff retry logic to direct API calls in `gitlab-client.ts`
-2. Handle 429 rate limit responses from GitLab API
-3. Retry transient failures (network errors, 5xx responses)
-4. Max 3 retries with exponential backoff (1s, 2s, 4s)
-5. User sees loading state during retries
-6. Toast notification: "GitLab API rate limit reached. Retrying in X seconds..."
-7. After 3 failures, show error message with manual retry button
+**Implementation Summary:**
+- `gitlab-client.ts`: `fetchWithRetry()` method with exponential backoff (1s, 2s, 4s)
+- `useManualRefresh.ts`: Custom hook with retry state, countdown, and toast notifications
+- 429 rate limit detection via `isRateLimit` property on `GitLabAPIError`
+- Routers handle rate limit errors and return appropriate messages
 
 **Acceptance Criteria:**
-- [ ] Direct API calls retry up to 3 times on failure
-- [ ] Exponential backoff implemented (1s → 2s → 4s delays)
-- [ ] 429 rate limit responses trigger backoff and user notification
-- [ ] User sees toast with retry countdown
-- [ ] After 3 failures, user sees error with "Retry" button
-- [ ] Background Inngest jobs continue to use automatic retry (no change)
+- [x] Direct API calls retry up to 3 times on failure
+- [x] Exponential backoff implemented (1s → 2s → 4s delays)
+- [x] 429 rate limit responses trigger backoff and user notification
+- [x] User sees toast with retry countdown
+- [x] After 3 failures, user sees error with "Retry" button
+- [x] Background Inngest jobs continue to use automatic retry (no change)
 
 **FRs Addressed:** FR6 (complete), FR88 (complete)
 
@@ -124,17 +115,18 @@ The following requirements are **fully implemented** with all acceptance criteri
 ## Summary
 
 **Original Scope:** 23 items listed  
-**Actually Completed:** 13 items (57% of listed scope)  
-**Remaining Required:** 1 item (Story 6-3)  
+**Actually Completed:** 15 items (65% of listed scope)  
+**Remaining Required:** 0 items  
 **Optional/Deferred:** 3 items (Stories 6-4, 6-5, 6-6)
 
-**Path to Epic 6 Completion:**
-- Complete Story 6-3 (Rate Limiting) - 4-6 hours
-- Mark Epic 6 as complete
-- Proceed to Epic 7
+**Epic 6 Status: COMPLETE**
+
+All required functionality implemented:
+- Story 6-3 (Rate Limiting) - Complete
+- All P0 requirements addressed
 
 **FRs Covered:** 
-- ✅ FR6 (Rate limits) - Partial, needs Story 6-3
+- ✅ FR6 (Rate limits) - Complete
 - ✅ FR8 (Offline tolerance) - Complete
 - ✅ FR70 (Polling reliability) - Complete
 - ✅ FR74-77 (Data integrity) - Complete
@@ -143,4 +135,4 @@ The following requirements are **fully implemented** with all acceptance criteri
 - ⚠️ FR63 (View preferences) - Deferred (undefined)
 - ⚠️ FR64 (Polling interval config) - Deferred (optional)
 
-**Rationale:** Epic 6 organic development covered nearly all requirements during earlier stories. Only rate limiting for direct API calls remains as blocking work.
+**Rationale:** Epic 6 organic development covered nearly all requirements during earlier stories. Rate limiting for direct API calls now complete with Story 6-3.

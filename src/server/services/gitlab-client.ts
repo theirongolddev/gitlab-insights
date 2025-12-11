@@ -300,6 +300,7 @@ export class GitLabClient {
 
   /**
    * Fetch with exponential backoff retry on transient errors
+   * Handles 5xx errors, network errors, and 429 rate limits
    */
   private async fetchWithRetry(
     url: string,
@@ -318,6 +319,15 @@ export class GitLabClient {
         // Retry on 5xx errors
         if (response.status >= 500 && attempt < retries) {
           const backoff = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
+          await new Promise((resolve) => setTimeout(resolve, backoff));
+          continue;
+        }
+
+        // Story 6.3: Handle 429 rate limit with Retry-After header
+        if (response.status === 429 && attempt < retries) {
+          const retryAfter = this.parseRetryAfter(response.headers.get("Retry-After"));
+          const backoff = retryAfter ?? Math.pow(2, attempt) * 1000;
+          logger.warn({ attempt, backoffMs: backoff, url }, "GitLabClient: Rate limited, retrying");
           await new Promise((resolve) => setTimeout(resolve, backoff));
           continue;
         }
@@ -341,6 +351,30 @@ export class GitLabClient {
 
     // Should never reach here
     throw new Error("Unexpected error in fetchWithRetry");
+  }
+
+  /**
+   * Parse Retry-After header from GitLab 429 response
+   * Can be seconds (integer) or HTTP-date format
+   * Returns milliseconds to wait, or null if header missing/invalid
+   */
+  private parseRetryAfter(retryAfter: string | null): number | null {
+    if (!retryAfter) return null;
+
+    // Try parsing as integer (seconds)
+    const seconds = parseInt(retryAfter, 10);
+    if (!isNaN(seconds) && seconds > 0) {
+      return seconds * 1000;
+    }
+
+    // Try parsing as HTTP-date
+    const date = Date.parse(retryAfter);
+    if (!isNaN(date)) {
+      const waitMs = date - Date.now();
+      return waitMs > 0 ? waitMs : null;
+    }
+
+    return null;
   }
 
   /**

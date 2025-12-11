@@ -33,7 +33,8 @@ export function Header() {
   const { showToast } = useToast();
 
   // Story 3.7: Manual refresh logic (extracted to custom hook)
-  const { isSyncing, triggerRefresh } = useManualRefresh();
+  // Story 6.3: Added retryState and showRetryPrompt for rate limit UI
+  const { isSyncing, triggerRefresh, retryState, showRetryPrompt } = useManualRefresh();
   const utils = api.useUtils();
 
   // Story 4.1: Split pane toggle state
@@ -198,7 +199,13 @@ export function Header() {
           <SyncIndicator isSyncing={isSyncing} />
 
           {/* Story 3.7: Manual refresh button */}
-          <RefreshButton onRefresh={triggerRefresh} isLoading={isSyncing} />
+          {/* Story 6.3: Pass retryState and showRetryPrompt for rate limit UI */}
+          <RefreshButton 
+            onRefresh={triggerRefresh} 
+            isLoading={isSyncing} 
+            retryState={retryState}
+            showRetryPrompt={showRetryPrompt}
+          />
 
           {/* Story 4.1: Split pane toggle button (desktop/tablet only) */}
           {/* Story 5.1 (AC 5.1.9): Added keyboard hint (d) */}

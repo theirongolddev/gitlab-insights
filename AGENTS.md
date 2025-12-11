@@ -8,7 +8,7 @@
 - **Language**: [TypeScript/Python/Go/etc.]
 - **Key Paths**: `src/`, `tests/`, `docs/`
 
----
+______________________________________________________________________
 
 ## RULE 1 – ABSOLUTE (DO NOT EVER VIOLATE THIS)
 
@@ -20,7 +20,7 @@ You may NOT delete any file or directory unless the user explicitly gives the ex
 
 Treat "never delete files without permission" as a hard invariant.
 
----
+______________________________________________________________________
 
 ## Irreversible Git & Filesystem Actions
 
@@ -34,10 +34,10 @@ Absolutely forbidden unless the user gives **exact command and explicit approval
 Rules:
 
 1. If you are not 100% sure what a command will delete, do not run it. Ask first.
-2. Prefer safe tools: `git status`, `git diff`, `git stash`, copying to backups.
-3. After approval, restate the command verbatim, list what it will affect, wait for confirmation.
+1. Prefer safe tools: `git status`, `git diff`, `git stash`, copying to backups.
+1. After approval, restate the command verbatim, list what it will affect, wait for confirmation.
 
----
+______________________________________________________________________
 
 ## Code Editing Discipline
 
@@ -45,7 +45,7 @@ Rules:
 - Large mechanical changes: break into smaller, explicit edits and review diffs
 - Subtle/complex changes: edit by hand, file-by-file, with careful reasoning
 
----
+______________________________________________________________________
 
 ## Issue Tracking with bd (Beads)
 
@@ -102,18 +102,19 @@ bd --readonly list                 # Safe read-only mode
 ### Agent Workflow
 
 1. `bd ready --json` to find unblocked work
-2. Claim: `bd update <id> --status in_progress`
-3. Implement + test
-4. Discovered work: `bd create "..." && bd dep add <new> <current> --type discovered-from`
-5. Close: `bd close <id> --reason "..."`
-6. Commit `.beads/` in the same commit as code changes
+1. Claim: `bd update <id> --status in_progress`
+1. Implement + test
+1. Discovered work: `bd create "..." && bd dep add <new> <current> --type discovered-from`
+1. Close: `bd close <id> --reason "..."`
+1. Commit `.beads/` in the same commit as code changes
 
 Never:
+
 - Use markdown TODO lists
 - Use other trackers
 - Duplicate tracking
 
----
+______________________________________________________________________
 
 ## Using bv as an AI Sidecar
 
@@ -132,11 +133,12 @@ bv --robot-diff --diff-since HEAD~5        # Changes in last 5 commits
 ```
 
 **Graph metrics explained**:
+
 - **PageRank**: Foundational blockers (tasks that enable many others)
 - **Betweenness**: Bottlenecks (must pass through these)
 - **Critical path**: Longest dependency chain
 
----
+______________________________________________________________________
 
 ## CASS — Cross-Agent Search
 
@@ -177,7 +179,7 @@ cass index --full                  # Rebuild index (if search returns nothing)
 
 **Output formats**: `--robot-format jsonl` (streaming), `--robot-format compact` (minimal)
 
----
+______________________________________________________________________
 
 ## cass-memory — Cross-Agent Learning
 
@@ -188,6 +190,7 @@ cm context "your task description" --json
 ```
 
 This returns:
+
 - **Relevant rules** from the playbook
 - **Historical context** from past sessions
 - **Anti-patterns** to avoid
@@ -198,63 +201,14 @@ cm doctor                          # Health check
 ```
 
 You do NOT need to:
+
 - Run `cm reflect` (automation handles this)
 - Manually add rules to the playbook
 - Worry about the learning pipeline
 
 The system learns from your sessions automatically.
 
----
-
-## UBS — Bug Scanner
-
-### Pre-Commit (Required)
-
-```bash
-ubs --staged                       # Scan staged changes
-ubs --staged --fail-on-warning     # Strict mode (exit 1 on any issue)
-```
-
-### Scanning Options
-
-```bash
-ubs .                              # Scan current directory
-ubs path/to/file.ts                # Scan specific file
-ubs --diff                         # Scan working tree changes vs HEAD
-ubs -v .                           # Verbose with code examples
-```
-
-### Profiles & Filters
-
-```bash
-ubs --profile=strict .             # Fail on warnings
-ubs --profile=loose .              # Skip nits (prototyping)
-ubs --only=python .                # Single language
-ubs --only=typescript,javascript . # Multiple languages
-```
-
-**Languages**: javascript, typescript, python, c, c++, rust, go, java, ruby
-
-### Output Formats
-
-```bash
-ubs . --format=json                # JSON
-ubs . --format=jsonl               # Line-delimited JSON
-ubs . --format=sarif               # GitHub Code Scanning
-```
-
-### CI Integration
-
-```bash
-ubs --ci                           # CI mode
-ubs --comparison baseline.json .   # Regression detection
-```
-
-**Suppress false positives**: `// ubs:ignore`
-
-**Health check**: `ubs doctor --fix`
-
----
+______________________________________________________________________
 
 ## MCP Agent Mail — Multi-Agent Coordination
 
@@ -346,39 +300,44 @@ macro_start_session(
 ```
 
 Common pitfalls:
+
 - "from_agent not registered" → call `register_agent` first
 - `FILE_RESERVATION_CONFLICT` → wait for expiry or coordinate with holder
 
----
+______________________________________________________________________
 
 ## Warp-Grep — Parallel Code Search
 
 Warp-Grep runs 8 parallel searches per turn. It's an MCP tool, not a CLI command.
 
 **When to use**:
+
 - "How does X work?" discovery
 - Data flow across multiple files
 - Cross-cutting concerns
 
 **When NOT to use**:
+
 - You know the function name (use `rg` or Grep tool)
 - You know the exact file (just open it)
 - Simple existence check
 
 The tool activates automatically for natural language code questions.
 
----
+______________________________________________________________________
 
 ## Exa MCP — AI Web & Code Search
 
 Exa provides real-time web search and code context retrieval.
 
 **When to use**:
+
 - Current documentation (APIs change after training cutoff)
 - Code examples from GitHub/StackOverflow
 - Latest library versions or deprecation notices
 
 **Available tools**:
+
 ```
 web_search_exa        # Real-time web search
 get_code_context_exa  # Search GitHub, docs, StackOverflow
@@ -387,11 +346,12 @@ crawling              # Extract content from specific URLs
 ```
 
 **When NOT to use**:
+
 - Information likely in codebase (use CASS or Warp-Grep)
 - Historical context (use cass-memory)
 - Task information (use Beads)
 
----
+______________________________________________________________________
 
 ## Session Workflow
 
@@ -417,16 +377,16 @@ fetch_inbox(project_key, agent_name)
 ### End
 
 ```bash
-ubs --staged                       # Scan for bugs
 bd close <id> --reason "Completed: ..."
 bd sync                            # Sync .beads
-git add -A && git commit && git push
+jj describe -m "<commit message>" && jj bookmark set <bookmark-name> && jj new
 release_file_reservations(...)     # If multi-agent
 ```
 
----
+______________________________________________________________________
 
 ## Contribution Policy
 
 <!-- CUSTOMIZE as needed -->
+
 Remove any mention of contributing/contributors from README if not applicable.

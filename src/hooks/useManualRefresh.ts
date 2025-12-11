@@ -9,7 +9,7 @@ import { useShortcutHandler } from "~/hooks/useShortcutHandler";
 const RETRY_DELAYS = [1000, 2000, 4000];
 const MAX_RETRIES = 3;
 
-interface RetryState {
+export interface RetryState {
   isRetrying: boolean;
   attempt: number;
   nextRetryIn: number; // countdown in seconds
@@ -31,6 +31,8 @@ interface RetryState {
 export function useManualRefresh() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [retryState, setRetryState] = useState<RetryState | null>(null);
+  // AC5: Track when retries exhausted to show "Retry" button
+  const [showRetryPrompt, setShowRetryPrompt] = useState(false);
   const isSyncingRef = useRef(false); // Synchronous check to prevent race condition
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -85,6 +87,8 @@ export function useManualRefresh() {
       await utils.queries.getNewItems.invalidate();
       
       resetState();
+      // AC5: Clear retry prompt on success
+      setShowRetryPrompt(false);
 
       const newItemsCount = data?.stored ?? 0;
       showToast(`Refreshed! ${newItemsCount} new item${newItemsCount === 1 ? '' : 's'} found`, "success");
@@ -143,9 +147,10 @@ export function useManualRefresh() {
       resetState();
       
       if (isRateLimitError) {
-        // Exhausted retries on rate limit
+        // AC5: Exhausted retries on rate limit - show Retry button
+        setShowRetryPrompt(true);
         showToast(
-          "GitLab rate limit exceeded. Please try again in a few minutes.",
+          "GitLab rate limit exceeded. Click Retry when ready.",
           "error"
         );
       } else {
@@ -163,6 +168,8 @@ export function useManualRefresh() {
 
     isSyncingRef.current = true;
     setIsSyncing(true);
+    // Clear retry prompt when user initiates new refresh
+    setShowRetryPrompt(false);
     void executeRefresh(0);
   }, [executeRefresh]);
 
@@ -174,5 +181,7 @@ export function useManualRefresh() {
     triggerRefresh,
     // AC10: Expose retry state for UI components that want to show countdown
     retryState,
+    // AC5: Expose flag for showing Retry button after failures
+    showRetryPrompt,
   };
 }
