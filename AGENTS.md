@@ -4,9 +4,9 @@
 
 ## Project Overview
 
-- **Name**: [Project Name]
-- **Language**: [TypeScript/Python/Go/etc.]
-- **Key Paths**: `src/`, `tests/`, `docs/`
+- **Name**: [Gitlab Insights]
+- **Language**: [TypeScript]
+- **Key Paths**: `src/`, `prisma`, `tests/`, `docs/`
 
 ______________________________________________________________________
 
@@ -34,7 +34,7 @@ Absolutely forbidden unless the user gives **exact command and explicit approval
 Rules:
 
 1. If you are not 100% sure what a command will delete, do not run it. Ask first.
-1. Prefer safe tools: `git status`, `git diff`, `git stash`, copying to backups.
+1. Prefer safe tools: `jj status`, `jj diff`, `git stash`, copying to backups.
 1. After approval, restate the command verbatim, list what it will affect, wait for confirmation.
 
 ______________________________________________________________________
@@ -44,6 +44,46 @@ ______________________________________________________________________
 - Do **not** run scripts that bulk-modify code (codemods, one-off scripts, giant sed/regex refactors)
 - Large mechanical changes: break into smaller, explicit edits and review diffs
 - Subtle/complex changes: edit by hand, file-by-file, with careful reasoning
+
+______________________________________________________________________
+
+## Configuration Reference
+
+<!-- CUSTOMIZE: Update paths based on what you've configured -->
+
+Your configuration is split across these locations:
+
+| Location | Purpose | When to Use |
+|----------|---------|-------------|
+| `CLAUDE.md` | Project context, architecture | Understanding the codebase |
+| `AGENTS.md` | This file - workflow instructions | Session startup, tool usage |
+| `.claude/rules/` | Constraints and conventions | Auto-loaded, always follow |
+| `.claude/skills/` | Detailed guides and capabilities | Reference when relevant |
+| `.claude/commands/` | Slash commands | Invoke with `/command-name` |
+
+### Rules (Auto-Loaded)
+
+Rules in `.claude/rules/*.md` are automatically enforced. Check what's there:
+
+- `safety.md` — File deletion, destructive commands
+- [Add your rules here]
+
+### Skills (On-Demand)
+
+Skills in `.claude/skills/*/SKILL.md` provide detailed guidance. Use them when:
+
+- The skill's description matches your current task
+- You need detailed patterns or examples
+
+Available skills:
+
+- \[List your skills here, e.g., `style-guide` — Code conventions\]
+
+### Commands (User-Triggered)
+
+Slash commands in `.claude/commands/*.md`:
+
+- \[List your commands here, e.g., `/audit-style <path>` — Check code style\]
 
 ______________________________________________________________________
 
@@ -210,6 +250,56 @@ The system learns from your sessions automatically.
 
 ______________________________________________________________________
 
+## UBS — Bug Scanner
+
+### Pre-Commit (Required)
+
+```bash
+ubs --staged                       # Scan staged changes
+ubs --staged --fail-on-warning     # Strict mode (exit 1 on any issue)
+```
+
+### Scanning Options
+
+```bash
+ubs .                              # Scan current directory
+ubs path/to/file.ts                # Scan specific file
+ubs --diff                         # Scan working tree changes vs HEAD
+ubs -v .                           # Verbose with code examples
+```
+
+### Profiles & Filters
+
+```bash
+ubs --profile=strict .             # Fail on warnings
+ubs --profile=loose .              # Skip nits (prototyping)
+ubs --only=python .                # Single language
+ubs --only=typescript,javascript . # Multiple languages
+```
+
+**Languages**: javascript, typescript, python, c, c++, rust, go, java, ruby
+
+### Output Formats
+
+```bash
+ubs . --format=json                # JSON
+ubs . --format=jsonl               # Line-delimited JSON
+ubs . --format=sarif               # GitHub Code Scanning
+```
+
+### CI Integration
+
+```bash
+ubs --ci                           # CI mode
+ubs --comparison baseline.json .   # Regression detection
+```
+
+**Suppress false positives**: `// ubs:ignore`
+
+**Health check**: `ubs doctor --fix`
+
+______________________________________________________________________
+
 ## MCP Agent Mail — Multi-Agent Coordination
 
 Agent Mail is available as an MCP server for coordinating multiple agents.
@@ -355,6 +445,32 @@ ______________________________________________________________________
 
 ## Session Workflow
 
+### Session Naming (Claude Code 2.0.64+)
+
+Name sessions immediately after Agent Mail registration for traceability:
+
+```
+{project}-{AgentMailName}-{YYYYMMDD-HHMMSS}
+```
+
+Examples:
+
+- `myapp-GreenCastle-20251210-143022`
+- `backend-BlueLake-20251210-091500`
+
+After `register_agent` or `macro_start_session` returns your agent name:
+
+```bash
+/rename myapp-GreenCastle-20251210-143022
+```
+
+To resume later:
+
+```bash
+claude --resume myapp-GreenCastle-20251210-143022
+# Or use /resume in REPL
+```
+
 ### Start
 
 ```bash
@@ -377,9 +493,10 @@ fetch_inbox(project_key, agent_name)
 ### End
 
 ```bash
+ubs --staged                       # Scan for bugs
 bd close <id> --reason "Completed: ..."
 bd sync                            # Sync .beads
-jj describe -m "<commit message>" && jj bookmark set <bookmark-name> && jj new
+git add -A && git commit && git push
 release_file_reservations(...)     # If multi-agent
 ```
 
