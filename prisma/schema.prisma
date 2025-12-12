@@ -25,6 +25,7 @@ model User {
   queries       UserQuery[]
   projects      MonitoredProject[]
   readEvents    ReadEvent[]
+  dashboardView String             @default("grouped") // "grouped" | "flat"
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
 
