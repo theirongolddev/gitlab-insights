@@ -10,6 +10,7 @@ export function SettingsClient() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const utils = api.useUtils();
 
   // Fetch user's current monitored projects (session already validated by server component)
   const { data: monitoredProjects, isLoading: isLoadingMonitored } =
@@ -29,7 +30,8 @@ export function SettingsClient() {
 
   // Save monitored projects mutation
   const saveMonitoredMutation = api.projects.saveMonitored.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
+      await utils.projects.getMonitored.invalidate();
       setSaveSuccess(true);
       setSaveError(null);
       setIsSubmitting(false);
