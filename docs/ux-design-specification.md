@@ -55,7 +55,7 @@ The vibe is **"feed reader for code discussions"** - think Feedly, Inoreader, Ne
    - **Phase 1 MVP:** Mouse-driven UI with buttons, nav links, clickable elements (fully functional, 3-4 weeks)
    - **Phase 2:** Layer vim-style keyboard shortcuts onto existing mouse UI (2-3 days additional implementation)
    - Phasing enables fast validation of core value proposition (polling-based discovery, filter effectiveness) before investing in power-user features
-   - Architecture uses React Aria Components (supports both mouse AND keyboard from day 1 - no refactoring needed)
+   - Architecture uses HeroUI (built on React Aria, supports both mouse AND keyboard from day 1 - no refactoring needed)
    - Mouse UI is fully functional (not degraded) - keyboard shortcuts enhance existing interactions
    - Target users will appreciate keyboard shortcuts, but MVP validates attention-efficient discovery first
 
@@ -100,48 +100,49 @@ The vibe is **"feed reader for code discussions"** - think Feedly, Inoreader, Ne
 
 ### 1.1 Design System Choice
 
-**Selected: React Aria Components** (Adobe)
+**Selected: HeroUI** (React Aria-based component library)
 
 **Decision Rationale:**
 
-React Aria Components chosen for its exceptional keyboard navigation foundation and progressive enhancement architecture, aligning perfectly with Phase 1 (mouse-driven) → Phase 2 (keyboard layer) implementation strategy.
+HeroUI provides a design-ready component layer on top of React Aria, giving us the best of both worlds: Adobe's battle-tested accessibility primitives with a cohesive visual foundation we can theme to our unique identity. This supports Phase 1 (mouse-driven) → Phase 2 (keyboard layer) strategy.
 
-**Why React Aria Components:**
+**Why HeroUI:**
 
-1. **Progressive enhancement ready:** Components work with mouse in Phase 1, keyboard shortcuts layer on in Phase 2 without refactoring
-2. **Best-in-class keyboard navigation:** Industry-leading focus management when we add shortcuts - architecture supports both input methods
-3. **Accessibility without compromise:** WCAG AA+ out of the box, ensures screen reader and keyboard-only users fully supported
-4. **Complete design control:** Unstyled components allow creation of unique visual identity with custom olive/moss green accent
-5. **Clean architecture:** Behavior (React Aria) + Styling (Tailwind) = maintainable separation of concerns
-6. **Battle-tested:** Built and maintained by Adobe, powers Spectrum design system, mature and stable
-7. **Composable primitives:** Build complex interactions (progressive disclosure, split pane toggle) from well-designed primitives
+1. **React Aria accessibility:** Built on Adobe's React Aria, ensuring WCAG AA+ compliance and best-in-class keyboard navigation
+2. **Theming-first architecture:** CSS variables and theme tokens enable systematic customization of our olive/moss green identity
+3. **Progressive enhancement ready:** Mouse interactions work immediately; keyboard shortcuts layer on in Phase 2 without refactoring
+4. **Reduced boilerplate:** Pre-composed components eliminate repetitive accessibility and interaction patterns
+5. **Escape hatch to primitives:** Can drop down to raw React Aria hooks when HeroUI components don't fit our needs
+6. **Dark mode native:** Theme system supports light/dark modes with coordinated color shifts
+7. **Composable patterns:** Build complex interactions (progressive disclosure, split pane) using HeroUI's building blocks
 
 **Components Provided:**
-- Tables (customize for dense one-line layout)
-- Tooltips (hover/focus progressive disclosure)
-- Modals/Overlays (expanded item view)
-- Menus/Dropdowns (filter UI, query sidebar)
-- Form components (filter creation)
-- Focus management (keyboard navigation)
-- Keyboard handling (shortcuts system)
+- Table (customize density and row styling)
+- Tooltip (hover/focus triggers with positioning)
+- Modal/Drawer (expanded item view, overlays)
+- Dropdown/Menu (filter UI, query sidebar)
+- Input/Autocomplete (search, filter creation)
+- Checkbox/Switch (toggle states)
+- Focus management and keyboard handling (via React Aria)
 
 **What We Build:**
-- Visual styling (Tailwind CSS for Linear-inspired aesthetic)
-- Dark mode implementation ✅ COMPLETED (Story 1.5.6 - toggle between light/dark with system preference detection)
-- Catch-Up Mode toggle (custom component using React Aria primitives)
-- Query sidebar (custom layout using Menu/Disclosure primitives)
+- Custom theme (olive/moss green accent, Linear-inspired aesthetic)
+- Dark mode refinements ✅ COMPLETED (Story 1.5.6 - leveraging HeroUI's theme system)
+- Catch-Up Mode toggle (HeroUI Switch with custom styling)
+- Query sidebar (HeroUI Listbox/Accordion composition)
 - Sync status indicators (last refresh timestamp, manual refresh button)
-- Unique accent color system
+- Dense table variant for scan efficiency
 
 **Tradeoffs Accepted:**
-- ✅ More initial styling work (but worth it for unique identity)
-- ✅ Implement dark mode ourselves (but full control over how it works)
-- ✅ More verbose component code (but explicit and maintainable)
+- ✅ Bound to HeroUI's component API (but React Aria primitives available as fallback)
+- ✅ Theme system learning curve (but systematic and well-documented)
+- ✅ Some visual opinions inherited (but fully overridable)
 
 **Benefits Gained:**
-- ✅ Exceptional keyboard navigation (j/k, focus management, escape, shortcuts)
+- ✅ Exceptional keyboard navigation (React Aria foundation)
 - ✅ Confidence in accessibility
-- ✅ Complete visual design freedom
+- ✅ Faster development with pre-built components
+- ✅ Systematic theming for unique visual identity
 - ✅ Clean, maintainable architecture
 - ✅ Perfect foundation for keyboard-primary identity
 
@@ -1162,48 +1163,48 @@ graph TD
 
 ### 6.1 Component Strategy
 
-**Design System: React Aria Components + Tailwind CSS**
+**Design System: HeroUI + Tailwind CSS**
 
-React Aria Components provides unstyled, accessible primitives with excellent keyboard navigation. We style them with Tailwind CSS for complete control over the visual design.
+HeroUI provides pre-styled, accessible components built on React Aria with excellent keyboard navigation. We customize them with HeroUI's theming system and Tailwind CSS overrides for our unique visual identity.
 
 ---
 
-#### Components from React Aria Components
+#### Components from HeroUI
 
 **Table Component:**
 - **Usage:** Main 2-line dense table for item list
-- **What React Aria Provides:** Focus management, keyboard navigation (arrow keys, Home/End), row selection
-- **Our Styling:** 52px row height, olive border on selection, hover states
+- **What HeroUI Provides:** Focus management, keyboard navigation (arrow keys, Home/End), row selection, pre-styled rows
+- **Our Customization:** 52px row height, olive border on selection, hover states via theme
 - **Custom Behavior:** j/k navigation override (vim-style instead of arrow keys)
 
 **Tooltip Component:**
 - **Usage:** Future enhancement for hover previews (post-MVP)
-- **What React Aria Provides:** Positioning, show/hide logic, accessibility
-- **Our Styling:** Dark background, olive border, custom positioning
+- **What HeroUI Provides:** Positioning, show/hide logic, accessibility, animations
+- **Our Customization:** Olive border, custom positioning via theme
 - **Custom Behavior:** 300ms delay before showing
 
-**Dialog/Modal Component:**
+**Modal Component:**
 - **Usage:** Save query modal, settings modal, error dialogs
-- **What React Aria Provides:** Focus trap, Esc to close, overlay click handling
-- **Our Styling:** Dark modal, backdrop blur, smooth fade-in animation
+- **What HeroUI Provides:** Focus trap, Esc to close, overlay click handling, backdrop blur
+- **Our Customization:** Theme colors, smooth fade-in animation
 - **Custom Behavior:** Auto-focus on primary input field
 
 **Button Component:**
 - **Usage:** Refresh button, action buttons, modal buttons
-- **What React Aria Provides:** Keyboard interaction (Space/Enter), disabled states
-- **Our Styling:** Primary (olive), secondary (gray), icon-only variants
+- **What HeroUI Provides:** Keyboard interaction (Space/Enter), disabled states, loading states
+- **Our Customization:** Primary (olive), secondary (gray), icon-only variants via theme
 - **Custom Behavior:** Loading states with spinner
 
-**Search/Combobox Component:**
+**Autocomplete Component:**
 - **Usage:** Search input with filter syntax support
-- **What React Aria Provides:** Autocomplete behavior, keyboard nav through suggestions
-- **Our Styling:** Minimal input with focus olive border
+- **What HeroUI Provides:** Autocomplete behavior, keyboard nav through suggestions, dropdown styling
+- **Our Customization:** Minimal input with focus olive border via theme
 - **Custom Behavior:** Filter syntax hints, real-time search
 
 **Checkbox Component:**
 - **Usage:** Settings: "Always show detail pane", query options
-- **What React Aria Provides:** Checked/unchecked states, keyboard toggle
-- **Our Styling:** Olive checkmark, minimal design
+- **What HeroUI Provides:** Checked/unchecked states, keyboard toggle, animations
+- **Our Customization:** Olive checkmark via theme
 
 ---
 
@@ -1211,7 +1212,7 @@ React Aria Components provides unstyled, accessible primitives with excellent ke
 
 **SplitPane Component:**
 - **Purpose:** Toggleable split pane layout with animation
-- **Composition:** Uses React Aria's focus management
+- **Composition:** Uses HeroUI's focus management (via React Aria)
 - **States:**
   - `closed` - Full-width table
   - `opening` - 200ms slide-in animation
@@ -1386,7 +1387,7 @@ App
 ├── AppHeader
 │   ├── CatchUpModeToggle
 │   ├── SyncIndicator
-│   └── SearchInput (React Aria Combobox)
+│   └── SearchInput (HeroUI Autocomplete)
 ├── MainLayout
 │   ├── QuerySidebar
 │   │   ├── QuerySection (Saved Queries)
@@ -1412,7 +1413,7 @@ App
 │       │       └── DetailActions
 │       └── KeyboardShortcutHelper (? key to show)
 └── GlobalModals
-    ├── SaveQueryModal (React Aria Dialog)
+    ├── SaveQueryModal (HeroUI Modal)
     ├── SettingsModal
     └── ErrorModal
 ```
@@ -1451,11 +1452,6 @@ These patterns ensure consistent behavior across the entire application, prevent
   - "Skip" or "Maybe Later"
   - Links to documentation
   - "Show keyboard shortcuts"
-
-**Destructive Action (Red):**
-- **Style:** `bg-red-600 text-white hover:bg-red-700`
-- **Usage:** Irreversible actions (rare in MVP)
-  - "Delete Query" (requires confirmation)
 - **Rule:** Always require confirmation modal
 
 ---
@@ -1796,8 +1792,8 @@ These patterns ensure consistent behavior across the entire application, prevent
   - List: 600px (more comfortable scanning)
   - Detail: Remaining space (~1660px, max 1400px)
   - Detail pane centered if > 1400px wide
-- Row Layout: 2-line rows, 8-10 items visible with ample whitespace
-- Default: Split pane ON by default (plenty of screen real estate)
+- Row Layout: 2-line rows with generous padding
+- Content: Centered layout with symmetrical margins
 
 **4K / Ultra-wide (3840px+):**
 - Sidebar: 320px (generous width for long query names)
@@ -1808,32 +1804,6 @@ These patterns ensure consistent behavior across the entire application, prevent
   - Consider: Optional third column for activity timeline (post-MVP)
 - Row Layout: 2-line rows with generous padding
 - Content: Centered layout with symmetrical margins
-- Default: Split pane ON by default
-
----
-
-#### Component Responsive Behavior
-
-**QuerySidebar:**
-- 1920-2559px (1080p): 280px, scrollable if many queries
-- 2560-3839px (1440p): 300px, comfortable spacing
-- 3840px+ (4K): 320px, generous spacing for long names
-
-**ItemRow (2-line):**
-- All widths: Same 52px height (consistent)
-- 1080p: Truncate very long titles (>80 chars) with ellipsis
-- 1440p: Full titles usually visible (up to 120 chars)
-- 4K: No truncation needed, generous whitespace
-
-**DetailPane:**
-- 1080p: Flexible width (~1160px when split pane open)
-- 1440p: Max 1400px, centered if more space
-- 4K: Max 1600px, centered with margins
-
-**Modals:**
-- All widths: Centered, fixed sizes (400/600/800px)
-- 1080p: Standard modal sizes
-- 1440p+: Same sizes (don't scale), more backdrop visible
 
 ---
 
@@ -1924,13 +1894,7 @@ These patterns ensure consistent behavior across the entire application, prevent
   - Not: "Click here"
   - Yes: "Open issue #1234 in GitLab"
 
-**Live Regions:**
-- **Search results:** `aria-live="polite"` announces "Showing 8 of 142 items"
-- **Sync status:** `aria-live="polite"` announces "Sync completed"
-- **Errors:** `aria-live="assertive"` announces errors immediately
-- **Success:** `aria-live="polite"` announces "Query saved"
-
-**Dynamic Content:**
+**Focus Regions:**
 - **Loading states:** `aria-busy="true"` while loading
 - **Empty states:** Clear messages announced
 - **Modal open:** Focus moves to modal, background inert
@@ -2163,7 +2127,7 @@ Only pursue Phase 2 if Phase 1 achieves:
 **Phase 1 MVP Implementation Sequence (3-4 weeks):**
 
 1. **Foundation (Week 1)**
-   - Design system setup: React Aria Components + Tailwind + olive color system
+   - Design system setup: HeroUI + Tailwind + olive color system
    - Core layout: Sidebar + Dashboard + Header components
    - GitLab OAuth authentication
    - Database schema and API polling infrastructure
@@ -2197,7 +2161,7 @@ Only pursue Phase 2 if Phase 1 achieves:
 
 2. **Keyboard Navigation (Week 6)**
    - Keyboard event handlers calling existing click handlers
-   - Vim-style shortcuts (j/k, /, o, d, m, r, s, c)
+   - Vim-style shortcuts (j/k, /, o, d, m)
    - Keyboard shortcut help modal (`?` key)
    - Focus management polish
 
@@ -2222,10 +2186,10 @@ This UX Design Specification documents the complete user experience design for G
 - **Progressive Disclosure:** Click item (Phase 2: OR press `d`) to toggle email-style split pane (200ms animation)
 - **Rationale:** Balances maximum scanning density with on-demand deep context
 
-**2. Design System: React Aria Components + Tailwind CSS**
-- **Foundation:** Adobe's React Aria Components for progressive enhancement (mouse → keyboard)
-- **Styling:** Custom Tailwind implementation with olive/moss green accent (#5e6b24 light, #9DAA5F dark)
-- **Rationale:** Components work with mouse in Phase 1, keyboard layer added in Phase 2 without refactoring
+**2. Design System: HeroUI + Tailwind CSS**
+- **Foundation:** HeroUI (built on Adobe's React Aria) for progressive enhancement (mouse → keyboard)
+- **Styling:** HeroUI theming + Tailwind overrides with olive/moss green accent (#5e6b24 light, #9DAA5F dark)
+- **Rationale:** Pre-styled components accelerate development; keyboard layer added in Phase 2 without refactoring
 
 **3. Polling-Based MVP Architecture (Phase 1)**
 - **Sync Strategy:** Scheduled background polling every 5-15 minutes + manual refresh button
@@ -2235,7 +2199,7 @@ This UX Design Specification documents the complete user experience design for G
 **4. Progressive Enhancement: Mouse → Keyboard (Phase 1 → Phase 2)**
 - **Phase 1:** Mouse-driven UI with buttons, nav links, clickable elements (fully functional)
 - **Phase 2:** Layer vim-style keyboard shortcuts onto existing mouse UI (2-3 days implementation)
-- **Architecture:** React Aria Components support both input methods from day 1
+- **Architecture:** HeroUI (built on React Aria) supports both input methods from day 1
 - **Rationale:** Fast validation of core value proposition (polling + filtering) before investing in power-user keyboard features
 
 **5. Desktop-Only MVP**
@@ -2270,7 +2234,7 @@ Through this collaborative design process, we created interactive HTML mockups t
 #### Design Documentation Delivered
 
 **Section 1 - Design System Foundation**
-- React Aria Components selection with rationale
+- HeroUI selection with rationale
 - Component library strategy (provided vs custom)
 
 **Section 2 - Core User Experience**
@@ -2300,7 +2264,7 @@ Through this collaborative design process, we created interactive HTML mockups t
 - Flow diagrams (Mermaid) and error handling
 
 **Section 6 - Component Library**
-- React Aria Components usage (Table, Dialog, Button, Search, Checkbox)
+- HeroUI component usage (Table, Modal, Button, Autocomplete, Checkbox)
 - Custom components to build (SplitPane, QuerySidebar, ItemRow, DetailPane, etc.)
 - Component hierarchy and styling approach
 - Tailwind CSS configuration
