@@ -9,4 +9,54 @@ metadata:
   totalReflections: 0
   totalSessionsProcessed: 0
 deprecatedPatterns: []
-bullets: []
+bullets:
+  - id: beads-check-existing-before-create
+    scope: project
+    category: beads
+    content: "Before creating new epics or features in beads, ALWAYS run 'bd list --json | jq -r '.[] | .title'' first to check for existing epic/story structure. Duplicate epic numbers and redundant work are common mistakes."
+    source: session-learning
+    type: rule
+    isNegative: false
+    kind: workflow_rule
+    state: active
+    maturity: established
+    tags:
+      - beads
+      - planning
+      - deduplication
+    reasoning: "Created 25+ redundant beads for 'Epic 10: Intelligence Platform' only to discover Epics 8-17 already existed covering the same features. Wasted significant effort. Always check first."
+    createdAt: 2025-12-15T00:00:00.000Z
+
+  - id: beads-existing-epic-structure
+    scope: project
+    category: beads
+    content: "This project has a comprehensive epic structure (Epics 8-17) for Intelligence Platform features. Epic 8=Person, Epic 9=Commits/Files, Epic 10=Expertise, Epic 11=Territory, Epic 12=Similarity, Epic 13=Decisions, Epic 14=Activity, Epic 15=Digest, Epic 16=MR Context, Epic 17=Incident. Check docs/intelligence-platform-epics.md for the canonical breakdown."
+    source: session-learning
+    type: rule
+    isNegative: false
+    kind: project_context
+    state: active
+    maturity: established
+    tags:
+      - beads
+      - project-structure
+      - intelligence-platform
+    reasoning: "Discovered existing epic structure after creating duplicates. This rule documents the existing structure to prevent future duplication."
+    createdAt: 2025-12-15T00:00:00.000Z
+
+  - id: beads-prd-to-epic-mapping
+    scope: project
+    category: beads
+    content: "PRD features map to existing epics: Expertise Discovery->Epic 10, Decision Archaeology->Epic 13, Territory Radar->Epic 11, Activity Summaries->Epic 14. Don't create new epics for PRD features - enhance the existing ones."
+    source: session-learning
+    type: rule
+    isNegative: false
+    kind: project_context
+    state: active
+    maturity: established
+    tags:
+      - beads
+      - prd
+      - mapping
+    reasoning: "Created redundant 'Feature 10.x' beads that duplicated existing epics. This mapping prevents that mistake."
+    createdAt: 2025-12-15T00:00:00.000Z

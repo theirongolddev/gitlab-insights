@@ -1,18 +1,17 @@
-______________________________________________________________________
-
-stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
+---
+stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
 inputDocuments:
-
-- docs/prd-work-item-grouping.md
-- docs/product-brief-gitlab-insights-2025-11-19.md
-- docs/ux-design-specification.md
-  workflowType: 'ux-design'
-  lastStep: 8
-  project_name: 'gitlab-insights'
-  user_name: 'Taylor'
-  date: '2025-12-12'
-
-______________________________________________________________________
+  - docs/prd-work-item-grouping.md
+  - docs/product-brief-gitlab-insights-2025-11-19.md
+  - docs/ux-design-specification.md
+workflowType: 'ux-design'
+lastStep: 14
+workflowComplete: true
+project_name: 'gitlab-insights'
+user_name: 'Taylor'
+date: '2025-12-12'
+completionDate: '2025-12-15'
+---
 
 # UX Design Specification - Work Item Grouping
 
@@ -105,11 +104,10 @@ Time to correctly triage - not just speed, not just accuracy, but both. Users ca
 
 1. **Three-Way Read Tracking System**
 
-   - **Expand in-place** → Marks as read (investigating activity timeline)
-   - **Open side panel** → Marks as read (deep dive into full context)
+   - **Expand in-place** → Marks as read immediately (investigating activity timeline)
+   - **Open side panel** → Marks as read immediately (deep dive into full context)
    - **Mark Read button** → Quick dismiss without opening (evaluated, not relevant)
    - NEW badge transforms to Mark Read button on hover (space-efficient interaction)
-   - Debounce timing: ~1 second (fine-tune during development)
 
 1. **Three-Level Progressive Disclosure**
 
@@ -289,14 +287,14 @@ Users expect to:
 **Speed Metrics:**
 
 - 3-5 seconds per collapsed card scan (relevance decision)
-- \<200ms for expand/collapse animation (feels instant)
-- \<500ms for side panel open + auto-scroll (fast enough to maintain flow)
+- <200ms for expand/collapse animation (feels instant)
+- <500ms for side panel open + auto-scroll (fast enough to maintain flow)
 
 **Accuracy Metrics:**
 
 - Users can determine relevance from collapsed card >90% of time (without expanding)
-- False positives \<10% (marked as read without investigation, but should have investigated)
-- False negatives \<5% (expanded but wasn't relevant)
+- False positives <10% (marked as read without investigation, but should have investigated)
+- False negatives <5% (expanded but wasn't relevant)
 
 **What Makes Users Say "This Just Works":**
 
@@ -453,7 +451,7 @@ Let's design the step-by-step flow for the **scan-to-decision core interaction**
 1. User clicks anywhere on collapsed card (except Mark Read button area)
 1. Card expands with 200ms ease-out animation
 1. Activity timeline appears showing all new events within work item
-1. After ~1 second (debounce), card is automatically marked as read
+1. Card is immediately marked as read (no debounce)
 1. Card visual state updates (NEW badge disappears, read styling applies)
 1. Unread count decrements by 1
 1. User scans activity timeline, then collapses or moves to next card
@@ -484,8 +482,8 @@ Let's design the step-by-step flow for the **scan-to-decision core interaction**
 
 - Hover: NEW badge → Mark Read button (200ms fade-in)
 - Click Mark Read: Immediate visual state change (opacity, border, weight, badge removal)
-- Expand: 200ms ease-out animation, activity timeline appears
-- Side panel: 200ms slide-in, auto-scroll to newest content
+- Expand: 200ms ease-out animation, activity timeline appears, immediate mark-as-read
+- Side panel: 200ms slide-in, auto-scroll to newest content, immediate mark-as-read
 - Unread count: Immediate decrement after each marking action
 
 **State Updates:**
@@ -527,13 +525,13 @@ Let's design the step-by-step flow for the **scan-to-decision core interaction**
 
 **Expanded Wrong Card:**
 
-- Card is marked as read after ~1 second debounce
-- Mitigation: 1 second gives time to collapse if wrong card
-- Future: Adjust debounce timing based on user testing
+- Card is marked as read immediately on expand
+- Mitigation: Can still read content, just marked as read
+- Future: Undo functionality (post-MVP)
 
 **Opened Side Panel for Wrong Work Item:**
 
-- Immediate mark as read (no debounce for side panel)
+- Immediate mark as read
 - Mitigation: List stays visible, can open correct card
 - Future: Undo functionality (post-MVP)
 
@@ -1164,8 +1162,20 @@ color: hsl(0, 0%, 75%);               /* Gray text */
 **All animations use 200ms ease-out for consistency with existing GitLab Insights patterns.**
 
 ```css
-/* Card Expand/Collapse */
-transition: height 200ms ease-out, padding 200ms ease-out;
+/* Card Expand/Collapse - Grid-based (NOT max-height) */
+.card-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 200ms ease-out;
+}
+
+.card-content.expanded {
+  grid-template-rows: 1fr;
+}
+
+.card-content > div {
+  overflow: hidden;
+}
 
 /* NEW Badge → Mark Read Button */
 transition: all 200ms ease-out;
@@ -1183,7 +1193,7 @@ transition: opacity 200ms ease-out, border 200ms ease-out, font-weight 0ms;
 
 ### 3.4 Responsive Adaptations
 
-**Mobile (\<768px) Adaptations:**
+**Mobile (<768px) Adaptations:**
 
 ```css
 /* Side Panel becomes Full-Screen Overlay */
@@ -1205,6 +1215,10 @@ padding: 12px;                         /* spacing-3 - tighter on mobile */
 /* Mark Read button: min 44px height for touch accessibility */
 min-height: 44px;
 padding: 12px 16px;                    /* Larger touch target */
+
+/* Mobile spacing: 12px dead zone between NEW badge and card body */
+/* Prevents accidental taps on Mark Read when aiming for expand */
+margin-bottom: 12px;                   /* spacing-3 */
 ```
 
 **Tablet (768px - 1279px) Adaptations:**
@@ -1788,3 +1802,1452 @@ We're creating an **organizational intelligence** tool that combines proven patt
 This strategy grounds us in proven UX patterns while maintaining our unique value proposition of discovering conversations users weren't tagged in but should know about.
 
 ______________________________________________________________________
+
+## Design Direction Decision
+
+### 4.1 Mockup Exploration Summary
+
+**Mockups Generated:** 4 HTML prototypes created via AI image generation prompts
+
+**Location:** `docs/work-item-grouping-mockups/`
+- work_item_list_-_dark_mode_1: Collapsed cards list view
+- work_item_list_-_dark_mode_2: Expanded card with activity timeline
+- work_item_list_-_dark_mode_3: Hover state with Mark Read button
+- work_item_list_-_dark_mode_4: Split-screen with side panel
+
+**Mockup Quality Assessment:**
+
+**What Works Well:**
+- ✅ Olive accent color (#9DAA5F) applied correctly to NEW badges and borders
+- ✅ Dark mode charcoal background (#2d2e2e) matches specification
+- ✅ Collapsible card pattern with clear visual hierarchy
+- ✅ Activity timeline with vertical connector line and event icons
+- ✅ Split-screen side panel with list remaining visible
+- ✅ NEW → Mark Read button transformation on hover (with visual indicator)
+- ✅ Read/unread distinction through opacity and border changes
+- ✅ Proper use of context signals (repo names visible in collapsed state)
+
+**Discrepancies Requiring Correction:**
+
+**1. Header/Branding Issues:**
+- ❌ App name shows "DevQueue" instead of "GitLab Insights"
+- ❌ Primary color is yellow (#f9f506) instead of olive (#9DAA5F)
+- ❌ Navigation shows generic "Issues, Pull Requests, Milestones" instead of GitLab Insights navigation
+- ❌ "New Issue" button doesn't fit organizational intelligence use case
+- **Fix:** Update header to reflect GitLab Insights branding and navigation structure
+
+**2. Sidebar Navigation Mismatch:**
+- ❌ Shows generic workspace navigation (Inbox, My Issues, Assigned to me)
+- ❌ Projects section (Frontend Core, API Gateway) doesn't match app structure
+- **Fix:** Replace with GitLab Insights navigation: Catch Up (main view), Events (flat chronological), Filters, Settings
+
+**3. Content/Messaging Issues:**
+- ❌ Page title "Work Item Queue" and subtitle "Manage your assigned tasks" contradicts organizational intelligence focus
+- **Fix:** Update to "Catch Up" or "Work Items" with subtitle emphasizing organizational awareness: "Discover activity across your GitLab projects - including conversations you weren't tagged in"
+
+**4. Context Signals Incomplete:**
+- ❌ Only shows repository name, missing component and keyword badges
+- **Fix:** Add component badges (e.g., "authentication", "api-gateway") and keyword highlights as specified in visual foundation
+
+**5. Minor Visual Refinements:**
+- Border-radius inconsistency (mockups use 16px, specification calls for 8px on cards)
+- Font family uses Spline Sans (correct choice for modern SaaS feel)
+- Spacing mostly follows 8px grid but some inconsistencies in card padding
+
+### 4.2 Chosen Design Direction
+
+**Selected Approach:** Refined version of existing mockups with corrections applied
+
+**Core Visual Direction:**
+- **Dense, information-rich cards** inspired by Linear and Datadog
+- **Gmail-style read/unread distinction** (bold/normal weight, opacity differences)
+- **Olive accent color** (#9DAA5F dark mode, #5e6b24 light mode) for NEW badges and active states
+- **Charcoal background** (#2d2e2e) with high-contrast text for dark mode
+- **Minimal border-radius** (8px on cards, 4px on badges) for professional, engineering-tool aesthetic
+- **Context signals as first-class information** (repo, component, keywords visible in collapsed state)
+
+**Interaction Patterns:**
+- **Three-level progressive disclosure:** Collapsed → Expanded in-place → Side panel
+- **NEW badge → Mark Read button transformation** on hover (smooth 200ms transition)
+- **Auto-scroll behavior** in side panel (jumps to newest content automatically)
+- **Split-screen pattern** (list stays visible when side panel open)
+
+**Layout Strategy:**
+- **Max-width container** (1000-1200px) to prevent excessive line length
+- **Vertical card stacking** with consistent 16px spacing between cards
+- **Sticky header** with unread count indicator always visible
+- **Responsive breakpoints:** Desktop (≥1280px), Tablet (768-1279px), Mobile (<768px)
+
+### 4.3 Design Rationale
+
+**Why This Direction Works:**
+
+**1. Familiar Yet Unique**
+- Uses proven patterns (Gmail list+panel, Datadog status indicators) that engineers already know
+- Adds unique twists (three-way read marking, context signals as first-class, auto-scroll) that solve specific organizational intelligence needs
+- Engineers don't need training - they recognize the patterns immediately
+
+**2. Dense Without Clutter**
+- Information-rich cards show repo, component, keywords, participants, timestamps in collapsed state
+- Visual hierarchy prevents cognitive overload (bold titles, subdued metadata, olive accents for new items)
+- Supports 3-5 second scan-to-decision goal through clear information prioritization
+
+**3. Calm, Professional Aesthetic**
+- Dark mode with charcoal background reduces visual fatigue for all-day monitoring
+- Olive accent (not bright yellow, not aggressive red) provides emphasis without anxiety
+- Reduced opacity for read items creates visual calm without hiding content
+- Professional engineering tool feel (not consumer app, not playful)
+
+**4. Organizational Intelligence Focus**
+- Context signals (repo, component, keywords) answer "why might this matter to me?" immediately
+- Three-way read marking supports different investigation depths (quick dismiss, scan, deep dive)
+- Unread count provides progress feedback without creating urgency/anxiety
+- Zero state uses green/success color (not red/warning) - "all caught up" feels satisfying, not alarming
+
+**5. Scalability & Maintainability**
+- Built on HeroUI component library (React Aria) - accessibility guaranteed
+- Uses existing design tokens (olive accent, typography scale, spacing grid)
+- Mockups validate that patterns work at realistic data volumes (4-8 cards visible)
+- Responsive approach proven across desktop/tablet/mobile
+
+**6. Supports Core User Loop**
+- Collapsed cards enable rapid scanning (3-5 seconds per item)
+- Hover interaction (NEW → Mark Read) requires zero clicks for quick dismissal
+- Expanded timeline shows activity context without leaving list view
+- Side panel provides deep investigation without losing place in list
+
+### 4.4 Mockup Refinement Requirements
+
+**Before Development Begins:**
+
+**Required Fixes:**
+1. ✅ Update header branding to "GitLab Insights"
+2. ✅ Replace yellow primary with olive accent throughout
+3. ✅ Update navigation to GitLab Insights structure (Catch Up, Events, Filters, Settings)
+4. ✅ Add component badges and keyword highlights to collapsed cards
+5. ✅ Update page title/subtitle to emphasize organizational intelligence
+6. ✅ Standardize border-radius to 8px on cards, 4px on badges
+7. ✅ Ensure consistent spacing (8px grid) throughout
+
+**Design Enhancements to Consider (Create Beads):**
+
+**Enhancement 1: Rich Context Signal Badges**
+- **Current:** Only repo name shown as plain text
+- **Proposed:** Add styled badges for component (purple tint) and keywords (gray tint) in collapsed card
+- **Value:** Improves scan-to-decision by surfacing relevance signals immediately
+- **Priority:** HIGH - directly supports core value proposition
+- **Create Bead:** Yes - "Add component and keyword badges to collapsed card context signals"
+
+**Enhancement 2: Participant Avatar Stack in Collapsed State**
+- **Current:** Avatars only visible in expanded state
+- **Proposed:** Show 2-3 participant avatars (overlapping stack) in collapsed card footer
+- **Value:** Quick visual scan of "who's involved" without expanding
+- **Priority:** MEDIUM - nice-to-have, adds visual density
+- **Create Bead:** Maybe - needs user testing to validate value vs. density tradeoff
+- **Concern:** May clutter collapsed state, conflicts with "scan-to-decision in 3-5 seconds" goal
+
+**Enhancement 3: Sticky Unread Count Indicator**
+- **Current:** Unread count in page title area (scrolls away)
+- **Proposed:** Sticky floating badge or header-pinned indicator that remains visible during scroll
+- **Value:** Always know progress toward zero/completion
+- **Priority:** LOW - nice-to-have, not critical for MVP
+- **Create Bead:** No - post-MVP enhancement
+
+**Enhancement 4: Keyboard Shortcut Indicators**
+- **Current:** No visible keyboard shortcuts (post-MVP feature)
+- **Proposed:** Subtle key hints (j/k navigation, x mark read, enter open) visible on hover
+- **Value:** Power user efficiency
+- **Priority:** LOW - keyboard shortcuts are post-MVP
+- **Create Bead:** No - wait for keyboard shortcut implementation
+
+### 4.5 Implementation Approach
+
+**Development Sequence:**
+
+**Phase 1: Static Layout (No Interactions)**
+1. Header with GitLab Insights branding and navigation
+2. Sidebar with proper navigation structure
+3. Main content area with collapsed cards
+4. Card components with proper visual hierarchy (title, summary, context signals, metadata)
+5. Unread count indicator
+6. Responsive breakpoints (desktop, tablet, mobile)
+
+**Phase 2: Card Interactions**
+1. Hover states (NEW → Mark Read transformation)
+2. Click to expand card in-place (200ms animation)
+3. Activity timeline rendering in expanded state
+4. Collapse interaction
+
+**Phase 3: Side Panel**
+1. Click card title to open side panel (200ms slide-in)
+2. Auto-scroll to newest content
+3. Close button and click-outside-to-close
+4. List remains visible (split-screen pattern)
+
+**Phase 4: Read State Management**
+1. Three-way read marking (Mark Read button, expand, side panel)
+2. Visual state transitions (opacity, border, weight, badge removal)
+3. Unread count decrement
+4. Database persistence
+
+**Phase 5: Data Integration**
+1. Connect to backend API for work item data
+2. Real-time updates for new items
+3. Filtering and sorting
+4. Pagination/infinite scroll
+
+**Component Reuse Strategy:**
+- **HeroUI Button** - Mark Read button, filter/sort buttons
+- **HeroUI Tooltip** - Context signal explanations (repo, component, keywords)
+- **HeroUI Modal** - Confirmation dialogs (if needed)
+- **Custom Collapsible Card** - New component extending React Aria disclosure
+- **Custom Split Pane** - Reuse existing pattern from main app
+- **Custom Badge** - Extend existing badge component with NEW variant and context signal variants
+
+**Visual Foundation Reference:**
+- All colors, typography, spacing, and animations specified in Section 3 (Visual Foundation)
+- CSS specifications provided for all states (unread, read, hover, expanded, side panel)
+- Responsive adaptations defined for mobile, tablet, desktop
+
+**Quality Gates:**
+- ✅ Accessibility: WCAG AA contrast ratios verified
+- ✅ Keyboard navigation: All interactions keyboard-accessible
+- ✅ Dark mode: All states tested in dark mode
+- ✅ Performance: Smooth 200ms animations, no jank
+
+______________________________________________________________________
+
+## Component Strategy
+
+### Design System Components
+
+**Foundation: HeroUI (React Aria-based Component Library)**
+
+GitLab Insights uses HeroUI as its component foundation, providing accessibility-first components built on React Aria. Work Item Grouping extends this existing system rather than introducing new dependencies.
+
+**Available Components from HeroUI:**
+
+| Component | Work Item Grouping Usage | Adaptation Required |
+|-----------|--------------------------|---------------------|
+| **Button** | Mark Read button, filter/sort controls, close button | Olive variant for primary actions |
+| **Tooltip** | Context signal explanations (repo, component, keyword badges) | No changes needed |
+| **Modal** | Future confirmation dialogs (not MVP) | No changes needed |
+| **Table** | Not used in Work Item Grouping | N/A |
+| **Autocomplete** | Not used in Work Item Grouping | N/A |
+| **Checkbox** | Future bulk selection (not MVP) | N/A |
+
+**Existing Custom Components (Reusable):**
+
+| Component | Source | Work Item Grouping Usage |
+|-----------|--------|--------------------------|
+| **Badge** | GitLab Insights custom | Extend with NEW badge variant and context signal variants (repo, component, keyword) |
+| **Split Pane** | GitLab Insights custom | Reuse for side panel detail view (list + detail pattern) |
+
+**Design Token System:**
+
+Work Item Grouping inherits the complete design token system:
+- **Colors:** Olive accent (#9DAA5F dark, #5e6b24 light), semantic colors, backgrounds
+- **Typography:** 11px-18px scale, font weights (400/500/600)
+- **Spacing:** 8px grid (4px, 8px, 12px, 16px, 24px, 32px)
+- **Animation:** 200ms ease-out standard timing
+- **Borders:** 1px subtle, 2px accent, 8px/4px border-radius
+
+### Custom Components
+
+**Gap Analysis - Custom Components Needed:**
+
+Work Item Grouping requires 3 new custom components not available in HeroUI or existing GitLab Insights:
+
+1. **Collapsible Work Item Card** - Core component for list view
+2. **Activity Timeline** - Event list within expanded cards
+3. **Unread Count Indicator** - Progress indicator at list top
+
+---
+
+#### 1. Collapsible Work Item Card
+
+**Purpose:** Display work item summary with progressive disclosure from collapsed → expanded states.
+
+**Content:**
+- **Collapsed state:** Work item title, one-line activity summary, context signals (repo/component/keywords), NEW badge, metadata (timestamp, participant count)
+- **Expanded state:** All collapsed content PLUS activity timeline showing all events within work item
+
+**Actions:**
+- Click card body (anywhere except Mark Read button) → Toggle expand/collapse
+- Hover over NEW badge → Transforms to Mark Read button
+- Click Mark Read button → Mark as read without expanding
+- Click card header/title → Open side panel (when implemented)
+
+**States:**
+
+| State | Visual Treatment | Interaction |
+|-------|------------------|-------------|
+| **Collapsed - Unread** | Bold title (600 weight), 2px olive border, NEW badge, high contrast text | Hoverable, clickable |
+| **Collapsed - Read** | Normal weight title (400), 1px gray border, no badge, 0.7 opacity | Hoverable, clickable |
+| **Expanded - Unread** | Same as collapsed unread PLUS activity timeline visible below | Collapsible, timeline scrollable |
+| **Expanded - Read** | Same as collapsed read PLUS activity timeline visible below | Collapsible, timeline scrollable |
+| **Hover (Unread)** | NEW badge → Mark Read button (200ms fade transition) | Mark Read button clickable |
+| **Expanding** | 200ms ease-out grid animation | Non-interactive during animation |
+| **Collapsing** | 200ms ease-out grid animation | Non-interactive during animation |
+
+**Variants:**
+- **Default:** Standard card with full metadata
+- **Compact (future):** Reduced padding for higher density (post-MVP)
+
+**Accessibility:**
+- `role="article"` on card container
+- `aria-expanded="true/false"` on collapsible region
+- `aria-label` on Mark Read button: "Mark [work item title] as read"
+- Keyboard navigation: Enter/Space to toggle expand, Tab to Mark Read button
+- Focus indicator: 2px olive outline on keyboard focus
+
+**Content Guidelines:**
+- **Title:** 60-80 characters max for readability
+- **Summary:** Single line (120 characters max), truncate with ellipsis if needed
+- **Context signals:** Show up to 3 badges (1 repo + 1-2 components/keywords), +N indicator if more
+- **Timestamp:** Relative time (e.g., "2h ago", "3 days ago")
+
+**Interaction Behavior:**
+- **Click detection zones:**
+  - Card body (excluding Mark Read button area) → Toggle expand/collapse
+  - Mark Read button area → Mark as read
+  - Card header/title → Open side panel (future enhancement)
+- **Mark-as-read timing:** Immediate on expand (no debounce)
+- **Animation:** 200ms ease-out for expand/collapse, grid-based height transition
+
+**Component Anatomy:**
+```
+┌─────────────────────────────────────────────────┐
+│ [Title: Bold/Normal]               [NEW/Button] │ ← Header
+│ [One-line summary]                              │ ← Summary
+│ [Repo] [Component] [Keyword]          [2h ago] │ ← Context + Metadata
+├─────────────────────────────────────────────────┤ ← Separator (when expanded)
+│ [Activity Timeline - only visible when expanded]│ ← Expandable content
+│ • Event 1                                       │
+│ • Event 2                                       │
+│ • Event 3                                       │
+└─────────────────────────────────────────────────┘
+```
+
+**Implementation Notes:**
+- Built using React Aria `useDisclosure` hook for accessible expand/collapse
+- Grid-based animation via `grid-template-rows: 0fr` → `1fr` transition
+- Mark Read button uses same dimensions as NEW badge for seamless transformation
+- Context signal badges reuse existing Badge component with color variants
+- **Immediate mark-as-read on expand** (no debounce logic)
+
+---
+
+#### 2. Activity Timeline
+
+**Purpose:** Display chronological list of events within a work item (comments, status changes, MR links).
+
+**Content:**
+- Event type icon (purple for issues, blue for MRs, gray for comments)
+- Event description text (e.g., "Alice commented", "Status changed to In Progress")
+- Timestamp (relative time)
+- Optional: Comment preview or change details
+
+**Actions:**
+- Click event → Future: Navigate to specific event in side panel (post-MVP)
+- Scroll → Natural vertical scrolling within expanded card
+
+**States:**
+
+| State | Visual Treatment |
+|-------|------------------|
+| **Default** | Vertical list with connecting line, event icons, descriptions |
+| **Hover (future)** | Subtle background highlight on event item |
+| **Loading** | Skeleton placeholders for event items (if async load) |
+
+**Variants:**
+- **Default:** Full timeline with all events
+- **Truncated (future):** Show last N events with "Show more" link (if performance concerns)
+
+**Accessibility:**
+- `role="list"` on timeline container
+- `role="listitem"` on each event
+- `aria-label` on timeline: "Activity timeline for [work item title]"
+- Keyboard navigation: Timeline scrollable via keyboard (arrow keys, Page Up/Down)
+- Screen reader: Event descriptions are semantic ("Alice commented 2 hours ago")
+
+**Content Guidelines:**
+- **Event descriptions:** Action + actor + context (e.g., "Bob merged MR #123", "Alice changed status to In Progress")
+- **Timestamps:** Relative time for recent events (<7 days), absolute date for older
+- **Maximum events:** Show all (no artificial limit) - user scrolls if needed
+- **Event ordering:** Chronological (oldest at top, newest at bottom) - matches GitLab convention
+
+**Interaction Behavior:**
+- Scrollable within expanded card (if timeline exceeds card height)
+- Events are read-only in MVP (click interactions post-MVP)
+- Timeline appears/disappears with 200ms fade when card expands/collapses
+
+**Component Anatomy:**
+```
+Timeline Container
+├─ Timeline Item (Event 1)
+│  ├─ Event Icon (purple/blue/gray circle)
+│  ├─ Connector Line (vertical gray line to next event)
+│  ├─ Event Description Text
+│  └─ Timestamp
+├─ Timeline Item (Event 2)
+│  └─ ...
+└─ Timeline Item (Event N)
+```
+
+**Visual Specification:**
+```css
+/* Timeline Container */
+padding: 16px 0;
+margin-top: 12px;
+border-top: 1px solid hsl(0, 0%, 25%);
+
+/* Timeline Item */
+display: flex;
+gap: 12px;
+margin-bottom: 12px;
+position: relative;
+
+/* Connector Line */
+position: absolute;
+left: 16px;  /* Aligned to center of event icon */
+top: 28px;   /* Below event icon */
+bottom: -12px;
+width: 2px;
+background: hsl(0, 0%, 35%);
+
+/* Event Icon */
+width: 32px;
+height: 32px;
+border-radius: 50%;
+background: [purple/blue/gray based on event type];
+display: flex;
+align-items: center;
+justify-content: center;
+z-index: 1;  /* Above connector line */
+
+/* Event Text */
+font-size: 13px;
+color: hsl(0, 0%, 85%);
+line-height: 20px;
+
+/* Timestamp */
+font-size: 11px;
+color: hsl(0, 0%, 55%);
+margin-top: 4px;
+```
+
+**Implementation Notes:**
+- Use existing event type colors from GitLab Insights (already defined)
+- Connector line stops at last event (no line below final item)
+- Timeline renders within expanded card's collapsible region
+- Events loaded from backend API, rendered as list items
+
+---
+
+#### 3. Unread Count Indicator
+
+**Purpose:** Show progress toward triage completion at top of work item list.
+
+**Content:**
+- Count badge showing number of unread items
+- Label text: "NEW ITEMS" or "All caught up!" based on count
+
+**Actions:**
+- Visual indicator only (not interactive in MVP)
+- Future: Click to scroll to first unread item (post-MVP enhancement)
+
+**States:**
+
+| State | Visual Treatment |
+|-------|------------------|
+| **Has Unread (>0)** | Olive badge with count, "NEW ITEMS" label |
+| **Zero State** | Green badge with "0" or checkmark, "All caught up!" label |
+| **Updating** | Smooth count decrement animation when items marked as read |
+
+**Variants:**
+- **Default:** Badge + label horizontal layout
+- **Compact (mobile):** Smaller badge, shortened label
+
+**Accessibility:**
+- `role="status"` for live region announcement
+- `aria-live="polite"` so count changes are announced to screen readers
+- `aria-label`: "8 new items" or "All caught up, zero new items"
+
+**Content Guidelines:**
+- **Count display:** Show exact number up to 99, then "99+" for larger counts
+- **Zero state messaging:** Positive reinforcement ("All caught up!"), not neutral
+- **Update timing:** Count decrements immediately when mark-as-read action completes
+
+**Interaction Behavior:**
+- Count decrements smoothly (100ms fade out old number, fade in new number)
+- Badge color transitions when reaching zero (olive → green, 200ms transition)
+- Label text changes when reaching zero ("NEW ITEMS" → "All caught up!")
+- Future: Clicking badge scrolls to first unread card (post-MVP)
+
+**Component Anatomy:**
+```
+┌────────────────────────────────┐
+│ [8] NEW ITEMS                  │  ← Badge + Label (unread state)
+└────────────────────────────────┘
+
+┌────────────────────────────────┐
+│ [✓] All caught up!             │  ← Badge + Label (zero state)
+└────────────────────────────────┘
+```
+
+**Visual Specification:**
+```css
+/* Container */
+display: flex;
+align-items: center;
+gap: 8px;
+padding: 12px 16px;
+background: hsl(0, 2%, 16%);  /* Slightly darker than cards */
+border-radius: 8px;
+margin-bottom: 16px;
+
+/* Count Badge (Unread > 0) */
+background: hsl(68, 36%, 52%);  /* Olive accent */
+color: hsl(0, 2%, 18%);  /* Dark text */
+font-size: 13px;
+font-weight: 600;
+padding: 4px 12px;
+border-radius: 12px;  /* Pill shape */
+min-width: 32px;
+text-align: center;
+
+/* Count Badge (Zero State) */
+background: hsl(142, 71%, 45%);  /* Success green */
+color: hsl(0, 0%, 100%);  /* White text */
+/* Other properties same as unread badge */
+
+/* Label Text */
+font-size: 14px;
+font-weight: 500;
+color: hsl(0, 0%, 85%);
+```
+
+**Implementation Notes:**
+- Count value sourced from work item list state (total unread)
+- Updates reactively when mark-as-read actions complete
+- Zero state uses success color to create positive emotional response
+- Badge number animates on change (fade out/in, not counter animation)
+
+---
+
+### Component Implementation Strategy
+
+**Build Approach:**
+
+**1. Composition Over Inheritance**
+- Build custom components by composing HeroUI primitives (Button, Tooltip) with React Aria hooks
+- Collapsible Card uses `useDisclosure` (React Aria) + HeroUI Button for Mark Read
+- Activity Timeline uses semantic HTML (`<ul>`, `<li>`) with custom styling
+- Unread Count uses React Aria `live region` + custom badge styling
+
+**2. Design Token Integration**
+- All custom components consume existing design tokens via CSS variables
+- No hardcoded colors - reference `--olive-accent-dark`, `--bg-dark`, `--text-high-contrast`
+- Spacing uses existing scale (spacing-1 through spacing-8)
+- Typography uses existing text-xs through text-xl classes
+
+**3. TypeScript Interface Contracts**
+
+All components must define explicit TypeScript interfaces before implementation:
+
+```typescript
+// src/components/work-items/types.ts
+
+interface WorkItemCardProps {
+  workItem: WorkItem;
+  isExpanded: boolean;
+  isRead: boolean;
+  onToggleExpand: () => void;
+  onMarkRead: () => void;
+  onOpenDetail?: () => void;  // Optional - future enhancement
+}
+
+interface ActivityTimelineProps {
+  events: WorkItemEvent[];
+  maxHeight?: number;
+  onEventClick?: (event: WorkItemEvent) => void;  // Future
+}
+
+interface UnreadCountProps {
+  count: number;
+  variant: 'unread' | 'zero';
+  onClick?: () => void;  // Future - scroll to first unread
+}
+```
+
+**4. Animation Performance**
+
+Use GPU-accelerated animations to prevent layout thrashing:
+
+```css
+/* Card expand/collapse - Grid-based (NOT max-height) */
+.card-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 200ms ease-out;
+}
+
+.card-content.expanded {
+  grid-template-rows: 1fr;
+}
+
+.card-content > div {
+  overflow: hidden;
+}
+
+/* Side panel slide-in */
+.side-panel {
+  transform: translateX(100%);
+  transition: transform 200ms ease-out;
+  will-change: transform;
+}
+
+.side-panel.open {
+  transform: translateX(0);
+}
+```
+
+**Why grid-based collapse?** Animating `max-height` causes layout recalculation every frame. Grid-based collapse uses GPU, achieving smooth 60fps performance.
+
+**5. Responsive Strategy**
+- Mobile-first CSS (base styles for mobile, media queries for desktop)
+- Touch targets minimum 44px on mobile (Mark Read button)
+- **Mobile spacing:** 12px dead zone between NEW badge and card body to prevent accidental taps
+- Side panel becomes full-screen overlay on mobile (<768px)
+- Context signal badges wrap gracefully on narrow viewports
+
+**Component Dependencies:**
+
+```
+Collapsible Work Item Card
+├─ HeroUI Button (Mark Read button)
+├─ Custom Badge (NEW badge, context signals)
+├─ Activity Timeline (embedded when expanded)
+└─ React Aria useDisclosure (expand/collapse)
+
+Activity Timeline
+└─ Semantic HTML list (no external dependencies)
+
+Unread Count Indicator
+├─ Custom Badge (count badge)
+└─ React Aria live region (accessibility)
+```
+
+**State Management - Zustand with Persistence:**
+
+```typescript
+// src/store/workItemStore.ts
+interface WorkItemState {
+  items: Map<string, WorkItem>;           // Keyed by work item ID
+  readStatus: Map<string, ReadMetadata>;  // Separate read tracking
+  unreadCount: number;                    // Derived, but cached
+  
+  // Actions
+  markAsRead: (id: string) => Promise<void>;
+  expandItem: (id: string) => void;
+  collapseItem: (id: string) => void;
+}
+
+// Use Zustand with persist middleware
+const useWorkItemStore = create<WorkItemState>()(
+  persist(
+    (set, get) => ({
+      items: new Map(),
+      readStatus: new Map(),
+      unreadCount: 0,
+      
+      markAsRead: async (id: string) => {
+        // Optimistic update
+        set(state => ({
+          readStatus: new Map(state.readStatus).set(id, { read: true, timestamp: Date.now() }),
+          unreadCount: state.unreadCount - 1
+        }));
+        
+        try {
+          await api.markAsRead(id);
+        } catch (error) {
+          // Rollback on failure
+          set(state => ({
+            readStatus: new Map(state.readStatus).set(id, { read: false }),
+            unreadCount: state.unreadCount + 1
+          }));
+          throw error;
+        }
+      },
+      // ... other actions
+    }),
+    { name: 'work-item-storage' }
+  )
+);
+```
+
+**Why Zustand over Context?**
+- **Performance:** Subscriptions prevent unnecessary re-renders (Context re-renders entire subtree)
+- **Persistence:** Built-in middleware for localStorage/IndexedDB
+- **DevTools:** Redux DevTools integration for debugging mark-as-read timing
+- **Server sync:** API calls fit naturally into Zustand actions
+
+**Component-level state:**
+- Card expand/collapse: Local component state (only visual, not persisted)
+- Read/unread status: Zustand global state (persisted, synced to backend)
+- Unread count: Zustand global state (derived from readStatus Map)
+- Side panel open/close: Local state (future: global for keyboard shortcuts)
+
+**Testing Strategy:**
+
+**Unit Test Coverage Targets:**
+- **Collapsible Card:** 90% coverage minimum
+  - All states (collapsed/expanded × read/unread)
+  - Hover transformation (NEW → Mark Read)
+  - Click zones (expand vs mark-read)
+  - **Test end states only** - no mid-animation testing
+  - **Immediate mark-as-read on expand** (no debounce timing tests needed)
+- **Activity Timeline:** 85% coverage
+  - Event rendering (purple/blue/gray icons)
+  - Connector line logic (last item has no line)
+  - Scrollable overflow behavior
+- **Unread Count:** 95% coverage
+  - Count display logic (1-99 vs "99+")
+  - Zero state transition
+  - Animation triggers (count decrement)
+
+**Testing Approach:**
+- Unit tests only at this stage (no integration tests, no E2E)
+- Test end states, not animation frames
+- Mock API calls for mark-as-read actions
+- Verify optimistic updates with rollback scenarios
+
+**Deferred Testing:**
+- Integration tests (defer until feature complete and user testing begins)
+- Visual regression tests (defer until design finalized)
+- E2E tests (defer until launch preparation)
+
+### Implementation Roadmap
+
+**Unified Development - No Phased Rollout**
+
+Since there are no active users and the feature will ship as a complete unit, development is organized by technical dependency, not user-facing rollout phases.
+
+**Component Implementation Order:**
+
+**Week 1-2: Foundation Components**
+1. **Unread Count Indicator** (simplest, no dependencies)
+2. **Activity Timeline** (standalone, can be tested in isolation)
+3. **Collapsible Card - Collapsed State** (visual foundation)
+
+**Week 2-3: Core Interactions**
+4. **Card Expand/Collapse** (grid-based animation, immediate mark-as-read)
+5. **NEW Badge → Mark Read Button** (hover transformation, click handler)
+6. **Mark-as-Read Integration** (Zustand actions, optimistic updates)
+
+**Week 3-4: Side Panel & State Management**
+7. **Side Panel Component** (reuse existing Split Pane pattern)
+8. **Auto-scroll to Newest** (JavaScript scroll logic)
+9. **Backend Persistence** (API integration, sync logic)
+
+**Week 4-5: Polish & Complete Feature**
+10. **Responsive Adaptations** (mobile/tablet breakpoints)
+11. **Context Signal Badges** (repo/component/keyword styling)
+12. **Zero State** (green badge, completion messaging)
+
+**Week 5-6: Testing & Refinement**
+13. **Unit Test Suite** (90%/85%/95% coverage targets)
+14. **Performance Optimization** (animation smoothness, render efficiency)
+15. **Final Integration** (connect all components, end-to-end validation)
+
+**Key Technical Dependencies:**
+- Zustand store must exist before mark-as-read interactions
+- Activity Timeline must work before card expand interactions
+- Side panel requires mark-as-read integration to work correctly
+
+**No User-Facing Phases:**
+All components ship together when feature is complete. No partial rollout, no incremental user exposure.
+
+______________________________________________________________________
+
+______________________________________________________________________
+
+## UX Consistency Patterns
+
+### Button Hierarchy
+
+**Primary Actions:**
+- **Mark Read Button** (transformed from NEW badge on hover)
+  - **Visual:** Olive background (#9DAA5F), dark text, 200ms fade-in on hover
+  - **Usage:** Quick dismissal without investigation
+  - **Size:** Minimum 44px height on mobile for touch targets
+  - **State:** Disabled state not needed (always actionable when visible)
+
+**Secondary Actions:**
+- **Close Button** (side panel)
+  - **Visual:** Icon-only, 32×32px, transparent background, gray icon
+  - **Hover:** Subtle gray background (#262626), lighter icon
+  - **Position:** Top-right of side panel header
+  - **Alternative:** Click outside panel to close
+
+**Tertiary Actions:**
+- **Expand/Collapse** (entire card body)
+  - **Visual:** No explicit button - entire card is clickable
+  - **Affordance:** Cursor changes to pointer on hover
+  - **Exclusion:** Mark Read button area is excluded from expand click zone
+
+**Button Hierarchy Rules:**
+1. One primary action per card (Mark Read button)
+2. Secondary actions use icon-only buttons (minimize visual weight)
+3. Tertiary actions use implicit affordances (cursor, hover states)
+4. No destructive actions in Work Item Grouping (no delete, no archive)
+
+**Accessibility:**
+- All buttons keyboard accessible (Tab, Enter/Space)
+- `aria-label` on icon-only buttons
+- Focus indicators: 2px olive outline
+- Screen reader announcements for state changes
+
+**Mobile Considerations:**
+- Mark Read button: 44px minimum height (increased padding: 12px 16px)
+- 12px dead zone between NEW badge and card body (prevents accidental Mark Read taps)
+- Close button: 44px minimum touch target
+- No hover states (touch interface)
+
+---
+
+### Feedback Patterns
+
+**Success Feedback:**
+- **Zero State (All Caught Up)**
+  - **Visual:** Green badge (#22C55E), checkmark icon, "All caught up!" text
+  - **Trigger:** Unread count reaches 0
+  - **Timing:** 200ms color transition (olive → green)
+  - **Emotion:** Positive reinforcement, satisfying closure
+  - **Persistence:** Remains until new items arrive
+
+**State Change Feedback:**
+- **Mark as Read Transition**
+  - **Visual Changes:**
+    - NEW badge disappears (instant)
+    - Title weight: 600 → 400 (instant, no animation to prevent blur)
+    - Border: 2px olive → 1px gray (200ms transition)
+    - Opacity: 1.0 → 0.7 (200ms transition)
+  - **Timing:** Immediate visual feedback (no lag)
+  - **Unread count:** Decrements by 1 (100ms fade animation)
+  - **Sound:** None (silent app for sustained attention)
+
+**Progress Feedback:**
+- **Unread Count Indicator**
+  - **Visual:** Badge shows exact count (1-99, then "99+")
+  - **Updates:** Real-time decrement on each mark-as-read action
+  - **Animation:** 100ms fade-out old number, fade-in new number
+  - **Position:** Sticky at top of list (always visible)
+  - **Emotional arc:** Olive (unread) → Green (zero/complete)
+
+**Optimistic Updates:**
+- **Mark as Read** updates UI immediately, rolls back on API failure
+- **Visual rollback:** Reverse all state changes (border, opacity, badge reappears)
+- **Error handling:** Silent rollback (no error toast unless repeated failures)
+
+**Error Patterns (Deferred):**
+- No error toasts in MVP
+- API failures handled via optimistic update rollback
+- Network errors: Future enhancement (retry logic, offline mode)
+
+**Accessibility:**
+- State changes announced via `aria-live="polite"` regions
+- Screen reader: "Marked as read" after action
+- Focus management: Focus returns to next unread item after mark-as-read
+
+**Mobile Considerations:**
+- Same feedback patterns (visual changes are device-agnostic)
+- Touch feedback: Native browser touch highlighting on buttons
+- No additional haptic feedback (not critical for this use case)
+
+---
+
+### State Transition Patterns
+
+**Card Expand/Collapse:**
+- **Animation:** 200ms ease-out grid-based transition
+  - Collapsed: `grid-template-rows: 0fr`
+  - Expanded: `grid-template-rows: 1fr`
+- **Trigger:** Click anywhere on card body (except Mark Read button area)
+- **Mark-as-read:** Immediate on expand (no debounce)
+- **Visual:** Timeline fades in as card expands
+- **Reversible:** Click card header to collapse
+- **During animation:** Non-interactive (prevents rapid click spam)
+
+**NEW Badge → Mark Read Button Transformation:**
+- **Trigger:** Mouse hover over card with NEW badge
+- **Animation:** 200ms fade transition
+  - NEW badge fades out
+  - Mark Read button fades in (same position, same dimensions)
+- **Timing:** Smooth crossfade (no gap between states)
+- **Reversal:** Mouse leave returns to NEW badge
+- **Touch devices:** No hover state - NEW badge visible, tapping it marks as read
+
+**Side Panel Open/Close:**
+- **Open animation:** 200ms slide-in from right (`translateX(100%) → 0`)
+- **Close animation:** 200ms slide-out to right (`translateX(0) → 100%`)
+- **Auto-scroll:** Scrolls to newest content after slide-in completes
+- **List visibility:** List remains visible (split-screen pattern)
+- **Mark-as-read:** Immediate on panel open
+- **Close triggers:** Close button (X), click outside panel, Escape key (future)
+
+**Unread Count Transitions:**
+- **Decrement:** 100ms fade-out old number, 100ms fade-in new number
+- **Zero state:** 200ms color transition (olive → green), text change ("NEW ITEMS" → "All caught up!")
+- **Increment:** Same animation when new items arrive (green → olive if leaving zero state)
+
+**Consistency Rules:**
+1. All animations use 200ms ease-out timing
+2. State changes provide immediate visual feedback (no lag)
+3. Optimistic updates for perceived performance
+4. GPU-accelerated animations (transform, opacity) - no layout properties
+
+**Accessibility:**
+- Animations respect `prefers-reduced-motion` (instant transitions if preferred)
+- State changes announced to screen readers
+- Focus management: Focus follows user intent (stays on action trigger or moves to next logical element)
+
+**Mobile Considerations:**
+- Side panel becomes full-screen overlay (slide-up animation from bottom)
+- Same animation timing (200ms feels responsive on mobile)
+- No hover states for NEW → Mark Read (button always visible on mobile)
+
+---
+
+### Empty States & Zero States
+
+**Zero State (All Caught Up):**
+- **Visual:**
+  - Green badge (#22C55E) with "0" or checkmark icon
+  - "All caught up!" text (14px, medium weight)
+  - List of read cards below (normal opacity, gray borders)
+- **Trigger:** Last unread item marked as read
+- **Emotion:** Positive reinforcement, satisfying completion
+- **Messaging:** Celebratory but professional (not playful)
+- **Action:** None (passive state, no CTA needed)
+- **Persistence:** Remains until new items arrive
+
+**First-Time Empty State (No Work Items):**
+- **Visual:**
+  - Centered message: "No work items to display"
+  - Subtitle: "New items will appear here when activity occurs"
+  - Optional: Illustration or icon (low priority)
+- **Trigger:** User has no work items (first time setup)
+- **Action:** None (passive waiting state)
+
+**Filtered Empty State:**
+- **Visual:**
+  - "No items match your filters"
+  - Link to "Clear filters" (future: when filtering implemented)
+- **Trigger:** Active filters return no results
+- **Action:** Clear filters link
+
+**Loading States (Minimal):**
+- **Initial Load:**
+  - Skeleton placeholders for 3-4 cards (subtle gray shimmer)
+  - Unread count shows "—" placeholder
+- **Timeline Load (within expanded card):**
+  - 2-3 skeleton event items (icon + text placeholders)
+  - No blocking spinner (content appears incrementally)
+
+**Consistency Rules:**
+1. Empty states are calm and reassuring (never alarming)
+2. Zero state uses success color (green) for positive emotional response
+3. Empty states provide context (why is it empty?) and optional actions
+4. Loading states are subtle (skeleton UI, not spinners)
+
+**Accessibility:**
+- Empty states have clear semantic structure (`role="status"`)
+- Screen reader announces state ("All caught up, zero new items")
+- Keyboard navigation: No interactive elements in passive empty states
+
+**Mobile Considerations:**
+- Same visual treatment (empty states are device-agnostic)
+- Text sizing remains consistent (14px readable on mobile)
+
+---
+
+### Loading States
+
+**Initial Page Load:**
+- **Visual:** Skeleton placeholders (not spinners)
+  - 3-4 card skeletons with animated shimmer (subtle gray pulse)
+  - Unread count shows "—" placeholder
+  - Header and navigation load immediately (static content)
+- **Duration:** Expected <500ms (optimistic for fast networks)
+- **Fallback:** If >2 seconds, show "Loading..." text (rare case)
+
+**Card Expand (Timeline Load):**
+- **Visual:** 2-3 event skeleton items appear immediately
+- **Animation:** Shimmer effect during load (subtle, not distracting)
+- **Incremental:** Events appear as they load (not all-or-nothing)
+- **No blocking:** User can collapse card during timeline load
+
+**Side Panel Load:**
+- **Visual:** Panel slides in immediately (200ms), content loads within
+- **Skeleton:** Full issue/MR skeleton (title, metadata, comment placeholders)
+- **Auto-scroll:** Happens after content loads, not during skeleton state
+
+**Unread Count Load:**
+- **Visual:** "—" placeholder during initial count calculation
+- **Transition:** Fade-in when count available (100ms)
+- **Updates:** Real-time updates after initial load (no re-loading state)
+
+**Consistency Rules:**
+1. Prefer skeleton UI over spinners (shows structure, less jarring)
+2. Incremental loading > all-or-nothing (progressive enhancement)
+3. No blocking interactions (user can navigate away during loads)
+4. Optimistic UI: Assume fast networks, degrade gracefully if slow
+
+**Accessibility:**
+- Loading states announced via `aria-live="polite"` regions
+- Screen reader: "Loading work items" during initial load
+- Skeleton UI has semantic structure (not just visual divs)
+
+**Mobile Considerations:**
+- Same skeleton UI patterns (mobile users expect instant feedback)
+- Network-aware: Could detect slow connections and show text fallbacks (future)
+
+---
+
+### Interaction Patterns
+
+**Click Detection Zones:**
+- **Card Body (Expand/Collapse):**
+  - Entire card is clickable except exclusion zones
+  - Exclusion: Mark Read button area
+  - Cursor: Changes to pointer on hover
+  - Visual feedback: Subtle hover highlight (future enhancement)
+
+- **Mark Read Button:**
+  - Precise click target (same dimensions as NEW badge)
+  - Mobile: 44px minimum height with padding
+  - Desktop: Hover shows button, click marks as read
+  - Mobile: Tap badge area marks as read (no hover)
+
+- **Card Title (Open Side Panel):**
+  - Future enhancement (not MVP)
+  - Will open side panel on click
+  - Cursor: Changes to pointer
+  - Visual: Underline on hover
+
+**Hover States:**
+- **Card Hover:**
+  - Subtle background highlight (future, not MVP)
+  - NEW → Mark Read transformation (200ms)
+  - Cursor changes to pointer (expand affordance)
+
+- **Button Hover:**
+  - Mark Read: Lighter olive background (#9DAA5F → #a5b675)
+  - Close (side panel): Gray background (#262626), lighter icon
+
+- **Mobile (No Hover):**
+  - No hover states on touch devices
+  - Tap feedback via native browser highlighting
+
+**Focus States:**
+- **Keyboard Focus:**
+  - 2px olive outline (#9DAA5F)
+  - Offset: 2px outside element
+  - Border-radius matches element
+  - Visible on all interactive elements
+
+- **Focus Order:**
+  - Unread count → Card 1 → Mark Read → Card 2 → Mark Read → ... → Side panel (if open)
+  - Logical tab order (top to bottom)
+  - Focus trap in side panel (Tab cycles within panel)
+
+**Scroll Behavior:**
+- **List Scroll:**
+  - Native browser scrolling (smooth on modern browsers)
+  - No infinite scroll in MVP (pagination future)
+  - Scroll position preserved on navigation back
+
+- **Side Panel Auto-Scroll:**
+  - JavaScript scrolls to newest content after panel opens
+  - Smooth scroll animation (200ms)
+  - User can override by scrolling during animation
+
+**Consistency Rules:**
+1. Click zones are large and forgiving (minimize precision requirements)
+2. Hover states are subtle (not distracting during scan)
+3. Focus indicators are always visible (keyboard accessibility)
+4. Scroll behavior is predictable (native, standard)
+
+**Accessibility:**
+- All interactive elements keyboard accessible
+- Focus indicators meet WCAG 2.1 (2px minimum, 3:1 contrast)
+- Click zones meet touch target minimum (44px on mobile)
+- Screen reader navigation follows logical order
+
+**Mobile Considerations:**
+- Touch targets minimum 44px (prevent fat-finger errors)
+- 12px dead zone between NEW badge and expand zone
+- No hover states (touch paradigm)
+- Native touch feedback (browser highlighting)
+
+
+______________________________________________________________________
+
+## Responsive Design & Accessibility
+
+### Responsive Strategy
+
+**Desktop Strategy (≥1280px):**
+
+**Screen Real Estate Usage:**
+- Split-screen pattern: Work item list (40%) + side panel (60% at 600px width)
+- Maximum content width: 1200px (prevents excessive line length)
+- Centered layout with breathing room
+- Dense information display (target users: mid-senior engineers comfortable with information-rich interfaces)
+
+**Desktop-Specific Features:**
+- Hover states: NEW → Mark Read button transformation, card hover highlights
+- Side panel remains visible while list scrollable (parallel browsing)
+- Keyboard shortcuts foundation (j/k navigation, x mark read - future enhancement)
+- Multi-card visibility: 4-8 cards visible without scrolling
+
+**Tablet Strategy (768px-1279px):**
+
+**Layout Adaptations:**
+- Side panel width reduced: 480px (narrower for tablet viewport)
+- Single-column card list (maintains simplicity)
+- Touch-optimized interactions: 44px minimum touch targets
+- Hybrid input: Support both touch and mouse/trackpad
+
+**Information Density:**
+- Same density as desktop (target users prefer information-rich interfaces)
+- Context signals remain visible in collapsed cards
+- No functionality reduction (full feature parity with desktop)
+
+**Gestures:**
+- Native browser scrolling (no custom gestures in MVP)
+- Tap to expand cards
+- Tap NEW badge area to mark as read (no hover required)
+- Swipe gestures: Future enhancement for mark-as-read actions
+
+**Mobile Strategy (<768px):**
+
+**Navigation Pattern:**
+- Header with app branding (GitLab Insights)
+- Navigation: Future enhancement (hamburger menu or bottom nav)
+- MVP: Single view (Catch Up/Work Items list)
+
+**Layout Collapse:**
+- Side panel becomes full-screen overlay (slide-up from bottom, 200ms animation)
+- Card padding reduced: 12px (tighter spacing for narrow viewport)
+- Context signal badges wrap to multiple lines if needed
+- Unread count indicator remains at top (sticky position)
+
+**Critical Information (Mobile-First):**
+- Work item title (bold if unread, normal if read)
+- One-line activity summary
+- Context signals: Repo, component (keywords may wrap or truncate)
+- NEW badge / Mark Read button
+- Unread count (always visible at top)
+
+**Mobile-Specific Optimizations:**
+- 12px dead zone between NEW badge and card body (prevents accidental Mark Read taps)
+- Touch targets: 44px minimum (Mark Read button, Close button)
+- Full-screen side panel (maximizes reading area)
+- Native browser scroll momentum
+- No hover states (touch paradigm)
+
+**Progressive Enhancement:**
+- Core functionality works on all devices (read marking, expand, side panel)
+- Desktop enhancements layer on top (hover states, keyboard shortcuts)
+- Mobile optimizations don't reduce feature set (full parity)
+
+---
+
+### Breakpoint Strategy
+
+**Breakpoint Definitions:**
+
+```css
+/* Mobile First - Base Styles */
+/* 320px - 767px: Mobile */
+/* Default styles apply to mobile */
+
+/* Tablet */
+@media (min-width: 768px) {
+  /* Side panel: 480px width */
+  /* Touch targets remain 44px */
+  /* Hybrid input support */
+}
+
+/* Desktop */
+@media (min-width: 1280px) {
+  /* Side panel: 600px width */
+  /* Max content width: 1200px */
+  /* Hover states enabled */
+}
+
+/* Large Desktop (optional) */
+@media (min-width: 1680px) {
+  /* Side panel: 600px (no change) */
+  /* List max-width: 1200px (no change) */
+  /* Prevents excessive spread on ultra-wide monitors */
+}
+```
+
+**Breakpoint Strategy Decisions:**
+
+**Mobile-First Approach:**
+- Base styles written for mobile (320px viewport)
+- Media queries progressively enhance for larger screens
+- Ensures core functionality works on smallest devices first
+- Aligns with target user behavior (desktop-primary, but mobile for quick checks)
+
+**Standard vs. Custom Breakpoints:**
+- Using standard breakpoints (768px, 1280px) for broad device compatibility
+- Aligns with HeroUI/React Aria defaults (consistent with design system)
+- Tested breakpoints (common across industry)
+
+**Key Breakpoint Behaviors:**
+
+| Breakpoint | Side Panel | Touch Targets | Hover States | Card Padding |
+|------------|------------|---------------|--------------|--------------|
+| Mobile (<768px) | Full-screen overlay | 44px minimum | None | 12px |
+| Tablet (768-1279px) | 480px width | 44px minimum | Optional | 16px |
+| Desktop (≥1280px) | 600px width | Standard | Yes | 16px |
+
+**Responsive Component Behavior:**
+
+**Collapsible Card:**
+- Mobile: Reduced padding (12px), badges wrap, 12px dead zone
+- Tablet: Standard padding (16px), badges inline if space
+- Desktop: Standard padding (16px), hover states enabled
+
+**Unread Count Indicator:**
+- Mobile: Sticky at top, compact badge, shortened label if needed
+- Tablet: Standard badge + label
+- Desktop: Standard badge + label
+
+**Activity Timeline:**
+- Mobile: Full width within expanded card, scrollable
+- Tablet: Same as mobile (no changes needed)
+- Desktop: Same as mobile (consistent across devices)
+
+**Side Panel:**
+- Mobile: Full-screen overlay, slide-up from bottom
+- Tablet: 480px width, slide-in from right
+- Desktop: 600px width, slide-in from right
+
+---
+
+### Accessibility Strategy
+
+**WCAG Compliance Level: Deferred**
+
+Based on Taylor's guidance: "Don't worry about WCAG compliance, accessibility is not a concern at this point."
+
+**Current Accessibility Status:**
+
+Work Item Grouping inherits React Aria accessibility foundation from HeroUI, which provides:
+- Semantic HTML structure
+- ARIA labels and roles
+- Keyboard navigation support
+- Focus management
+
+**Deferred Accessibility Testing:**
+- WCAG AA contrast ratio verification: Deferred
+- Screen reader testing (VoiceOver, NVDA): Deferred
+- Keyboard-only navigation testing: Deferred
+- Automated accessibility scans (axe-core): Deferred
+
+**Accessibility Considerations (Built-In, Not Tested):**
+
+The following accessibility features are designed into components but not validated:
+
+**Keyboard Navigation:**
+- Tab order: Unread count → Cards → Mark Read buttons → Side panel (if open)
+- Enter/Space: Toggle card expand, activate Mark Read button
+- Escape: Close side panel (future)
+- Focus indicators: 2px olive outline (#9DAA5F)
+
+**Screen Reader Support:**
+- ARIA labels on icon-only buttons (`aria-label="Close"`)
+- ARIA live regions for state changes (`aria-live="polite"`)
+- Semantic HTML: `<article>` for cards, `<ul>` for timeline
+- Role attributes: `role="status"` for unread count, `role="list"` for timeline
+
+**Touch Targets:**
+- Mobile: 44px minimum (Mark Read button, Close button)
+- Desktop: Standard sizes (sufficient for mouse precision)
+- Dead zones: 12px between NEW badge and card body on mobile
+
+**Color Contrast (Not Verified):**
+- Unread cards: High contrast text (gray-50 on #2d2e2e background)
+- Read cards: Reduced contrast (gray-300 on #2d2e2e background)
+- Olive accent: #9DAA5F (not verified against WCAG standards)
+
+**Focus Management:**
+- Focus returns to next unread item after mark-as-read action
+- Focus trap in side panel (Tab cycles within panel when open)
+- Focus visible on all interactive elements
+
+**Accessibility Launch Strategy:**
+
+Pre-launch (when accessibility becomes a priority):
+1. Run automated accessibility scans (axe-core in CI)
+2. Manual keyboard navigation testing
+3. Screen reader testing (VoiceOver minimum)
+4. Contrast ratio verification and fixes
+5. User testing with assistive technology users
+
+---
+
+### Testing Strategy
+
+**Responsive Testing (Current Priority: Low)**
+
+**Device Testing:**
+- Desktop: Chrome, Firefox, Safari, Edge (macOS and Windows)
+- Mobile: iOS Safari, Chrome Mobile (iPhone 12+, Android flagship)
+- Tablet: iPad (Safari), Android tablet (Chrome)
+
+**Testing Approach:**
+- Browser DevTools responsive mode for rapid iteration
+- Real device testing before launch (borrowed devices or device lab)
+- Network throttling: Test on 3G/4G connections (mobile performance)
+
+**Visual Regression Testing:**
+- Deferred until design finalized
+- Storybook snapshots for all component states when implemented
+
+**Accessibility Testing (Deferred):**
+- Automated: axe-core integration in CI pipeline (pre-launch)
+- Manual: Keyboard navigation, screen reader testing (pre-launch)
+- User testing: Include users with disabilities (pre-launch)
+
+**Testing Priority:**
+- Unit tests: Current priority (90%/85%/95% coverage targets defined)
+- Responsive testing: Low priority (test during development as needed)
+- Accessibility testing: Deferred until launch preparation
+- Visual regression: Deferred until design finalized
+
+---
+
+### Implementation Guidelines
+
+**Responsive Development:**
+
+**CSS Approach:**
+```css
+/* Mobile-first base styles */
+.work-item-card {
+  padding: 12px;
+  /* Mobile defaults */
+}
+
+/* Tablet and above */
+@media (min-width: 768px) {
+  .work-item-card {
+    padding: 16px;
+  }
+}
+
+/* Desktop hover states */
+@media (min-width: 1280px) and (hover: hover) {
+  .work-item-card:hover {
+    /* Hover enhancements */
+  }
+}
+```
+
+**Relative Units:**
+- Typography: Use rem (root em) for font sizes
+- Spacing: Use existing spacing-* CSS variables (8px grid)
+- Widths: Use max-width with px for content constraints, % for responsive containers
+- Heights: Use auto or min-height (not fixed heights)
+
+**Touch Target Guidelines:**
+```css
+/* Mobile touch targets */
+@media (max-width: 767px) {
+  .mark-read-button {
+    min-height: 44px;
+    padding: 12px 16px;
+  }
+  
+  .close-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+```
+
+**Image Optimization:**
+- Not applicable (Work Item Grouping uses minimal images)
+- Avatar images (future): Lazy load, srcset for retina displays
+
+**Accessibility Development (Built-In, Not Validated):**
+
+**Semantic HTML:**
+```html
+<article role="article" aria-label="Work item: [title]">
+  <header>
+    <h3>[Title]</h3>
+    <button aria-label="Mark [title] as read">Mark Read</button>
+  </header>
+  <div class="timeline" role="list" aria-label="Activity timeline">
+    <div role="listitem">[Event]</div>
+  </div>
+</article>
+```
+
+**ARIA Labels:**
+- Icon-only buttons: `aria-label="Close"`, `aria-label="Mark [title] as read"`
+- Live regions: `aria-live="polite"` for unread count, state changes
+- Expanded state: `aria-expanded="true/false"` on collapsible cards
+
+**Keyboard Navigation:**
+```typescript
+// React Aria useDisclosure handles expand/collapse keyboard events
+const { isExpanded, toggleExpanded } = useDisclosure();
+
+// Custom keyboard handlers for future enhancements
+const handleKeyDown = (event: KeyboardEvent) => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    toggleExpanded();
+  }
+};
+```
+
+**Focus Management:**
+```typescript
+// Focus returns to next unread item after mark-as-read
+const markAsReadAndFocus = (id: string) => {
+  markAsRead(id);
+  const nextUnread = findNextUnreadCard();
+  if (nextUnread) {
+    nextUnread.focus();
+  }
+};
+```
+
+**Performance Considerations:**
+
+**Animation Performance:**
+- Use GPU-accelerated properties: `transform`, `opacity`
+- Avoid animating: `width`, `height`, `top`, `left`
+- Grid-based collapse: `grid-template-rows: 0fr → 1fr`
+- Will-change sparingly: `will-change: transform` on side panel only
+
+**Mobile Performance:**
+- Lazy load timeline events if >20 events (future optimization)
+- Virtualization: Future enhancement if card list exceeds 100 items
+- Debounce scroll handlers (if scroll-based features added)
+
+**Network Performance:**
+- Optimistic updates: UI responds immediately, syncs to backend
+- Offline support: Future enhancement (service worker, local storage)
+- Bundle size: Code splitting for side panel component (future)
+

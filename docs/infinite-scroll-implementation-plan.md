@@ -2,13 +2,26 @@
 
 ## Overview
 
-Add cursor-based infinite scrolling to all list views (Dashboard, Saved Queries, Catch-up Mode, Search) to allow users to load beyond the current 50-150 item limits. Implementation will use TanStack Query's `useInfiniteQuery` with auto-load on scroll via Intersection Observer API.
+Add cursor-based infinite scrolling to Dashboard, Search, and Saved Query detail views to allow users to load beyond the current 50-150 item limits. Implementation will use TanStack Query's `useInfiniteQuery` with auto-load on scroll via Intersection Observer API.
 
 **User Preferences:**
 - Pagination Strategy: Cursor-based (createdAt + ID)
 - Load Trigger: Auto-load on scroll
 - Page Size: 50 items per page
-- Scope: All pages (Dashboard sections, Query results, Catch-up mode, Search)
+- Scope: Dashboard, Search results, and Query detail views (NOT Catch-up mode - see exclusion section below)
+
+## Scope Exclusion: Catch-Up Mode
+
+**Catch-Up Mode does NOT use infinite scroll.** It loads all new items per query without pagination.
+
+**Rationale:**
+- "New items since last visit" is a bounded, finite dataset (typically <100 items per query)
+- User intent: "Show me what I missed so I can review and clear it" - not browsing history
+- Interaction pattern: Mark as reviewed → items disappear → done
+- Total load: Even with 10 queries × 50 new items = 500 items total - very manageable for single load
+- Avoids complexity of managing multiple independent scroll regions
+
+**Implementation:** Remove pagination limit or set high limit (1000) on `getNewItems` when called from Catch-Up context.
 
 ## Cursor Strategy
 
@@ -92,6 +105,15 @@ getRecent: protectedProcedure
         })
       : null;
 
+    logger.info({
+      userId: ctx.session.user.id,
+      endpoint: 'events.getRecent',
+      cursorProvided: !!input?.cursor,
+      itemsReturned: items.length,
+      hasMore,
+      durationMs: Date.now() - start
+    }, 'Pagination query completed');
+
     return { items, nextCursor, hasMore };
   });
 ```
@@ -148,6 +170,15 @@ getForDashboard: protectedProcedure
         })
       : null;
 
+    logger.info({
+      userId: ctx.session.user.id,
+      endpoint: 'events.getForDashboard',
+      cursorProvided: !!input?.cursor,
+      itemsReturned: items.length,
+      hasMore,
+      durationMs: Date.now() - start
+    }, 'Pagination query completed');
+
     return { items, nextCursor, hasMore };
   });
 ```
@@ -194,11 +225,15 @@ export interface SearchOptions {
 
 Update `searchEvents` query to include cursor logic:
 ```typescript
-// Add cursor WHERE clause before ORDER BY rank DESC
-// Since search uses rank-based ordering, cursor must include rank + createdAt + id
+// Add cursor WHERE clause using standard cursor format (createdAt + id)
+// Search ordering is rank DESC, createdAt DESC
+// Cursor uses only createdAt + id (ignoring rank for simplicity)
+// WHERE clause: same as other endpoints (createdAt/id comparison)
+// Accepts tiny risk of sub-optimal ordering at page boundaries
+// (extremely rare due to millisecond timestamp precision)
 ```
 
-**Important:** Search ordering is `rank DESC, createdAt DESC` - cursor must track rank value to maintain consistency.
+**Note:** Search uses standard cursor format `{ createdAt, id }` for consistency with other endpoints. The cursor ignores the `rank` value to avoid expensive double calculation of `ts_rank()`. This means items with identical timestamps but different ranks might occasionally appear in slightly sub-optimal order at page boundaries, which is acceptable given millisecond precision makes this extremely rare.
 
 ### 3. Queries Router (`src/server/api/routers/queries.ts`)
 
@@ -230,7 +265,7 @@ interface UseInfiniteScrollOptions {
   isFetchingNextPage: boolean;
   isError?: boolean;
   onError?: () => void;
-  threshold?: number; // Default 0.8 (80% scroll)
+  threshold?: number; // Default 0.8 (trigger when sentinel 80% visible)
 }
 
 export function useInfiniteScroll({
@@ -417,22 +452,7 @@ export function DashboardClient() {
 
 **Note:** Dashboard already merges all event types into one unified sorted list (line 106-108), so single infinite scroll stream. Filter changes invalidate query and reset to page 1.
 
-#### C. CatchUpView (`src/components/catchup/CatchUpView.tsx`)
-
-**Update each query section to use infinite scroll:**
-```typescript
-// For each query section, use useInfiniteQuery
-const newItemsQuery = api.queries.getNewItems.useInfiniteQuery(
-  { queryId: query.id },
-  { getNextPageParam: (lastPage) => lastPage.nextCursor }
-);
-
-const flattenedItems = useFlattenedEvents(newItemsQuery.data);
-
-// Pass to EventTable with infiniteScroll prop
-```
-
-#### D. Search Results
+#### C. Search Results
 
 **Update search context/components to use infinite scroll:**
 ```typescript
@@ -445,7 +465,39 @@ const searchQuery = api.events.search.useInfiniteQuery(
 );
 ```
 
-### 3. Scroll Restoration Integration
+**Scroll behavior on keyword change:**
+- Use instant scroll to top (not smooth) since changing keywords is a new search
+```typescript
+useEffect(() => {
+  if (activeKeywords.length > 0 && scrollContainerRef.current) {
+    scrollContainerRef.current.scrollTo({ top: 0, behavior: 'auto' });
+  }
+}, [activeKeywords]);
+```
+
+#### D. Query Detail View
+
+**Update query detail components to use infinite scroll:**
+```typescript
+const queryResultsQuery = api.queries.getNewItems.useInfiniteQuery(
+  { queryId },
+  {
+    getNextPageParam: (lastPage) => lastPage.nextCursor
+  }
+);
+```
+
+**Scroll behavior on filter change:**
+- Use instant scroll to top (if filters exist on query detail view)
+```typescript
+useEffect(() => {
+  if (filterChanged && scrollContainerRef.current) {
+    scrollContainerRef.current.scrollTo({ top: 0, behavior: 'auto' });
+  }
+}, [filterChanged]);
+```
+
+## Scroll Restoration Integration
 
 **Current Hook:** `src/hooks/useScrollRestoration.ts` (Lines 1-65)
 - Already uses `sessionStorage` for persistence
@@ -456,6 +508,12 @@ const searchQuery = api.events.search.useInfiniteQuery(
 - Restores scroll position after navigation
 - Doesn't interfere with Intersection Observer
 - `isRestoring()` check prevents scrollIntoView conflicts (Line 84)
+
+**TanStack Query Cache Behavior:**
+When user navigates away and returns:
+- **Within 30s (staleTime):** All loaded pages instantly available from cache, scroll restores immediately
+- **After 30s:** Stale data returned immediately while refetching in background, scroll restores to stale position, fresh data loads without disruption
+- This stale-while-revalidate behavior ensures smooth restoration regardless of cache age
 
 ## Critical Files to Modify
 
@@ -471,8 +529,8 @@ const searchQuery = api.events.search.useInfiniteQuery(
 2. `/src/hooks/useInfiniteEvents.ts` - New hook wrapping tRPC infinite queries
 3. `/src/components/dashboard/EventTable.tsx` - Add infiniteScroll prop support
 4. `/src/components/dashboard/DashboardClient.tsx` - Use infinite queries
-5. `/src/components/catchup/CatchUpView.tsx` - Use infinite queries
-6. `/src/components/queries/QueryDetailClient.tsx` - Use infinite search query
+5. `/src/components/search/SearchResults.tsx` - Use infinite queries for search
+6. `/src/components/queries/QueryDetailClient.tsx` - Use infinite queries for query detail view
 
 ## New Items During Active Session
 
@@ -480,18 +538,34 @@ When manual sync or automatic background sync brings in new events while user is
 
 **Behavior:**
 1. New items are added to TanStack Query cache (invalidation triggers refetch of page 1)
-2. Show banner at top of EventTable: "5 new items available"
-3. Banner actions:
-   - **[Scroll to top]** button - smoothly scrolls to top and dismisses banner, user sees new items
-   - **[Dismiss]** button - hides banner, user continues current position
-4. Banner persists until user takes action or navigates away
-5. Banner styling: Subtle blue background, positioned at top of scroll container (sticky)
+2. Show Sonner toast notification: "5 new items available"
+3. Toast only appears if user is scrolled away from top (no toast if already at top)
+4. Toast persists until user dismisses or clicks action button
 
-**Implementation:**
-- Track previous page 1 item count vs current
-- If count increases, show banner with difference
+**Toast Implementation:**
+```typescript
+toast.info("5 new items available", {
+  duration: Infinity, // Persistent until dismissed
+  description: "Click to scroll to top",
+  action: {
+    label: "↑ Top",
+    onClick: () => {
+      scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      toast.dismiss(); // Auto-dismiss on action
+    }
+  }
+});
+```
+
+**Where to show:**
+- Dashboard view (main browsing interface)
+- Query detail view (when viewing a single saved query)
+- NOT on Search results (search is point-in-time, sync doesn't affect results)
+
+**Detection logic:**
+- Track previous page 1 item count vs current after sync
+- If count increases and user scroll position > 100px from top, show toast
 - Store dismissed state in component state (resets on navigation)
-- Use existing smooth scroll utilities
 
 ## Implementation Order
 
@@ -506,8 +580,8 @@ When manual sync or automatic background sync brings in new events while user is
 ### Phase 2: Component Integration (Week 2)
 1. Update EventTable to accept infinite scroll props
 2. Migrate DashboardClient to use infinite queries
-3. Migrate QueryDetailClient for search results
-4. Migrate CatchUpView sections
+3. Migrate Search results to use infinite queries
+4. Migrate Query detail view to use infinite queries
 5. Test keyboard navigation with large datasets
 6. Test scroll restoration
 
@@ -527,22 +601,14 @@ When manual sync or automatic background sync brings in new events while user is
 - **No new indexes needed** - existing composite indexes handle cursor WHERE clauses
 
 ### Memory Management
-- **No artificial cap:** Users can load unlimited items via infinite scroll
-- **Browser native handling:** Modern browsers manage memory efficiently
-- **User control:** Users can refresh page if performance degrades
-- **Future optimization:** If users report performance issues with 1000+ items, consider implementing virtualization with `@tanstack/react-virtual`
+- **No artificial limits:** Users can load unlimited items via infinite scroll
+- **No warnings or caps:** Keep implementation simple
+- **If performance issues arise:** Users will report, then consider implementing virtualization with `@tanstack/react-virtual`
 
 ### Network Efficiency
 - **Page Size:** 50 items per page (same as current)
 - **Prefetch:** TanStack Query's built-in prefetch on scroll approach threshold
 - **Caching:** 30s staleTime prevents redundant requests
-
-### Keyboard Navigation
-- **Works seamlessly** - EventTable already uses flattened events array
-- **Auto-load on boundary** - When j/k navigation reaches last loaded item and more pages exist, automatically trigger `fetchNextPage()`, wait for completion, then continue navigation
-- **No changes needed to core nav** - j/k navigation iterates through full loaded dataset
-- **Scroll restoration** - Maintains position when navigating away/back
-- **Implementation:** Add boundary detection in `moveSelection()` function - if moving to last item and `hasNextPage`, trigger load
 
 ## Error Handling
 
@@ -562,10 +628,21 @@ if (input?.cursor) {
 
 ### Network Failures
 - TanStack Query handles retries automatically (3 retries by default)
-- Show toast notification: "Failed to load more items" with error styling
-- Toast auto-dismisses after 5s or user can dismiss manually
-- Retry happens automatically on next scroll to sentinel (Intersection Observer triggers again)
-- Use existing toast system from `~/components/ui/Toast/ToastContext`
+- After all retries exhausted, show toast notification with retry option
+```typescript
+toast.error("Failed to load more items", {
+  duration: 10000, // 10 seconds (longer than default 5s)
+  description: "Scroll down to retry",
+  action: {
+    label: "Retry",
+    onClick: () => fetchNextPage()
+  }
+});
+```
+- Automatic retry: Scrolling to bring sentinel back into view triggers another fetch attempt
+- Manual retry: User can click "Retry" button in toast
+- Already-loaded items remain visible during errors
+- No data loss or duplicates after retry
 
 ### Race Conditions
 - `isFetchingNextPage` flag prevents duplicate requests
@@ -609,16 +686,26 @@ if (input?.cursor) {
 ## Monitoring & Metrics
 
 ### Add Logging
+
+Add to all pagination endpoints before return statement:
+
 ```typescript
+// Add to: getRecent, getForDashboard, search, getNewItems
 logger.info({
-  userId,
-  endpoint: 'events.getRecent',
+  userId, // Match existing logging patterns in codebase
+  endpoint: 'events.getRecent', // Update per endpoint
   cursorProvided: !!input?.cursor,
   itemsReturned: items.length,
   hasMore,
   durationMs
 }, 'Pagination query completed');
 ```
+
+**Implementation notes:**
+- Place logging before return statement in each endpoint handler
+- Check existing codebase for userId logging patterns and match that approach
+- If userId is not currently logged elsewhere, use hashed ID for privacy
+- Calculate `durationMs` using `Date.now()` at start and end of handler
 
 ### Metrics to Track
 - Average items per user session
@@ -672,7 +759,7 @@ Support scrolling up to load newer items:
 **Acceptance Criteria:**
 - ✓ User can scroll continuously to load all available events
 - ✓ No "Load More" button required (automatic on scroll)
-- ✓ Works on Dashboard, Search results, Saved queries, and Catch-up mode
+- ✓ Works on Dashboard, Search results, and Saved query detail views
 - ✓ Loading indicator shows when fetching next page
 - ✓ No duplicate items appear across pages
 
@@ -683,9 +770,8 @@ Support scrolling up to load newer items:
 
 **Acceptance Criteria:**
 - ✓ j/k navigation works across all loaded pages (not just first 50)
-- ✓ When navigating past last loaded item, next page auto-loads
-- ✓ Navigation continues smoothly after page loads
-- ✓ Ctrl+d/u half-page jumps work across page boundaries
+- ✓ Navigation naturally triggers scroll, which loads more items automatically
+- ✓ Ctrl+d/u half-page jumps work seamlessly
 - ✓ Selected item remains highlighted during page loads
 
 ### User Story 3: Reliable Search Experience
@@ -695,7 +781,7 @@ Support scrolling up to load newer items:
 
 **Acceptance Criteria:**
 - ✓ Search results support infinite scroll
-- ✓ Applying new filter resets to page 1 with smooth scroll
+- ✓ Applying new keywords resets to page 1 with instant scroll to top
 - ✓ Results remain sorted by relevance (rank) across pages
 - ✓ Search highlighting preserved across all pages
 
