@@ -24,6 +24,9 @@ export function useScrollRestoration(key: string): UseScrollRestorationReturn {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const isRestoringRef = useRef<boolean>(false);
+  // Use ref to always access current key value in callbacks (avoids stale closure)
+  const keyRef = useRef<string>(key);
+  keyRef.current = key;
 
   // Restore scroll position on mount or key change
   useEffect(() => {
@@ -63,8 +66,8 @@ export function useScrollRestoration(key: string): UseScrollRestorationReturn {
   }, []);
 
   // Debounced scroll handler to save position
-  // Note: key is intentionally NOT in dependencies to avoid recreating callback on every key change
-  // The callback captures the current key value via closure, which is correct behavior
+  // Uses keyRef.current to always access the latest key value while keeping
+  // the callback reference stable (empty deps array is intentional)
   const handleScroll = useMemo(() => {
     return (e: React.UIEvent<HTMLDivElement>) => {
       // Capture scrollTop immediately (React event pooling nulls currentTarget after handler)
@@ -74,10 +77,9 @@ export function useScrollRestoration(key: string): UseScrollRestorationReturn {
         clearTimeout(timeoutRef.current);
       }
       timeoutRef.current = setTimeout(() => {
-        sessionStorage.setItem(`scroll-${key}`, scrollY.toString());
+        sessionStorage.setItem(`scroll-${keyRef.current}`, scrollY.toString());
       }, 100); // Debounce 100ms
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return {

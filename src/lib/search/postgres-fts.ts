@@ -69,19 +69,44 @@ function sanitizeKeyword(keyword: string): string {
 }
 
 /**
- * Build a tsquery string from multiple keywords with AND logic
- * Each keyword is wrapped in plainto_tsquery for safe parsing, then ANDed
+ * Build a Prisma.sql fragment for combining multiple keywords with AND logic.
+ * 
+ * IMPORTANT: plainto_tsquery ignores operators like & in the input string.
+ * To get true AND logic with multiple keywords, we must:
+ * 1. Call plainto_tsquery separately for each keyword
+ * 2. Combine them using PostgreSQL's && operator on tsquery values
+ * 
+ * Example for ["auth", "login"]:
+ *   (plainto_tsquery('english', 'auth') && plainto_tsquery('english', 'login'))
  */
-function buildTsQueryString(keywords: string[]): string {
+function buildCombinedTsQuerySql(keywords: string[]): Prisma.Sql {
   const sanitized = keywords
     .map(sanitizeKeyword)
     .filter((k) => k.length > 0);
 
-  if (sanitized.length === 0) return "";
-  if (sanitized.length === 1) return sanitized[0]!;
+  if (sanitized.length === 0) {
+    // Return a query that matches nothing
+    return Prisma.sql`plainto_tsquery('english', '')`;
+  }
 
-  // Join with & for AND logic
-  return sanitized.join(" & ");
+  if (sanitized.length === 1) {
+    // Single keyword - simple case
+    return Prisma.sql`plainto_tsquery('english', ${sanitized[0]})`;
+  }
+
+  // Multiple keywords - AND them together using &&
+  // Build: (plainto_tsquery('english', $1) && plainto_tsquery('english', $2) && ...)
+  const parts = sanitized.map(
+    (keyword) => Prisma.sql`plainto_tsquery('english', ${keyword})`
+  );
+
+  // Join with && operator
+  let combined = parts[0]!;
+  for (let i = 1; i < parts.length; i++) {
+    combined = Prisma.sql`${combined} && ${parts[i]}`;
+  }
+
+  return combined;
 }
 
 /**
@@ -109,13 +134,11 @@ export async function searchEvents(
 
   const startTime = Date.now();
 
-  // For single keyword, use plainto_tsquery (simpler, handles phrases)
-  // For multiple keywords, use to_tsquery with & for AND logic
-  const queryString = buildTsQueryString(validKeywords);
+  // Build combined tsquery with proper AND logic for multiple keywords
+  const tsQuery = buildCombinedTsQuerySql(validKeywords);
 
   // Use parameterized query with Prisma.sql for SQL injection prevention
-  // Note: We use plainto_tsquery for each keyword segment which handles
-  // special characters safely, then combine with &
+  // Each keyword gets its own plainto_tsquery call, combined with &&
   const results = await db.$queryRaw<SearchResultEvent[]>`
     SELECT
       e.id,
@@ -134,24 +157,24 @@ export async function searchEvents(
       e."updatedAt",
       ts_rank(
         to_tsvector('english', e.title || ' ' || COALESCE(e.body, '')),
-        plainto_tsquery('english', ${queryString})
+        ${tsQuery}
       ) as rank,
       ts_headline(
         'english',
         e.title,
-        plainto_tsquery('english', ${queryString}),
+        ${tsQuery},
         'StartSel=<mark>, StopSel=</mark>, MaxWords=50, MinWords=10'
       ) as "highlightedTitle",
       ts_headline(
         'english',
         COALESCE(e.body, ''),
-        plainto_tsquery('english', ${queryString}),
+        ${tsQuery},
         'StartSel=<mark>, StopSel=</mark>, MaxWords=100, MinWords=20'
       ) as "highlightedSnippet"
     FROM "Event" e
     WHERE e."userId" = ${userId}
       AND to_tsvector('english', e.title || ' ' || COALESCE(e.body, ''))
-          @@ plainto_tsquery('english', ${queryString})
+          @@ ${tsQuery}
     ORDER BY rank DESC, e."createdAt" DESC
     LIMIT ${effectiveLimit}
   `;
@@ -196,14 +219,15 @@ export async function countSearchResults(
     return 0;
   }
 
-  const queryString = buildTsQueryString(validKeywords);
+  // Build combined tsquery with proper AND logic for multiple keywords
+  const tsQuery = buildCombinedTsQuerySql(validKeywords);
 
   const result = await db.$queryRaw<[{ count: bigint }]>`
     SELECT COUNT(*) as count
     FROM "Event" e
     WHERE e."userId" = ${userId}
       AND to_tsvector('english', e.title || ' ' || COALESCE(e.body, ''))
-          @@ plainto_tsquery('english', ${queryString})
+          @@ ${tsQuery}
   `;
 
   return Number(result[0]?.count ?? 0);
