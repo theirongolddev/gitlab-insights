@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Work Item Split View - Detail Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&amp;family=Noto+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "primary": "#f9f506",
+                "background-light": "#f8f8f5",
+                "background-dark": "#23220f",
+                "charcoal": "#2d2e2e", 
+                "olive": "#9DAA5F",
+                "surface-hover": "#363838",
+              },
+              fontFamily: {
+                "display": ["Spline Sans", "Noto Sans", "sans-serif"]
+              },
+              borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+            },
+          },
+        }
+    </script>
+<style>
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4a4a4a; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #666; 
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-[#181811] dark:text-gray-200 font-display min-h-screen flex flex-col overflow-hidden transition-colors duration-200">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-[#e5e5e0] dark:border-[#3E4040] bg-white dark:bg-[#1E1F1F] px-6 py-3 shrink-0 z-50 h-[65px]">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3">
+<div class="size-8 flex items-center justify-center bg-primary/20 rounded-lg text-primary">
+<span class="material-symbols-outlined">dataset</span>
+</div>
+<h2 class="text-lg font-bold leading-tight tracking-tight dark:text-white">DevQueue</h2>
+</div>
+<label class="hidden md:flex flex-col min-w-40 w-64 lg:w-96 h-10">
+<div class="flex w-full flex-1 items-stretch rounded-xl h-full bg-[#f5f5f0] dark:bg-[#2d2e2e] transition-colors border border-transparent focus-within:border-primary/50">
+<div class="text-[#8c8b5f] flex items-center justify-center pl-4 rounded-l-xl">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<input class="flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl bg-transparent text-base font-normal leading-normal placeholder:text-[#8c8b5f] px-3 focus:outline-0 focus:ring-0 border-none h-full dark:text-gray-200" placeholder="Search..." value=""/>
+<div class="text-[#8c8b5f] flex items-center justify-center pr-4 text-xs font-mono opacity-50">⌘K</div>
+</div>
+</label>
+</div>
+<div class="flex items-center gap-4">
+<nav class="hidden lg:flex items-center gap-6">
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">Issues</a>
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">Pull Requests</a>
+</nav>
+<div class="h-6 w-px bg-gray-200 dark:bg-gray-700 hidden lg:block"></div>
+<div class="flex gap-3">
+<button class="flex items-center justify-center size-10 rounded-full bg-[#f5f5f0] dark:bg-[#2d2e2e] text-[#181811] dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors relative">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+<span class="absolute top-2 right-2 size-2 bg-primary rounded-full border border-[#f5f5f0] dark:border-[#2d2e2e]"></span>
+</button>
+<div class="size-10 rounded-full bg-cover bg-center border border-gray-200 dark:border-gray-700 cursor-pointer" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCMtiUR9YauvHngc0DoKXn-FzaRt_c9X3uzJmm2rQx4hTurK6hUQ7VqVRHitODGqJjqSVNIQYJXoO4EIqACbDV2ryldUL5iJFDUakdcujJQKsB4eg7QBspVn2QpJAQCAnFr1oQOjEtlBcg6G4PxpbWUIqfUiNdvTbY-FqTU0LZyTBogOQh-rZmzLtix8mVoVbovbVxBk6HuLSz4z1rENe8YLaT4-XwySwRPta9OzKE0waXbuqGXgnAKtysICaCbMB0lZTQUqUfHsSA");'></div>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden h-[calc(100vh-65px)]">
+<aside class="hidden xl:flex flex-col w-64 border-r border-[#e5e5e0] dark:border-[#3E4040] bg-white dark:bg-[#1E1F1F] p-4 gap-2 shrink-0 overflow-y-auto">
+<div class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-3 mb-2 mt-2">Workspace</div>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary dark:text-primary font-medium" href="#">
+<span class="material-symbols-outlined text-[20px]">inbox</span>
+            Inbox
+            <span class="ml-auto text-xs bg-primary text-black px-1.5 py-0.5 rounded-full">8</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#2d2e2e] transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">my_location</span>
+            My Issues
+        </a>
+<div class="my-2 border-t border-gray-100 dark:border-gray-800"></div>
+<div class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-3 mb-2">Projects</div>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#2d2e2e] transition-colors" href="#">
+<span class="size-2 rounded-full bg-blue-500"></span>
+<span>Frontend Core</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#2d2e2e] transition-colors" href="#">
+<span class="size-2 rounded-full bg-olive"></span>
+<span>API Gateway</span>
+</a>
+</aside>
+<main class="flex flex-1 overflow-hidden relative w-full">
+<div class="w-full md:w-[40%] flex flex-col border-r border-[#e5e5e0] dark:border-[#3E4040] bg-background-light dark:bg-background-dark">
+<div class="p-4 border-b border-[#e5e5e0] dark:border-[#3E4040] flex items-center justify-between sticky top-0 bg-inherit z-10 backdrop-blur-sm bg-opacity-90">
+<div class="flex items-center gap-3">
+<h1 class="text-lg font-bold dark:text-white">Queue</h1>
+<div class="flex h-5 items-center px-2 rounded-full bg-olive/20 text-olive text-[10px] font-bold tracking-wide border border-olive/30">
+                        8 NEW
+                    </div>
+</div>
+<div class="flex gap-2">
+<button class="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-gray-500">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+</button>
+<button class="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-gray-500">
+<span class="material-symbols-outlined text-[20px]">sort</span>
+</button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
+<div class="relative flex flex-col gap-2 bg-[#e0e0dc] dark:bg-[#3E4040] p-4 rounded-[4px] shadow-md border-2 border-olive cursor-pointer transition-all">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-2 mb-1">
+<span class="text-[10px] font-bold text-gray-500 dark:text-gray-300 uppercase">API Gateway</span>
+<span class="text-[10px] text-gray-400">•</span>
+<span class="text-[10px] font-mono text-gray-500 dark:text-gray-300">#4025</span>
+</div>
+<span class="size-2 rounded-full bg-olive"></span>
+</div>
+<h3 class="text-[#181811] dark:text-white text-sm font-bold leading-snug">Implement rate limiting for public API endpoints</h3>
+<div class="flex items-center gap-2 mt-1">
+<div class="size-4 rounded-full bg-cover bg-center" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuB5tBNFyaxfw7mZpf6zLgaSvncesgFeZYy_Y9G2nljVLcQ_YLjEBNUhAShHAsaDf8RWlcEEJGv7U2nemxgAWBM5btMsvefbtX9vm8-vde8AW24FeV_aj65AC7GIY-oByCVXIyPT1pcnPq9IfkppyFEVylTbTsxuRnVnXPAA8FdaJgCj3hDpQ_4OygWRrAXjvwdOsKLVzF62imbLIvJFy17yGdsb2ikA12MoNDMzZhKiDAle_KGPNtAtQNBFrHHLAAq2jgwbHLTQknU");'></div>
+<span class="text-xs text-olive font-medium">@sarah_dev</span>
+<span class="ml-auto text-xs text-gray-500">2m ago</span>
+</div>
+</div>
+<div class="relative flex flex-col gap-2 bg-white dark:bg-[#2d2e2e] p-4 rounded-[4px] shadow-sm border-2 border-olive hover:shadow-md transition-all cursor-pointer opacity-90 hover:opacity-100">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-2 mb-1">
+<span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">Dashboard</span>
+<span class="text-[10px] text-gray-400">•</span>
+<span class="text-[10px] font-mono text-gray-500 dark:text-gray-400">#4019</span>
+</div>
+<div class="flex items-center gap-1 bg-olive text-black text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">New</div>
+</div>
+<h3 class="text-[#181811] dark:text-gray-200 text-sm font-semibold leading-snug">Fix: memory leak in data grid component</h3>
+<div class="flex items-center gap-2 mt-1">
+<div class="size-4 rounded-full bg-cover bg-center" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCu2ZJe-uWBkl58UP0Z8R61nnrRT96HjsVT5BtbN9usJ5l7HyWrP5NOUxab6ZPVvSUzjUvOu-r-xgZI4pTVcF3-_ZrfOyXlUPprC6DjyPMa9KUd18RULtKsr2_7EdU0mBZEpcyDxOihJPB5_QihflfjAgc468ezQwz-6nVD-YhGuvl0BtFK3TBj12A191g_UUVUP2Nuo58r4dUnelDm97T0ogJStEBd8TvqVOlZAVwRgsRO1TpU1rcQL3ZODkEZbTHQzrGhWKm5x8E");'></div>
+<span class="text-xs text-gray-500">@mike_r</span>
+<span class="ml-auto text-xs text-gray-500">4h ago</span>
+</div>
+</div>
+<div class="relative flex flex-col gap-2 bg-white dark:bg-[#2d2e2e] p-4 rounded-[4px] shadow-sm border border-transparent hover:border-gray-500 transition-all cursor-pointer opacity-70 hover:opacity-100">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-2 mb-1">
+<span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">Docs</span>
+<span class="text-[10px] text-gray-400">•</span>
+<span class="text-[10px] font-mono text-gray-500 dark:text-gray-400">#3992</span>
+</div>
+</div>
+<h3 class="text-[#181811] dark:text-gray-300 text-sm font-medium leading-snug">Update API documentation for v2</h3>
+<div class="flex items-center gap-2 mt-1">
+<div class="size-4 rounded-full bg-cover bg-center" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAu7uLc55a8nP57uAYjgK864aYJo1z93XVL5Uj6au0sWUJrVmBXIXEPUIoupddTzouutkiM1mKYNCQ_Vgj5WE_AJ7AnM43SI7sudC5w05IY-qwz6oYvOyq-QsZKrGQSNt_YoR8xyUAcFimkD4sipMqWPhk8PpFWXuhpC8nZnLyYCi9hGp0nXtKGXLpG6PABpAu4zVtSPIJWDsRgYxa8LNsZfzHWObKvuxUMeRjhxCqovwrvrCv5bizRGyYnWPttDWCaADNeKHAXV_Q");'></div>
+<span class="text-xs text-gray-500">@jenny_w</span>
+<span class="ml-auto text-xs text-gray-500">Yesterday</span>
+</div>
+</div>
+<div class="relative flex flex-col gap-2 bg-white dark:bg-[#2d2e2e] p-4 rounded-[4px] shadow-sm border border-transparent hover:border-gray-500 transition-all cursor-pointer opacity-70 hover:opacity-100">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-2 mb-1">
+<span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">Design Sys</span>
+<span class="text-[10px] text-gray-400">•</span>
+<span class="text-[10px] font-mono text-gray-500 dark:text-gray-400">#3980</span>
+</div>
+</div>
+<h3 class="text-[#181811] dark:text-gray-300 text-sm font-medium leading-snug">Design System: Add toggle component</h3>
+<div class="flex items-center gap-2 mt-1">
+<div class="size-4 rounded-full bg-cover bg-center" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDkwNSSv4WXSDhqjM8eUgaaNfeYKDnOq5Ont0oRfr8sCPS_12sc1JHXR7NYPBKbLQMxWvIE58tC-izEabyR5jz3CfA9LaTi_w6Z8ShRZchO_p2T2TDx263OuCV-ymmodP5AEKXzlSFiZe-9Szy2uNsXTozbhB5DTnOx_21MsbANbJtBWEvo6lKk9IXIMeCkrpuU8g8dvIk8RYqOLjKJpTDE9U9gi_pQ2rArYBKY-OsbEx4KGRkrt1Sv6YqRAgpcSFmYfCalN1gTkpQ");'></div>
+<span class="text-xs text-gray-500">@alex_ui</span>
+<span class="ml-auto text-xs text-gray-500">2d ago</span>
+</div>
+</div>
+</div>
+</div>
+<div class="hidden md:flex w-[60%] flex-col bg-white dark:bg-[#2d2e2e] h-full shadow-[-8px_0_24px_-4px_rgba(0,0,0,0.4)] z-20 border-l border-[#e5e5e0] dark:border-[#3E4040]">
+<div class="flex items-center justify-between px-6 py-4 border-b border-[#e5e5e0] dark:border-[#3E4040] shrink-0">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+<span class="font-mono">#4025</span>
+<span>•</span>
+<span class="flex items-center gap-1 text-green-600 dark:text-green-400 font-medium">
+<span class="material-symbols-outlined text-[14px]">adjust</span> Open
+                        </span>
+<span>•</span>
+<span>opened 2 hours ago by</span>
+<span class="font-medium text-gray-700 dark:text-gray-300">@sarah_dev</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="flex items-center justify-center size-8 rounded-lg hover:bg-gray-100 dark:hover:bg-[#3E4040] text-gray-500 transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_horiz</span>
+</button>
+<button class="flex items-center justify-center size-8 rounded-lg hover:bg-gray-100 dark:hover:bg-[#3E4040] text-gray-500 transition-colors">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto px-6 py-6 custom-scrollbar">
+<div class="mb-8">
+<h1 class="text-2xl font-bold text-[#181811] dark:text-white mb-4 leading-tight">Implement rate limiting for public API endpoints</h1>
+<div class="flex flex-wrap gap-2 mb-6">
+<span class="px-2.5 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-bold uppercase tracking-wide">High Priority</span>
+<span class="px-2.5 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-medium">backend</span>
+<span class="px-2.5 py-1 rounded-full bg-olive/20 text-olive text-xs font-medium">security</span>
+</div>
+<div class="prose dark:prose-invert max-w-none text-sm text-gray-600 dark:text-gray-300 space-y-4">
+<p>We've observed a significant increase in bot traffic on the <code>/v1/public/items</code> endpoint. This is causing performance degradation for legitimate users.</p>
+<div class="p-4 bg-gray-50 dark:bg-[#23220f] rounded-lg border border-gray-200 dark:border-gray-700 font-mono text-xs">
+                            GET /v1/public/items?limit=1000<br/>
+                            Status: 504 Gateway Timeout<br/>
+                            Latency: 12.5s
+                        </div>
+<p class="font-bold text-gray-800 dark:text-white mt-4">Requirements:</p>
+<ul class="list-disc pl-5 space-y-1">
+<li>Implement a sliding window rate limiter using Redis.</li>
+<li>Limit unauthenticated requests to <strong>60 req/min</strong> per IP.</li>
+<li>Return <code>429 Too Many Requests</code> with standard retry-after headers.</li>
+<li>Add metrics to track blocked requests in Datadog.</li>
+</ul>
+</div>
+</div>
+<div class="relative pt-6 border-t border-[#e5e5e0] dark:border-[#3E4040]">
+<h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-6 tracking-wider">Activity</h3>
+<div class="absolute left-[19px] top-[60px] bottom-0 w-px bg-gray-200 dark:bg-gray-700 z-0"></div>
+<div class="relative z-10 flex gap-4 mb-6">
+<div class="size-10 shrink-0 rounded-full bg-cover bg-center border-2 border-white dark:border-[#2d2e2e]" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCMtiUR9YauvHngc0DoKXn-FzaRt_c9X3uzJmm2rQx4hTurK6hUQ7VqVRHitODGqJjqSVNIQYJXoO4EIqACbDV2ryldUL5iJFDUakdcujJQKsB4eg7QBspVn2QpJAQCAnFr1oQOjEtlBcg6G4PxpbWUIqfUiNdvTbY-FqTU0LZyTBogOQh-rZmzLtix8mVoVbovbVxBk6HuLSz4z1rENe8YLaT4-XwySwRPta9OzKE0waXbuqGXgnAKtysICaCbMB0lZTQUqUfHsSA");'></div>
+<div class="flex-1">
+<div class="flex items-baseline gap-2 mb-1">
+<span class="text-sm font-bold text-gray-900 dark:text-gray-200">You</span>
+<span class="text-xs text-gray-500">assigned to @sarah_dev</span>
+<span class="text-xs text-gray-400">2h ago</span>
+</div>
+</div>
+</div>
+<div class="relative z-10 flex gap-4 mb-6">
+<div class="size-10 shrink-0 rounded-full bg-cover bg-center border-2 border-white dark:border-[#2d2e2e]" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuB5tBNFyaxfw7mZpf6zLgaSvncesgFeZYy_Y9G2nljVLcQ_YLjEBNUhAShHAsaDf8RWlcEEJGv7U2nemxgAWBM5btMsvefbtX9vm8-vde8AW24FeV_aj65AC7GIY-oByCVXIyPT1pcnPq9IfkppyFEVylTbTsxuRnVnXPAA8FdaJgCj3hDpQ_4OygWRrAXjvwdOsKLVzF62imbLIvJFy17yGdsb2ikA12MoNDMzZhKiDAle_KGPNtAtQNBFrHHLAAq2jgwbHLTQknU");'></div>
+<div class="flex-1">
+<div class="flex items-baseline gap-2 mb-1">
+<span class="text-sm font-bold text-gray-900 dark:text-gray-200">Sarah Jenkins</span>
+<span class="text-xs text-gray-400">1h ago</span>
+</div>
+<div class="bg-white dark:bg-[#23220f] border border-gray-200 dark:border-gray-700 rounded-lg rounded-tl-none p-3 text-sm text-gray-700 dark:text-gray-300 shadow-sm">
+<p>I'll start by adding the middleware. Do we want this applied globally or just on specific routes?</p>
+</div>
+</div>
+</div>
+<div class="relative z-10 flex gap-4 mb-6 items-center">
+<div class="size-10 shrink-0 flex items-center justify-center rounded-full bg-[#2d2e2e] dark:bg-[#1E1F1F] border-2 border-white dark:border-[#2d2e2e]">
+<span class="material-symbols-outlined text-[16px] text-gray-400">link</span>
+</div>
+<div class="flex-1 text-xs">
+<span class="font-bold text-gray-900 dark:text-gray-200">Sarah Jenkins</span>
+<span class="text-gray-500">linked pull request</span>
+<a class="text-primary hover:underline ml-1" href="#">#4030 feat: rate limiter middleware</a>
+</div>
+</div>
+<div class="relative z-10 flex gap-4 scroll-mt-20">
+<div class="absolute -left-3 top-4 size-1.5 rounded-full bg-olive animate-pulse"></div>
+<div class="size-10 shrink-0 rounded-full bg-cover bg-center border-2 border-olive dark:border-olive" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDKFZy3CzwKJqr9xuNxAEpAFU1wHevXK0rOZHFTN1BM5ulGMFypPdIYLAFu7KXxkmkT2P6FZsANKN-iMryo7B7fG03wgNO9E3iqdZzGNknqb8zcgBJytgYc2p-RZ2S3FWqn1Ek8xdDvG27SSqgEk6HXfSb11ojgwvp3xTud39kVpKSkEb1qnz_byATU9NAxXo1nIBjfDfloeDop7_EdHGqK39OHSG8hn6XKToYODT7enqN5stKXQH51MQwbnkk06igGXjrQ8kueVnw");'></div>
+<div class="flex-1">
+<div class="flex items-baseline gap-2 mb-1">
+<span class="text-sm font-bold text-gray-900 dark:text-gray-200">David Ross</span>
+<span class="text-xs font-bold text-olive bg-olive/10 px-1.5 py-0.5 rounded">TEAM</span>
+<span class="text-xs text-gray-400">Just now</span>
+</div>
+<div class="bg-olive/10 dark:bg-olive/5 border border-olive/30 rounded-lg rounded-tl-none p-4 text-sm text-gray-800 dark:text-gray-200 shadow-sm ring-1 ring-olive/20">
+<p>@sarah_dev Let's apply it globally for now but with an exclusion list for internal service IPs. I updated the ticket description with the required threshold values.</p>
+</div>
+<div class="flex gap-2 mt-2">
+<button class="flex items-center gap-1 px-2 py-1 rounded hover:bg-black/5 dark:hover:bg-white/5 text-xs text-gray-500 font-medium transition-colors">
+<span class="material-symbols-outlined text-[14px]">thumb_up</span>
+                                    Like
+                                </button>
+<button class="flex items-center gap-1 px-2 py-1 rounded hover:bg-black/5 dark:hover:bg-white/5 text-xs text-gray-500 font-medium transition-colors">
+<span class="material-symbols-outlined text-[14px]">reply</span>
+                                    Reply
+                                </button>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-8 flex gap-4 ml-14">
+<div class="flex-1 bg-white dark:bg-[#1E1F1F] border border-gray-200 dark:border-gray-700 rounded-lg p-3 shadow-sm opacity-60 hover:opacity-100 transition-opacity cursor-text">
+<span class="text-sm text-gray-400">Reply to conversation...</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
