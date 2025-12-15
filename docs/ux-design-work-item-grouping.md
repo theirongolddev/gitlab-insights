@@ -1,22 +1,25 @@
----
-stepsCompleted: [1, 2, 3, 4, 5, 6, 7]
+______________________________________________________________________
+
+stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
 inputDocuments:
-  - docs/prd-work-item-grouping.md
-  - docs/product-brief-gitlab-insights-2025-11-19.md
-  - docs/ux-design-specification.md
-workflowType: 'ux-design'
-lastStep: 7
-project_name: 'gitlab-insights'
-user_name: 'Taylor'
-date: '2025-12-12'
----
+
+- docs/prd-work-item-grouping.md
+- docs/product-brief-gitlab-insights-2025-11-19.md
+- docs/ux-design-specification.md
+  workflowType: 'ux-design'
+  lastStep: 8
+  project_name: 'gitlab-insights'
+  user_name: 'Taylor'
+  date: '2025-12-12'
+
+______________________________________________________________________
 
 # UX Design Specification - Work Item Grouping
 
 **Author:** Taylor
 **Date:** 2025-12-12
 
----
+______________________________________________________________________
 
 ## Executive Summary
 
@@ -33,6 +36,7 @@ This is **organizational intelligence, not task management.** GitLab already not
 Capturing relationships at data ingest time (parent links, closes patterns, participants) and surfacing them through collapsible work item cards that group related activity. The system enables ambient awareness throughout the workday, where engineers can monitor organizational activity beyond their direct assignments and discover contexts where their expertise or awareness matters.
 
 **Key User Impact:**
+
 - Discover discussions about components you own (not assigned, not tagged)
 - Identify decisions that will affect your work before they're finalized
 - Provide context others don't have by joining conversations early
@@ -41,6 +45,7 @@ Capturing relationships at data ingest time (parent links, closes patterns, part
 ### Target Users
 
 **Primary: Mid-Senior Engineers**
+
 - Monitor multiple GitLab projects for organizational awareness
 - Own domains/components but aren't always tagged in related discussions
 - Experience cognitive overload with flat event feeds (40+ events to mentally parse)
@@ -48,11 +53,13 @@ Capturing relationships at data ingest time (parent links, closes patterns, part
 - Desktop-primary workflow with throughout-the-day monitoring pattern
 
 **Secondary: Tech Leads**
+
 - Need coordination visibility across teams beyond assigned work
 - Identify cross-team decisions and dependencies
 - Currently spend 5-10 hrs/week on manual sync and context-building
 
 **User Capabilities:**
+
 - Comfortable with dense, information-rich interfaces
 - Prefer scan efficiency over progressive onboarding
 - Desktop-primary with mobile for quick monitoring on the go
@@ -60,6 +67,7 @@ Capturing relationships at data ingest time (parent links, closes patterns, part
 
 **Usage Pattern:**
 Throughout-the-day ambient monitoring with interruption-based interactions:
+
 - Quick check-ins (30 seconds while waiting for build)
 - Morning triage (15 min deep review)
 - Periodic monitoring (glance while in another window)
@@ -68,17 +76,20 @@ Throughout-the-day ambient monitoring with interruption-based interactions:
 ### Target User Experience
 
 **Emotional Goals:**
+
 - **Control:** Full agency over what gets marked as read, when, and how
 - **Confidence:** Trust that relevant activity is surfaced, nothing important missed
 
 **Core 'Aha' Moment:**
 Immediate understanding of new activity context - seeing at a glance:
+
 - What changed in this work item
 - Why it might matter to me (keywords, components, participants)
 - Whether I should investigate further
 
 **Success Metric:**
 Time to correctly triage - not just speed, not just accuracy, but both. Users can quickly and accurately determine:
+
 - Is this relevant to my expertise/domain?
 - Do I have context others don't?
 - Should I contribute to this conversation?
@@ -86,30 +97,35 @@ Time to correctly triage - not just speed, not just accuracy, but both. Users ca
 ### Key Design Challenges
 
 1. **Scan Efficiency Through Context Surfacing**
+
    - Collapsed cards must surface ALL new content in summary form
    - One-line summaries show: what changed + why it might matter
    - Visual hierarchy for instant read/unread distinction
    - Support sustained attention (low visual fatigue for all-day usage)
 
-2. **Three-Way Read Tracking System**
+1. **Three-Way Read Tracking System**
+
    - **Expand in-place** → Marks as read (investigating activity timeline)
    - **Open side panel** → Marks as read (deep dive into full context)
    - **Mark Read button** → Quick dismiss without opening (evaluated, not relevant)
    - NEW badge transforms to Mark Read button on hover (space-efficient interaction)
    - Debounce timing: ~1 second (fine-tune during development)
 
-3. **Three-Level Progressive Disclosure**
+1. **Three-Level Progressive Disclosure**
+
    - **Collapsed:** One-line summary with title, status, context signals (repo, component, keywords), NEW badge
    - **Expanded (in-place):** Shows all new activity within card (no hiding, user can scroll)
    - **Detail pane (side panel):** Click card header opens side panel with full context, scrolled to newest content automatically
 
-4. **Organizational Intelligence Signals**
+1. **Organizational Intelligence Signals**
+
    - Visual hierarchy emphasizes context relevance, not personal assignment
    - Show: Which repo? Which component? What keywords matched?
    - De-emphasize: "Is this assigned to me?" (GitLab already handles that)
    - Support discovery of unknown relevance
 
-5. **Interruption-Stable State**
+1. **Interruption-Stable State**
+
    - App state persists across micro-sessions (check, code, check again)
    - Visual design supports low cognitive load for sustained monitoring
    - New items arriving during session appear at top (no special notification)
@@ -117,27 +133,31 @@ Time to correctly triage - not just speed, not just accuracy, but both. Users ca
 ### Design Opportunities
 
 1. **Visual Language for Read State**
+
    - Unread cards: Bold, higher contrast, NEW badge
    - NEW badge → Mark Read button on hover (elegant state transition)
    - Read cards: Reduced opacity/contrast, no badge
    - Unread count indicator: Prominent when >0, green/zero when all caught up
 
-2. **Smart Activity Summaries**
+1. **Smart Activity Summaries**
+
    - Context signals: Repo, component, matched keywords
    - Usernames as distinct text (no @mention noise)
    - GitLab avatars if available (visual scanning aid)
    - Participant count + latest comment preview
 
-3. **Auto-Scroll Intelligence**
+1. **Auto-Scroll Intelligence**
+
    - Side panel opens scrolled to newest content (zero wasted time)
    - Saves 3-5 seconds per card × 20 cards = 60-100 seconds per triage session
 
-4. **Mobile-Optimized Monitoring**
+1. **Mobile-Optimized Monitoring**
+
    - Intersection observer for scroll-into-view read marking
    - Detail pane as full-screen overlay on mobile
    - Touch-friendly expand/collapse interactions
 
----
+______________________________________________________________________
 
 ## Core User Experience
 
@@ -149,9 +169,10 @@ The core experience centers on **scan-to-decision** - enabling users to determin
 "Discover conversations about my domains that I wasn't tagged in, and determine if my expertise is needed - all within 3-5 seconds of scanning the collapsed card."
 
 **Primary User Loop:**
+
 1. Scan collapsed card one-liner (what changed + why it might matter)
-2. Make relevance decision (relevant to my expertise/domain?)
-3. Act on decision:
+1. Make relevance decision (relevant to my expertise/domain?)
+1. Act on decision:
    - **Not relevant:** Click Mark Read button (quick dismissal)
    - **Might be relevant:** Expand in-place to scan activity timeline
    - **Definitely relevant:** Open side panel for full context investigation
@@ -171,6 +192,7 @@ Users can discover conversations about their domains that they weren't tagged in
 **How Users Currently Solve This Problem:**
 
 **Existing Solutions:**
+
 - **GitLab notifications:** Only shows assigned work or @mentions (reactive, not proactive)
 - **Manual monitoring:** Check projects/MRs/issues manually throughout day (5-10 hrs/week overhead)
 - **Slack channels:** Conversation context scattered, no work item structure
@@ -182,18 +204,21 @@ Users think in terms of **work items and their activity**, not timelines. When t
 **User Expectations:**
 
 **What Users Love About Gmail:**
+
 - Bold vs. normal weight instantly shows read/unread
 - List stays visible while reading email in side panel
 - Can mark read without opening (archive/delete shortcuts)
 - Keyboard shortcuts for power users (post-MVP for us)
 
 **What Users Love About Datadog:**
+
 - Alert severity is instant (color + badge)
 - Grouped alerts prevent repetition
 - Can silence/acknowledge explicitly (control over state)
 - Context on hover (minimal interaction for common actions)
 
 **What Users Hate About Current Solutions:**
+
 - **GitLab notifications:** Only reactive (@mentions), miss proactive discovery
 - **Manual monitoring:** Time-consuming, unsustainable overhead
 - **Email/Slack:** Conversation scattered, no work item structure
@@ -202,20 +227,23 @@ Users think in terms of **work items and their activity**, not timelines. When t
 **Mental Model Expectations:**
 
 Users expect to:
+
 1. **See work items, not events** - "Show me issues and MRs, not individual comments"
-2. **Determine relevance instantly** - "Does this affect my domain?" (3-5 second assessment)
-3. **Control read state explicitly** - "I decide when it's read, not the system"
-4. **Investigate at own depth** - "Quick scan or deep dive, my choice"
-5. **Discover proactively** - "Show me things I should know about, not just things I'm assigned"
+1. **Determine relevance instantly** - "Does this affect my domain?" (3-5 second assessment)
+1. **Control read state explicitly** - "I decide when it's read, not the system"
+1. **Investigate at own depth** - "Quick scan or deep dive, my choice"
+1. **Discover proactively** - "Show me things I should know about, not just things I'm assigned"
 
 **Where Users Get Confused:**
 
 **Potential Confusion Points:**
+
 - **NEW badge vs. Mark Read button** - Hover transforms badge to button (requires discovery)
 - **Three-way read marking** - Multiple paths to mark as read (button, expand, side panel)
 - **Unread count behavior** - How it decrements based on different actions
 
 **Our Mitigation Strategy:**
+
 - Clear visual feedback on hover (NEW → Mark Read transformation)
 - Consistent behavior across all marking methods
 - Predictable state transitions (no surprise auto-marking)
@@ -227,52 +255,59 @@ Users expect to:
 **Users Feel Successful When:**
 
 1. **Discovery Works** - They find conversations about their domains that they weren't tagged in
-2. **Relevance Assessment is Fast** - 3-5 seconds per work item to determine "does this matter to me?"
-3. **Context is Sufficient** - Collapsed one-liner has enough information to make relevance decision
-4. **Control is Maintained** - Full agency over what gets marked read, when, and how
-5. **Completion is Clear** - Unread count shows progress, green/zero state signals "all caught up"
+1. **Relevance Assessment is Fast** - 3-5 seconds per work item to determine "does this matter to me?"
+1. **Context is Sufficient** - Collapsed one-liner has enough information to make relevance decision
+1. **Control is Maintained** - Full agency over what gets marked read, when, and how
+1. **Completion is Clear** - Unread count shows progress, green/zero state signals "all caught up"
 
 **Success Indicators:**
 
 **Cognitive Success:**
+
 - "I understand what changed without expanding" - Collapsed card communicates clearly
 - "I know if this matters to me" - Context signals (repo, component, keywords) surface relevance
 - "I trust I'm not missing anything" - Transparent filtering, predictable behavior
 
 **Emotional Success:**
+
 - "I feel in control" - Three-way read marking gives flexibility
 - "I feel confident" - Trust that relevant activity is surfaced
 - "I feel calm" - Low visual fatigue, no anxiety-inducing styling
 
 **Behavioral Success:**
+
 - Users complete triage quickly (scanning 20 cards in 60-100 seconds)
 - Users discover at least one conversation they weren't tagged in per week
 - Users join discussions early enough to influence outcomes
 
 **System Feedback Success:**
+
 - Auto-scroll to newest content saves 3-5 seconds per card
 - NEW → Mark Read button transformation on hover is discovered within first 5 uses
 - Unread count updates immediately after marking actions
 
 **Speed Metrics:**
+
 - 3-5 seconds per collapsed card scan (relevance decision)
-- <200ms for expand/collapse animation (feels instant)
-- <500ms for side panel open + auto-scroll (fast enough to maintain flow)
+- \<200ms for expand/collapse animation (feels instant)
+- \<500ms for side panel open + auto-scroll (fast enough to maintain flow)
 
 **Accuracy Metrics:**
+
 - Users can determine relevance from collapsed card >90% of time (without expanding)
-- False positives <10% (marked as read without investigation, but should have investigated)
-- False negatives <5% (expanded but wasn't relevant)
+- False positives \<10% (marked as read without investigation, but should have investigated)
+- False negatives \<5% (expanded but wasn't relevant)
 
 **What Makes Users Say "This Just Works":**
 
 1. **Instant relevance assessment** - Context signals answer "why might this matter to me?"
-2. **No wasted time** - Auto-scroll to newest content, no hunting
-3. **Predictable behavior** - State transitions are consistent and expected
-4. **Flexible investigation** - Can go shallow or deep based on relevance
-5. **Clear completion** - Unread count → zero feels satisfying
+1. **No wasted time** - Auto-scroll to newest content, no hunting
+1. **Predictable behavior** - State transitions are consistent and expected
+1. **Flexible investigation** - Can go shallow or deep based on relevance
+1. **Clear completion** - Unread count → zero feels satisfying
 
 **Automatic Behaviors:**
+
 - Side panel auto-scrolls to newest content (zero manual scrolling)
 - New items appear silently at top (no jarring notifications)
 - Read tracking infers from natural investigation actions
@@ -287,18 +322,21 @@ The Work Item Grouping experience **combines familiar patterns in innovative way
 **Established Patterns We Use:**
 
 **From Gmail:**
+
 - ✅ Bold/normal weight for read/unread (proven, intuitive)
 - ✅ List + side panel layout (familiar to email users)
 - ✅ Batch operations (mark all as read in sections)
 - ✅ Auto-scroll to content (Gmail scrolls to unread in threads)
 
 **From Datadog:**
+
 - ✅ Status color coding (green/gray/blue for merged/closed/open)
 - ✅ Badge indicators (small, unobtrusive NEW badge)
 - ✅ Grouped clustering (Issues and MRs in separate sections)
 - ✅ Explicit acknowledge pattern (Mark Read button)
 
 **From Modern Web Apps:**
+
 - ✅ Collapsible cards/accordions (familiar expand/collapse pattern)
 - ✅ Hover state enhancements (additional controls appear on hover)
 - ✅ Progressive disclosure (collapsed → expanded → detail)
@@ -306,24 +344,28 @@ The Work Item Grouping experience **combines familiar patterns in innovative way
 **Novel Innovations (Unique Twists):**
 
 **1. Three-Way Read Marking**
+
 - **Novel aspect:** Three distinct paths to mark as read, each signaling different investigation depth
 - **Familiar metaphor:** Gmail's archive/delete options, but adapted for investigation depth
 - **User education strategy:** Visual feedback on hover, consistent state transitions
 - **Why novel:** Most apps have one-way (open = read) or two-way (mark read button + open). We have three paths that preserve investigation intent.
 
 **2. NEW Badge → Mark Read Button Transformation**
+
 - **Novel aspect:** Hover transforms informational badge into actionable button
 - **Familiar metaphor:** Hover menus in modern web apps (Gmail's archive/snooze on hover)
 - **User education strategy:** Clear hover state, button appears smoothly (200ms fade-in)
 - **Why novel:** Badge and button occupy same visual space, reducing UI density while maintaining discoverability
 
 **3. Context Signals as First-Class Information**
+
 - **Novel aspect:** Repo, component, keywords shown upfront in collapsed state (not just title + timestamp)
 - **Familiar metaphor:** Email headers showing sender/subject/snippet
 - **User education strategy:** Visual hierarchy makes signals obvious, no explanation needed
 - **Why novel:** Most work item tools show assignment or status. We show domain relevance signals to support proactive discovery.
 
 **4. Auto-Scroll to Newest Content in Side Panel**
+
 - **Novel aspect:** Side panel opens scrolled to newest activity automatically
 - **Familiar metaphor:** Gmail's scroll-to-unread in threads, Slack's jump-to-latest
 - **User education strategy:** Happens automatically, zero learning curve
@@ -348,18 +390,21 @@ The Work Item Grouping experience **combines familiar patterns in innovative way
 **Teaching Strategy for Novel Patterns:**
 
 **No Onboarding Tutorial Needed:**
+
 - Familiar patterns provide scaffolding (users recognize list + side panel from Gmail)
 - Novel aspects use visual feedback (hover shows Mark Read button, no explanation needed)
 - Progressive disclosure means users can explore at own pace
 
 **First-Time Discovery Path:**
+
 1. See collapsed cards with NEW badges (familiar notification pattern)
-2. Hover over NEW badge → transforms to Mark Read button (visual discovery)
-3. Expand card → activity timeline appears (familiar accordion pattern)
-4. Click card header → side panel opens (familiar list + detail pattern)
-5. Notice side panel is scrolled to newest content → "oh, it jumped to what's new!" (automatic behavior, no teaching needed)
+1. Hover over NEW badge → transforms to Mark Read button (visual discovery)
+1. Expand card → activity timeline appears (familiar accordion pattern)
+1. Click card header → side panel opens (familiar list + detail pattern)
+1. Notice side panel is scrolled to newest content → "oh, it jumped to what's new!" (automatic behavior, no teaching needed)
 
 **Visual Cues for Novel Behaviors:**
+
 - Hover state shows Mark Read button (discovers transformation pattern)
 - Click affordance on card header (cursor changes, hover highlight)
 - Auto-scroll happens automatically (zero teaching needed, just works)
@@ -373,16 +418,19 @@ Let's design the step-by-step flow for the **scan-to-decision core interaction**
 #### 1. Initiation
 
 **How Users Start:**
+
 - User opens GitLab Insights app (desktop browser or mobile)
 - Work item list view loads with collapsed cards
 - Unread count indicator shows number of NEW items at top
 
 **What Triggers/Invites Action:**
+
 - NEW badge on collapsed cards (visual signal of unread activity)
 - Unread count at top of list (motivates triage)
 - Olive accent border on unread cards (draws attention)
 
 **Visual State:**
+
 - Unread cards: Bold title, olive border, NEW badge, higher contrast text
 - Read cards: Normal weight, gray border, reduced opacity
 - List sorted: Unread items float to top, then by most recent activity
@@ -392,33 +440,37 @@ Let's design the step-by-step flow for the **scan-to-decision core interaction**
 **What User Does:**
 
 **Path A: Quick Dismissal (Mark Read Without Investigation)**
+
 1. User hovers over collapsed card with NEW badge
-2. NEW badge transforms to "Mark Read" button (200ms fade-in)
-3. User clicks Mark Read button
-4. Card immediately transitions to read state (opacity reduction, border change, weight change)
-5. Unread count decrements by 1
-6. User continues to next card
+1. NEW badge transforms to "Mark Read" button (200ms fade-in)
+1. User clicks Mark Read button
+1. Card immediately transitions to read state (opacity reduction, border change, weight change)
+1. Unread count decrements by 1
+1. User continues to next card
 
 **Path B: In-Place Investigation (Expand to Scan Activity)**
+
 1. User clicks anywhere on collapsed card (except Mark Read button area)
-2. Card expands with 200ms ease-out animation
-3. Activity timeline appears showing all new events within work item
-4. After ~1 second (debounce), card is automatically marked as read
-5. Card visual state updates (NEW badge disappears, read styling applies)
-6. Unread count decrements by 1
-7. User scans activity timeline, then collapses or moves to next card
+1. Card expands with 200ms ease-out animation
+1. Activity timeline appears showing all new events within work item
+1. After ~1 second (debounce), card is automatically marked as read
+1. Card visual state updates (NEW badge disappears, read styling applies)
+1. Unread count decrements by 1
+1. User scans activity timeline, then collapses or moves to next card
 
 **Path C: Deep Investigation (Side Panel for Full Context)**
+
 1. User clicks card header (work item title)
-2. Side panel slides in from right (200ms animation)
-3. Side panel auto-scrolls to newest content within work item
-4. Card immediately marked as read (user has committed to investigation)
-5. Card visual state updates in list view
-6. Unread count decrements by 1
-7. User reads full context in side panel
-8. User closes side panel (or opens next work item)
+1. Side panel slides in from right (200ms animation)
+1. Side panel auto-scrolls to newest content within work item
+1. Card immediately marked as read (user has committed to investigation)
+1. Card visual state updates in list view
+1. Unread count decrements by 1
+1. User reads full context in side panel
+1. User closes side panel (or opens next work item)
 
 **Controls/Inputs:**
+
 - Mouse hover (triggers NEW → Mark Read transformation)
 - Click Mark Read button (Path A)
 - Click card body (Path B - expand in-place)
@@ -429,6 +481,7 @@ Let's design the step-by-step flow for the **scan-to-decision core interaction**
 **System Response:**
 
 **Visual Feedback:**
+
 - Hover: NEW badge → Mark Read button (200ms fade-in)
 - Click Mark Read: Immediate visual state change (opacity, border, weight, badge removal)
 - Expand: 200ms ease-out animation, activity timeline appears
@@ -436,6 +489,7 @@ Let's design the step-by-step flow for the **scan-to-decision core interaction**
 - Unread count: Immediate decrement after each marking action
 
 **State Updates:**
+
 - Read status persists to database
 - Unread count updates in real-time
 - Visual state changes are immediate (no lag)
@@ -445,17 +499,20 @@ Let's design the step-by-step flow for the **scan-to-decision core interaction**
 **What Tells Users They're Succeeding:**
 
 **Visual Feedback:**
+
 - Card transitions to read state (opacity reduction, gray border, normal weight)
 - NEW badge disappears
 - Unread count decrements (progress toward zero)
 - Green/zero state when all caught up (success indicator)
 
 **Behavioral Feedback:**
+
 - Auto-scroll to newest content saves time (3-5 seconds per card)
 - Collapsed one-liner has sufficient context for decision (90%+ accuracy)
 - Three-way marking options match different investigation depths
 
 **How They Know It's Working:**
+
 - Discover at least one conversation they weren't tagged in (validates organizational intelligence)
 - Complete triage in 60-100 seconds for 20 cards (efficiency goal)
 - Trust they haven't missed important activity (confidence)
@@ -463,16 +520,19 @@ Let's design the step-by-step flow for the **scan-to-decision core interaction**
 **If They Make a Mistake:**
 
 **Accidental Mark Read:**
+
 - No undo in MVP (out of scope)
 - Mitigation: Can still open card and view activity (marking doesn't hide content)
 - Future: Undo toast notification (post-MVP)
 
 **Expanded Wrong Card:**
+
 - Card is marked as read after ~1 second debounce
 - Mitigation: 1 second gives time to collapse if wrong card
 - Future: Adjust debounce timing based on user testing
 
 **Opened Side Panel for Wrong Work Item:**
+
 - Immediate mark as read (no debounce for side panel)
 - Mitigation: List stays visible, can open correct card
 - Future: Undo functionality (post-MVP)
@@ -482,12 +542,14 @@ Let's design the step-by-step flow for the **scan-to-decision core interaction**
 **How Users Know They're Done:**
 
 **Visual Completion Signals:**
+
 - Unread count reaches zero
 - Green/zero state indicator at top ("All caught up!")
 - All cards show read styling (normal weight, gray border, reduced opacity)
 - No NEW badges visible in list
 
 **Successful Outcome:**
+
 - User has assessed relevance of all new activity
 - Discovered conversations about their domains (organizational intelligence validated)
 - Joined relevant discussions or marked irrelevant items as read
@@ -496,20 +558,20 @@ Let's design the step-by-step flow for the **scan-to-decision core interaction**
 **What's Next:**
 
 **After Triage Completion:**
+
 - Return to coding/work (app remains open for periodic monitoring)
 - Throughout-the-day pattern: check again when switching context
 - New items arrive silently at top of list (no jarring notifications)
 - Unread count increments as new activity appears
 
 **Ongoing Pattern:**
+
 - Morning deep triage (15 min review after absence)
 - Throughout-day quick checks (30 second glances)
 - Post-absence catch-up (Monday morning pattern)
 - Periodic monitoring while coding (glance while in another window)
 
-
-
----
+______________________________________________________________________
 
 ## Desired Emotional Response
 
@@ -520,6 +582,7 @@ Let's design the step-by-step flow for the **scan-to-decision core interaction**
 The core emotional goal is creating a state of calm, confident organizational awareness. Users feel strategically informed without anxiety or overwhelm, maintaining full control over their attention while trusting they're not missing critical conversations.
 
 **Key Emotional States:**
+
 - **Control:** Full agency over what gets marked as read, when, and how
 - **Confidence:** Trust that relevant activity is surfaced, nothing important missed
 - **Calm awareness:** Monitoring organizational activity without stress or anxiety
@@ -532,24 +595,30 @@ This creates **proactive discovery** feelings vs. GitLab's **reactive notificati
 ### Emotional Journey Mapping
 
 **First Discovery:**
+
 - Curious and hopeful - "Could this solve my organizational awareness problem?"
 
 **First Use (Initial Triage):**
+
 - Skeptical → Validated - "This actually surfaced a discussion I care about that I wasn't tagged in. This works."
 
 **During Core Experience (Scanning Cards):**
+
 - Focused and efficient - In flow state, making rapid relevance decisions
 - Calm control - Not overwhelmed, not anxious, methodically working through cards
 
 **After Completing Triage:**
+
 - Satisfied confidence - "I know what's happening. I can go back to coding."
 - Professional competence - "I'm strategically aware, not just reactively responsive"
 
 **If Something Goes Wrong:**
+
 - Momentary confusion → Quick recovery - System makes it easy to get unstuck
 - Trust maintained - One confusing card doesn't undermine confidence in whole system
 
 **When Returning Throughout Day:**
+
 - Habitual trust - App becomes reliable part of workflow
 - No friction - Opening the app feels natural, not like a chore
 
@@ -575,28 +644,33 @@ Monitoring organizational activity doesn't create stress. Low visual fatigue, si
 **Emotion-Design Connections:**
 
 **Control** → Three-way read marking options
+
 - Mark Read button (quick dismissal without investigation)
 - Expand in-place (scan activity timeline)
 - Side panel (deep dive into full context)
 - Users choose investigation depth, system doesn't force interaction
 
 **Confidence** → Context signals visible in collapsed state
+
 - Repo, component, keywords shown upfront
 - No hidden relevance logic
 - Predictable behavior and consistent visual language
 
 **Calm Awareness** → Low-stimulation design
+
 - Visual design supports sustained attention (8+ hours)
 - Silent updates when new items arrive
 - No aggressive badge counts or notifications
 - Reduced opacity for read items (visual calm)
 
 **Efficient Competence** → Speed optimizations
+
 - Auto-scroll to newest content (saves 3-5 seconds per card)
 - 3-5 second scan-to-decision target
 - Unread count shows progress toward completion
 
 **Trust** → Transparent state management
+
 - Clear visual feedback when state changes (hover → Mark Read button)
 - Predictable read tracking triggers
 - Consistent interaction patterns
@@ -604,26 +678,31 @@ Monitoring organizational activity doesn't create stress. Low visual fatigue, si
 ### Emotional Design Principles
 
 1. **Design for Calm, Not Excitement**
+
    - This is an ambient awareness tool, not a notification center
    - Low visual fatigue over flashy interactions
    - Silent updates over attention-grabbing alerts
 
-2. **Control Builds Confidence**
+1. **Control Builds Confidence**
+
    - Users with agency over read state trust the system more
    - Flexibility (three marking options) reduces anxiety
    - Predictable behavior prevents distrust
 
-3. **Clarity Prevents Anxiety**
+1. **Clarity Prevents Anxiety**
+
    - Instant visual distinction (read/unread, new/old)
    - Context signals answer "why might this matter?" upfront
    - No hidden logic or surprise behaviors
 
-4. **Progress Enables Satisfaction**
+1. **Progress Enables Satisfaction**
+
    - Visible unread count shows triage progress
    - Clear completion state (green/zero) creates closure
    - Quick wins (Mark Read button) maintain momentum
 
-5. **Trust Through Transparency**
+1. **Trust Through Transparency**
+
    - No hidden algorithms or mystery scoring
    - Predictable state transitions
    - Honest about what's being shown and why
@@ -631,6 +710,7 @@ Monitoring organizational activity doesn't create stress. Low visual fatigue, si
 ### Emotions to Actively Avoid
 
 **Design Choices That Create Negative Emotions:**
+
 - Aggressive auto-marking → Helplessness
 - Hidden relevance logic → Distrust
 - Overwhelming notifications → Anxiety
@@ -638,7 +718,7 @@ Monitoring organizational activity doesn't create stress. Low visual fatigue, si
 - Unclear visual states → Confusion
 - Time pressure or urgency signals → Stress
 
----
+______________________________________________________________________
 
 ## Design System Integration
 
@@ -649,6 +729,7 @@ Monitoring organizational activity doesn't create stress. Low visual fatigue, si
 **Existing Design System:** HeroUI (React Aria-based component library)
 
 **Why This Works:**
+
 - **Accessibility foundation:** React Aria ensures WCAG AA+ compliance and exceptional keyboard navigation
 - **Component library:** Pre-built Table, Tooltip, Modal, Button, Autocomplete, Checkbox components
 - **Theme system:** CSS variables and theme tokens enable systematic customization
@@ -707,6 +788,7 @@ Semibold:  600   /* Headings, section titles */
 ### Work Item Grouping Extensions
 
 **What We Inherit:**
+
 - ✅ HeroUI component library (Table, Modal, Button, etc.)
 - ✅ Olive/moss green accent color system
 - ✅ Dark mode support (already implemented)
@@ -717,6 +799,7 @@ Semibold:  600   /* Headings, section titles */
 **What We Extend for Work Item Grouping:**
 
 **1. Collapsible Card Component (New)**
+
 - **Base:** HeroUI Accordion or custom composition using React Aria disclosure
 - **Visual treatment:** Olive border when has NEW items, subtle gray when read
 - **States:** Collapsed (default), Expanding (animation), Expanded, Collapsing
@@ -724,18 +807,21 @@ Semibold:  600   /* Headings, section titles */
 - **Animation:** 200ms ease-out (consistent with existing split pane pattern)
 
 **2. NEW Badge Treatment**
+
 - **Style:** Small olive badge (existing accent color)
 - **Behavior:** Transforms to "Mark Read" button on hover (space-efficient)
 - **Typography:** text-xs (11px), medium weight (500)
 - **Color:** Uses existing olive accent (dark: #9DAA5F, light: #5e6b24)
 
 **3. Unread Count Indicator**
+
 - **Style:** Prominent badge when >0, green success color when zero/caught up
 - **Color:** Olive for unread count, green (#22C55E dark, #16A34A light) for zero state
 - **Typography:** text-sm (13px), semibold weight (600)
 - **Location:** Top of work item list, always visible
 
 **4. Read/Unread Visual States**
+
 - **Unread cards:**
   - Bold title (weight: 600)
   - Higher contrast text (gray-50 in dark mode, gray-900 in light mode)
@@ -748,6 +834,7 @@ Semibold:  600   /* Headings, section titles */
   - Subtle gray border (1px)
 
 **5. Activity Timeline Within Expanded Card**
+
 - **Layout:** Vertical timeline with events
 - **Event items:** Uses existing event type colors (purple for issues, blue for MRs, gray for comments)
 - **Typography:** text-sm for event text, text-xs for timestamps
@@ -755,6 +842,7 @@ Semibold:  600   /* Headings, section titles */
 - **Visual:** Left border line connects events (gray-600 in dark, gray-200 in light)
 
 **6. Side Panel for Detail View**
+
 - **Pattern:** Similar to existing split pane pattern in main app
 - **Animation:** 200ms slide-in from right (consistent with existing pattern)
 - **Auto-scroll:** Scrolls to newest content automatically (existing pattern from main UX spec)
@@ -774,11 +862,11 @@ Semibold:  600   /* Headings, section titles */
 **Design System Consistency Rules:**
 
 1. **Use existing color system** - No new colors, only new applications of olive accent
-2. **Follow spacing grid** - All spacing uses 8px increments
-3. **Match typography scale** - No new font sizes or weights
-4. **Maintain accessibility** - All new components meet WCAG AA standards
-5. **Dark mode native** - Design for both modes simultaneously
-6. **Animation consistency** - 200ms ease-out for all transitions
+1. **Follow spacing grid** - All spacing uses 8px increments
+1. **Match typography scale** - No new font sizes or weights
+1. **Maintain accessibility** - All new components meet WCAG AA standards
+1. **Dark mode native** - Design for both modes simultaneously
+1. **Animation consistency** - 200ms ease-out for all transitions
 
 **Benefits of Extending Existing System:**
 
@@ -789,7 +877,690 @@ Semibold:  600   /* Headings, section titles */
 - ✅ **Faster development** - Reuse existing components, no new system to build
 - ✅ **Maintenance aligned** - Updates to design system benefit both features
 
----
+______________________________________________________________________
+
+## Visual Foundation
+
+### 3.1 Foundation Reference
+
+**Work Item Grouping uses the existing GitLab Insights visual foundation** documented in Section 6 (Design System Integration) above. This section documents Work Item Grouping-specific visual treatments and extensions.
+
+**Inherited Foundation:**
+
+- ✅ HeroUI component library with React Aria accessibility
+- ✅ Olive/moss green accent color (dark: #9DAA5F, light: #5e6b24)
+- ✅ Typography scale (11px-18px, Linear-inspired)
+- ✅ Spacing system (8px grid)
+- ✅ Dark mode support (native, both modes designed simultaneously)
+- ✅ Semantic colors (success, warning, error, info)
+
+### 3.2 Work Item Grouping-Specific Visual Treatments
+
+#### Collapsed Card Visual States
+
+**Unread Card (Has NEW Activity):**
+
+```css
+/* Card Container */
+background: var(--bg-dark);           /* hsl(0, 2%, 18%) - #2d2e2e */
+border: 2px solid hsl(68, 36%, 52%);  /* Olive accent - #9DAA5F */
+border-radius: 8px;
+padding: 16px;                         /* spacing-4 */
+box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+
+/* Work Item Title */
+font-size: 14px;                       /* text-base */
+font-weight: 600;                      /* Semibold - unread emphasis */
+color: hsl(0, 0%, 95%);               /* gray-50 - high contrast */
+line-height: 24px;
+
+/* One-Liner Summary */
+font-size: 13px;                       /* text-sm */
+font-weight: 400;                      /* Regular */
+color: hsl(0, 0%, 85%);               /* gray-200 - readable */
+line-height: 20px;
+margin-top: 8px;                       /* spacing-2 */
+
+/* NEW Badge */
+background: hsl(68, 36%, 52%);        /* Olive accent */
+color: hsl(0, 2%, 18%);               /* Dark text on olive */
+font-size: 11px;                       /* text-xs */
+font-weight: 500;                      /* Medium */
+padding: 2px 8px;                      /* Compact badge */
+border-radius: 4px;
+text-transform: uppercase;
+letter-spacing: 0.5px;
+
+/* NEW Badge → Mark Read Button (Hover State) */
+/* Same dimensions, smooth 200ms transition */
+background: hsl(68, 36%, 52%);        /* Olive accent */
+color: hsl(0, 2%, 18%);               /* Dark text */
+padding: 4px 12px;                     /* Slightly larger for button */
+border-radius: 4px;
+cursor: pointer;
+transition: all 200ms ease-out;
+
+/* Mark Read Button Hover */
+background: hsl(68, 36%, 60%);        /* Lighter olive on hover */
+```
+
+**Read Card (Marked as Read):**
+
+```css
+/* Card Container */
+background: var(--bg-dark);           /* Same background */
+border: 1px solid hsl(0, 0%, 30%);   /* Subtle gray border - #4d4d4d */
+border-radius: 8px;
+padding: 16px;                         /* spacing-4 */
+opacity: 0.7;                          /* Reduced prominence */
+
+/* Work Item Title */
+font-size: 14px;                       /* text-base */
+font-weight: 400;                      /* Regular - read state */
+color: hsl(0, 0%, 70%);               /* gray-300 - lower contrast */
+line-height: 24px;
+
+/* One-Liner Summary */
+font-size: 13px;                       /* text-sm */
+font-weight: 400;                      /* Regular */
+color: hsl(0, 0%, 60%);               /* gray-400 - subdued */
+line-height: 20px;
+margin-top: 8px;                       /* spacing-2 */
+
+/* No Badge (read state) */
+```
+
+#### Expanded Card Visual Treatment
+
+**Activity Timeline (Within Expanded Card):**
+
+```css
+/* Timeline Container */
+padding: 16px 0;                       /* spacing-4 vertical */
+margin-top: 12px;                      /* spacing-3 */
+border-top: 1px solid hsl(0, 0%, 25%); /* Subtle separator */
+
+/* Timeline Item */
+display: flex;
+gap: 12px;                             /* spacing-3 */
+margin-bottom: 12px;                   /* spacing-3 between items */
+position: relative;
+
+/* Timeline Connector Line */
+position: absolute;
+left: 16px;                            /* Aligned to event type icon */
+top: 28px;
+bottom: -12px;
+width: 2px;
+background: hsl(0, 0%, 35%);          /* gray-600 */
+
+/* Event Type Icon */
+width: 32px;                           /* Fixed width for alignment */
+height: 32px;
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+background: hsl(280, 67%, 55%);       /* Purple for issues */
+/* OR */
+background: hsl(199, 92%, 60%);       /* Blue for MRs */
+/* OR */
+background: hsl(0, 0%, 50%);          /* Gray for comments */
+
+/* Event Text */
+font-size: 13px;                       /* text-sm */
+font-weight: 400;                      /* Regular */
+color: hsl(0, 0%, 85%);               /* gray-200 */
+line-height: 20px;
+flex: 1;
+
+/* Timestamp */
+font-size: 11px;                       /* text-xs */
+font-weight: 400;                      /* Regular */
+color: hsl(0, 0%, 55%);               /* gray-400 - metadata */
+margin-top: 4px;                       /* spacing-1 */
+```
+
+#### Unread Count Indicator
+
+**Count Badge (Top of List):**
+
+```css
+/* Container */
+display: flex;
+align-items: center;
+gap: 8px;                              /* spacing-2 */
+padding: 12px 16px;                    /* spacing-3, spacing-4 */
+background: hsl(0, 2%, 16%);          /* Slightly darker than cards */
+border-radius: 8px;
+margin-bottom: 16px;                   /* spacing-4 */
+
+/* Count Badge (Unread > 0) */
+background: hsl(68, 36%, 52%);        /* Olive accent */
+color: hsl(0, 2%, 18%);               /* Dark text */
+font-size: 13px;                       /* text-sm */
+font-weight: 600;                      /* Semibold - prominent */
+padding: 4px 12px;
+border-radius: 12px;                   /* Pill shape */
+min-width: 32px;
+text-align: center;
+
+/* Count Badge (Zero State - Caught Up) */
+background: hsl(142, 71%, 45%);       /* Success green - #22C55E */
+color: hsl(0, 0%, 100%);              /* White text */
+font-size: 13px;                       /* text-sm */
+font-weight: 600;                      /* Semibold */
+padding: 4px 12px;
+border-radius: 12px;                   /* Pill shape */
+
+/* Label Text */
+font-size: 14px;                       /* text-base */
+font-weight: 500;                      /* Medium */
+color: hsl(0, 0%, 85%);               /* gray-200 */
+```
+
+#### Side Panel Visual Treatment
+
+**Side Panel Container:**
+
+```css
+/* Panel */
+position: fixed;
+right: 0;
+top: 0;
+bottom: 0;
+width: 600px;                          /* Desktop width */
+background: hsl(0, 2%, 18%);          /* --bg-dark */
+border-left: 1px solid hsl(0, 0%, 25%); /* Subtle separator */
+box-shadow: -4px 0 16px rgba(0,0,0,0.3); /* Depth shadow */
+z-index: 1000;
+animation: slideIn 200ms ease-out;
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* Panel Header */
+padding: 20px 24px;                    /* spacing-5, spacing-6 */
+border-bottom: 1px solid hsl(0, 0%, 25%);
+display: flex;
+justify-content: space-between;
+align-items: center;
+
+/* Work Item Title in Panel */
+font-size: 16px;                       /* text-lg */
+font-weight: 600;                      /* Semibold */
+color: hsl(0, 0%, 95%);               /* gray-50 */
+line-height: 24px;
+
+/* Close Button */
+width: 32px;
+height: 32px;
+border-radius: 4px;
+display: flex;
+align-items: center;
+justify-content: center;
+background: transparent;
+border: none;
+color: hsl(0, 0%, 70%);               /* gray-300 */
+cursor: pointer;
+transition: background 200ms ease-out;
+
+/* Close Button Hover */
+background: hsl(0, 0%, 25%);          /* Subtle background */
+color: hsl(0, 0%, 95%);               /* Lighter text */
+
+/* Panel Content */
+padding: 24px;                         /* spacing-6 */
+overflow-y: auto;
+height: calc(100vh - 72px);            /* Full height minus header */
+
+/* Auto-scroll behavior: JavaScript scrolls to newest content on open */
+```
+
+#### Context Signals (Repo, Component, Keywords)
+
+**Signal Badges in Collapsed Card:**
+
+```css
+/* Signal Container */
+display: flex;
+gap: 8px;                              /* spacing-2 */
+flex-wrap: wrap;
+margin-top: 8px;                       /* spacing-2 */
+
+/* Signal Badge */
+background: hsl(0, 0%, 25%);          /* gray-700 - subtle */
+color: hsl(0, 0%, 75%);               /* gray-300 - readable */
+font-size: 11px;                       /* text-xs */
+font-weight: 500;                      /* Medium */
+padding: 2px 8px;
+border-radius: 4px;
+display: flex;
+align-items: center;
+gap: 4px;                              /* spacing-1 for icon */
+
+/* Signal Icon (if used) */
+width: 12px;
+height: 12px;
+opacity: 0.8;
+
+/* Repo Signal (first-class) */
+background: hsl(199, 50%, 30%);       /* Blue tint - repository */
+color: hsl(199, 92%, 80%);            /* Light blue text */
+
+/* Component Signal (first-class) */
+background: hsl(280, 50%, 30%);       /* Purple tint - component */
+color: hsl(280, 67%, 80%);            /* Light purple text */
+
+/* Keyword Signal (contextual) */
+background: hsl(0, 0%, 25%);          /* Gray - less prominent */
+color: hsl(0, 0%, 75%);               /* Gray text */
+```
+
+### 3.3 Animation & Transition Specifications
+
+**All animations use 200ms ease-out for consistency with existing GitLab Insights patterns.**
+
+```css
+/* Card Expand/Collapse */
+transition: height 200ms ease-out, padding 200ms ease-out;
+
+/* NEW Badge → Mark Read Button */
+transition: all 200ms ease-out;
+
+/* Side Panel Slide-In */
+animation: slideIn 200ms ease-out;
+
+/* Hover States (buttons, cards) */
+transition: background 200ms ease-out, color 200ms ease-out;
+
+/* Opacity Changes (read state transitions) */
+transition: opacity 200ms ease-out, border 200ms ease-out, font-weight 0ms;
+/* Note: font-weight has 0ms to prevent blurry animation */
+```
+
+### 3.4 Responsive Adaptations
+
+**Mobile (\<768px) Adaptations:**
+
+```css
+/* Side Panel becomes Full-Screen Overlay */
+width: 100vw;
+animation: slideUp 200ms ease-out;
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* Collapsed Card Padding Reduction */
+padding: 12px;                         /* spacing-3 - tighter on mobile */
+
+/* Font Size Adjustments */
+/* Keep same sizes - mobile users can handle desktop density */
+
+/* Touch Targets */
+/* Mark Read button: min 44px height for touch accessibility */
+min-height: 44px;
+padding: 12px 16px;                    /* Larger touch target */
+```
+
+**Tablet (768px - 1279px) Adaptations:**
+
+```css
+/* Side Panel Width Reduction */
+width: 480px;                          /* Narrower on tablets */
+
+/* Card Grid (if multiple columns in future) */
+/* Single column maintained for MVP */
+```
+
+**Desktop (≥1280px) - Default:**
+
+```css
+/* Side Panel Standard Width */
+width: 600px;
+
+/* List View Maximum Width for Readability */
+max-width: 1200px;                     /* Prevent excessive line length */
+margin: 0 auto;                        /* Center content */
+```
+
+### 3.5 AI Mockup Generation Prompts
+
+**These prompts are designed for AI image generation tools (Midjourney, DALL-E, Stable Diffusion) to create professional UI mockups matching our theme.**
+
+______________________________________________________________________
+
+#### Prompt 1: Collapsed Cards List View (Unread Items)
+
+```
+Create a professional desktop web application UI mockup for a work item management interface in dark mode. Show a vertical list of 4-5 collapsible cards representing GitLab issues and merge requests. Design specifications:
+
+THEME & COLORS:
+- Dark background: #2d2e2e (dark charcoal)
+- Accent color: #9DAA5F (olive/moss green)
+- Text: High contrast white/light gray
+- Modern, clean aesthetic inspired by Linear and Datadog
+
+CARD DESIGN (Unread State):
+- Each card has 2px olive green border (#9DAA5F)
+- Bold work item title (14px, white text)
+- One-line summary below title (13px, light gray)
+- Small "NEW" badge in top-right corner (olive background, dark text, uppercase)
+- Context badges showing repository name and component (small pills, subtle colors)
+- 8px spacing between elements, 16px internal padding
+- Subtle shadow for depth
+- Rounded corners (8px border-radius)
+
+TOP SECTION:
+- Unread count indicator showing "8 NEW ITEMS" in prominent olive badge
+- Clean, minimal header
+
+LAYOUT:
+- Consistent 24px spacing between cards
+- List is left-aligned with breathing room
+- Professional spacing and typography hierarchy
+
+STYLE:
+- Modern SaaS application aesthetic
+- Dense information display (engineer-focused)
+- Gmail-inspired read/unread distinction
+- Datadog-inspired status indicators
+- Clean, not cluttered
+- Professional desktop application feel
+- High contrast for readability
+- 16:9 desktop viewport
+```
+
+______________________________________________________________________
+
+#### Prompt 2: Collapsed Cards with Hover State (Mark Read Button)
+
+```
+Create a professional desktop web application UI mockup showing a work item card in hover state. Design specifications:
+
+THEME & COLORS:
+- Dark background: #2d2e2e (dark charcoal)
+- Accent color: #9DAA5F (olive/moss green)
+- Modern, clean aesthetic inspired by Linear and Datadog
+
+CARD DESIGN:
+- Single large card in focus (unread state)
+- 2px olive green border (#9DAA5F)
+- Bold work item title: "Add authentication middleware to API gateway"
+- One-line summary: "Discussion about implementing JWT vs OAuth2 for microservices authentication"
+- Context badges: "backend-api" (repository), "authentication" (component)
+
+HOVER STATE:
+- NEW badge has transformed into "MARK READ" button (same position, size, olive background)
+- Button has subtle hover glow/highlight effect
+- Card has slight scale or highlight to show interactivity
+- Cursor pointer visible over button
+
+LAYOUT:
+- Show card with ample padding
+- Clear visual focus on hover interaction
+- Professional button styling (not flat, has subtle depth)
+
+STYLE:
+- Modern SaaS application
+- Smooth, professional interaction design
+- Clean typography
+- High contrast for readability
+- Desktop viewport, close-up view of single card
+```
+
+______________________________________________________________________
+
+#### Prompt 3: Expanded Card with Activity Timeline
+
+```
+Create a professional desktop web application UI mockup showing an expanded work item card with activity timeline. Design specifications:
+
+THEME & COLORS:
+- Dark background: #2d2e2e (dark charcoal)
+- Accent colors: Purple (#B794F4) for issues, Blue (#38BDF8) for MRs, Gray for comments
+- Text: High contrast white/light gray
+- Modern, clean aesthetic
+
+EXPANDED CARD DESIGN:
+- Large card showing work item "Update authentication service to use OAuth2"
+- Card header with title (now marked as read - normal weight text, subtle gray border)
+- Expanded section below title showing activity timeline
+
+ACTIVITY TIMELINE:
+- Vertical timeline with left-side colored dots/icons
+- Connecting line between events (subtle gray)
+- 4-5 timeline events showing:
+  - Issue created (purple dot)
+  - Comment added (gray dot)
+  - Merge request linked (blue dot)
+  - Status changed (gray dot)
+- Each event has: icon, event description, timestamp (small gray text)
+- 12px spacing between timeline items
+- Clean, readable event descriptions (13px)
+
+VISUAL HIERARCHY:
+- Timeline events are clearly grouped
+- Subtle top border separating timeline from header
+- Proper spacing and alignment
+- Professional list design
+
+STYLE:
+- Modern SaaS application
+- Engineering tool aesthetic (dense but organized)
+- Clean typography and spacing
+- High contrast for readability
+- Desktop viewport, single expanded card in focus
+```
+
+______________________________________________________________________
+
+#### Prompt 4: Side Panel Detail View (Auto-Scrolled to New Content)
+
+```
+Create a professional desktop web application UI mockup showing a split-screen layout with side panel detail view on the right of the page. Design specifications:
+
+THEME & COLORS:
+- Dark background: #2d2e2e (dark charcoal)
+- Accent color: #9DAA5F (olive/moss green)
+- Modern, clean aesthetic inspired by Gmail's reading pane
+
+LAYOUT:
+- LEFT SIDE (40% width): Work item list with 3-4 collapsed cards (some read, some unread)
+- RIGHT SIDE (60% width): Detail panel showing full work item context
+
+DETAIL PANEL DESIGN:
+- Header with work item title "Implement rate limiting for public API endpoints"
+- Close button (X) in top-right corner
+- Content area with full issue/MR details
+- Activity feed showing comments, status changes, related MRs
+- VISUAL INDICATOR: Highlight or subtle background on newest content (auto-scrolled position)
+- Scrollbar visible showing position in content
+
+PANEL STYLING:
+- Subtle left border separating panel from list
+- Deep shadow for layering depth
+- Clean header with proper spacing
+- Content area with 24px padding
+- Professional scrollbar design
+
+LEFT SIDE (List):
+- Cards remain visible (not obscured by panel)
+- One card highlighted/selected (corresponds to panel content)
+- Clean, compact card design
+
+STYLE:
+- Modern SaaS application
+- Gmail-inspired split view pattern
+- Professional information hierarchy
+- High contrast for readability
+- Desktop viewport (1920x1080 or similar)
+- Clean, spacious layout with proper breathing room
+```
+
+______________________________________________________________________
+
+#### Prompt 5: Mobile View (Touch-Optimized)
+
+```
+Create a professional mobile web application UI mockup for work item management interface. Design specifications:
+
+THEME & COLORS:
+- Dark background: #2d2e2e (dark charcoal)
+- Accent color: #9DAA5F (olive/moss green)
+- Mobile-optimized dark theme
+
+MOBILE LAYOUT (375px width typical):
+- Top: Unread count badge "5 NEW ITEMS" (olive, prominent)
+- Below: Vertical list of 3 cards (mobile viewport shows limited items)
+
+MOBILE CARD DESIGN:
+- Slightly tighter padding (12px instead of 16px)
+- Bold work item title (14px, same as desktop)
+- One-line summary (13px)
+- NEW badge in top-right (same styling as desktop)
+- Context badges below (stacked if needed for narrow viewport)
+- Touch-optimized: minimum 44px touch targets for interactive elements
+
+MARK READ BUTTON (Touch):
+- Larger button size for touch (minimum 44px height)
+- Clear tap target
+- No hover state (touch interface)
+
+STYLE:
+- Mobile-first responsive design
+- Touch-friendly spacing and targets
+- Clean, modern mobile UI
+- High contrast for outdoor readability
+- Professional mobile application aesthetic
+- Portrait orientation (9:16 aspect ratio)
+- iOS or Android modern design language
+```
+
+______________________________________________________________________
+
+#### Prompt 6: Zero State / All Caught Up
+
+```
+Create a professional desktop web application UI mockup showing "all caught up" success state. Design specifications:
+
+THEME & COLORS:
+- Dark background: #2d2e2e (dark charcoal)
+- Success color: #22C55E (green)
+- Modern, calm aesthetic
+
+ZERO STATE DESIGN:
+- Top: Large success indicator showing "0 NEW ITEMS" with green badge/checkmark
+- Text below: "All caught up! You're up to date with your work items."
+- Below: List of 4-5 read cards (all showing read state)
+
+READ CARD STYLING:
+- 1px subtle gray border (not olive)
+- Normal weight titles (not bold)
+- Reduced opacity (0.7)
+- No NEW badges
+- Calm, subdued appearance
+
+SUCCESS INDICATOR:
+- Prominent green badge or checkmark icon
+- Celebratory but professional (not playful)
+- Clear "caught up" messaging
+- Subtle positive reinforcement
+
+STYLE:
+- Modern SaaS application
+- Calm, success-oriented design
+- Professional positive feedback
+- High contrast for readability
+- Desktop viewport
+- Clean, spacious layout with breathing room
+```
+
+______________________________________________________________________
+
+#### Prompt 7: Wireframe / Low-Fidelity Blueprint
+
+```
+Create a clean wireframe/blueprint mockup for work item grouping interface. Design specifications:
+
+STYLE:
+- Low-fidelity wireframe aesthetic
+- White/light gray background
+- Black lines and shapes
+- Minimal shading
+- Blueprint or sketch style
+- Annotations with arrows and labels
+
+LAYOUT ELEMENTS TO SHOW:
+- Overall page structure with header, sidebar (if any), main content area
+- Collapsed card wireframe showing: title box, summary box, badge position, context signal positions
+- Expanded card wireframe showing: title, timeline structure, event items
+- Side panel wireframe showing: header, content area, close button position
+- Spacing annotations (8px, 16px, 24px grid)
+- Touch target sizing annotations (44px minimum)
+
+ANNOTATIONS:
+- Label key measurements
+- Show component hierarchy
+- Indicate interactive elements
+- Mark spacing and padding
+- Show responsive breakpoints
+
+STYLE:
+- Professional UX wireframe
+- Clean, technical drawing aesthetic
+- Clear hierarchy and structure
+- Desktop viewport with optional mobile variant side-by-side
+```
+
+______________________________________________________________________
+
+### 3.6 Design Validation Checklist
+
+Before implementation, validate that mockups meet these criteria:
+
+**Visual Consistency:**
+
+- ✅ Olive accent color (#9DAA5F in dark mode) used consistently
+- ✅ Typography follows 11px-18px scale with proper font weights
+- ✅ Spacing follows 8px grid (4px, 8px, 12px, 16px, 24px, 32px)
+- ✅ Border-radius consistent (4px for small elements, 8px for cards)
+- ✅ Dark mode background (#2d2e2e) matches existing app
+
+**Interaction Design:**
+
+- ✅ NEW badge → Mark Read button transformation visible in hover mockup
+- ✅ Three-level progressive disclosure represented (collapsed, expanded, side panel)
+- ✅ Read/unread distinction is immediately clear
+- ✅ Touch targets meet 44px minimum for mobile
+
+**Accessibility:**
+
+- ✅ High contrast text (WCAG AA minimum)
+- ✅ Color not sole indicator (text + weight + border changes for read state)
+- ✅ Interactive elements clearly indicated
+- ✅ Focus states designed (for keyboard navigation)
+
+**Information Hierarchy:**
+
+- ✅ Work item title most prominent
+- ✅ Context signals (repo, component) visible but not distracting
+- ✅ Timestamps and metadata subdued
+- ✅ NEW badge/unread count draws appropriate attention
+
+**Professional Polish:**
+
+- ✅ Modern SaaS application aesthetic
+- ✅ Dense but not cluttered
+- ✅ Engineering tool feel (not consumer app)
+- ✅ Subtle shadows and depth where appropriate
+- ✅ Clean, consistent spacing throughout
+
+______________________________________________________________________
 
 ## UX Pattern Analysis & Inspiration
 
@@ -801,6 +1572,7 @@ Semibold:  600   /* Headings, section titles */
 Inbox triage at scale - distinguishing important from noise without reading everything.
 
 **UX Strengths:**
+
 - **Read/unread visual language:** Clear, instant distinction (bold vs. normal weight)
 - **Triage views:** Primary/Social/Promotions tabs pre-sort by relevance
 - **Side panel pattern:** Email list stays visible while reading details
@@ -809,6 +1581,7 @@ Inbox triage at scale - distinguishing important from noise without reading ever
 - **Batch operations:** Select multiple, mark all as read, bulk actions
 
 **Information Hierarchy:**
+
 - Collapsed: Sender, subject, timestamp, snippet
 - Expanded: Full email in side panel
 - List remains visible during reading
@@ -816,7 +1589,7 @@ Inbox triage at scale - distinguishing important from noise without reading ever
 **Why Users Return:**
 Reliable, predictable, fast. The muscle memory of inbox zero.
 
----
+______________________________________________________________________
 
 **Datadog - Infrastructure Monitoring at Scale**
 
@@ -824,6 +1597,7 @@ Reliable, predictable, fast. The muscle memory of inbox zero.
 Monitoring infrastructure at scale - surface critical alerts without drowning in noise.
 
 **UX Strengths:**
+
 - **Alert prioritization:** Clear severity levels (critical/warning/info)
 - **Smart grouping:** Related alerts clustered, not repeated
 - **Search and filtering:** Powerful query language for finding specific signals
@@ -832,6 +1606,7 @@ Monitoring infrastructure at scale - surface critical alerts without drowning in
 - **Silence/acknowledge:** Explicit control over alert lifecycle
 
 **Information Hierarchy:**
+
 - Dashboard: High-level status, grouped alerts
 - Alert list: Summary with severity, timestamp, affected services
 - Detail view: Full context, metrics, timeline, related alerts
@@ -839,29 +1614,32 @@ Monitoring infrastructure at scale - surface critical alerts without drowning in
 **Why Users Return:**
 Trust that critical issues won't be missed, ability to quickly assess "is this urgent?"
 
----
+______________________________________________________________________
 
 **Common Success Patterns:**
 
 Both Gmail and Datadog excel at:
+
 1. **Scan-first design** - List view optimized for rapid scanning
-2. **Progressive disclosure** - Collapsed summary → Expanded detail
-3. **Read/unread state** - Clear visual distinction
-4. **Side panel pattern** - List stays visible while viewing details
-5. **Search-driven** - Finding specific items is fast and powerful
-6. **Explicit control** - Users control state (mark read, acknowledge, archive)
+1. **Progressive disclosure** - Collapsed summary → Expanded detail
+1. **Read/unread state** - Clear visual distinction
+1. **Side panel pattern** - List stays visible while viewing details
+1. **Search-driven** - Finding specific items is fast and powerful
+1. **Explicit control** - Users control state (mark read, acknowledge, archive)
 
 ### Transferable UX Patterns
 
 **Navigation & Hierarchy:**
 
 **From Gmail:**
+
 - **List + Side Panel** - Work item list stays visible while detail pane shows full context
 - **Bold/Normal weight distinction** - Unread items bold, read items normal (instant scan)
 - **Snippet preview** - One-line activity summary in collapsed card (like subject + snippet)
 - **Keyboard-driven flow** - j/k navigation, shortcuts for mark read (post-MVP)
 
 **From Datadog:**
+
 - **Severity/Priority visual language** - Adapt for unread priority and activity level
 - **Grouped clustering** - Issues and MRs in separate sections
 - **Status indicators** - Open/closed/merged badges with clear color coding
@@ -870,28 +1648,33 @@ Both Gmail and Datadog excel at:
 **Interaction Patterns:**
 
 **From Both:**
+
 - **Scan-first list view** - Collapsed cards optimized for rapid scanning (3-5 seconds per item)
 - **Progressive disclosure** - Collapsed → Expanded → Detail pane (three levels)
 - **Predictable state management** - Clear visual feedback when state changes
 - **Search as first-class** - Powerful filtering to find specific work items
 
 **From Gmail:**
+
 - **Batch operations** - "Mark all as read" for sections
 - **Auto-scroll to content** - Scroll to newest activity in detail pane
 - **Persistent list visibility** - Reading detail doesn't hide the list
 
 **From Datadog:**
+
 - **Context on hover** - Hover shows additional options (NEW → Mark Read transformation)
 - **Time-based sorting with priority override** - Recent first, but unread items float to top
 
 **Visual Design:**
 
 **From Gmail:**
+
 - **Minimal color usage** - Rely on typography weight, not color overload
 - **Density control** - Let content determine density, not arbitrary limits
 - **Consistent spacing rhythm** - Predictable visual scanning pattern
 
 **From Datadog:**
+
 - **Color for meaning** - Status colors (open/merged/closed)
 - **Badge indicators** - Small, unobtrusive badges for NEW status
 - **Reduced opacity for dismissed** - De-emphasize read items without hiding them
@@ -901,40 +1684,51 @@ Both Gmail and Datadog excel at:
 **From Email Clients (Gmail):**
 
 - **Aggressive auto-archiving/categorization** - Users feel loss of control
+
   - *Our approach:* Only explicit expand/open actions mark as read, no time-based auto-marking
 
 - **Hidden folder/filter complexity** - Users lose trust when they can't find things
+
   - *Our approach:* Transparent filtering, no mystery algorithms
 
 - **Notification overload** - Badge counts creating anxiety
+
   - *Our approach:* Unread count is informational, not anxiety-inducing. Green/zero when caught up
 
 - **Forced threading** - No alternative views
+
   - *Our approach:* Grouped view is primary, but search enables flat exploration
 
 **From Monitoring Dashboards (Datadog):**
 
 - **Alert fatigue** - Too many low-priority alerts desensitize users
+
   - *Our approach:* User's query/filter setup controls relevance, we don't add noise
 
 - **Complexity creep** - Too many features, overwhelming UI
+
   - *Our approach:* MVP stays focused: scan, mark read, expand, side panel
 
 - **Red everywhere** - Overuse of urgent styling
+
   - *Our approach:* Use color sparingly and meaningfully. NEW badge is informational, not alarming
 
 - **Hidden context** - Too many clicks to understand the issue
+
   - *Our approach:* Collapsed one-liner has enough context for decision-making
 
 **From Both Categories:**
 
 - **Unclear state transitions** - Users don't know if action succeeded
+
   - *Our approach:* Clear visual feedback (hover → Mark Read button, read/unread styling)
 
 - **No escape hatch** - Forced into workflows
+
   - *Our approach:* Mark Read button is the escape hatch (skip without investigation)
 
 - **Mobile-as-afterthought** - Desktop features that break on mobile
+
   - *Our approach:* Scroll-into-view for mobile, full-screen overlay for detail pane
 
 ### Design Inspiration Strategy
@@ -942,12 +1736,14 @@ Both Gmail and Datadog excel at:
 **Adopt (Use Directly):**
 
 **From Gmail:**
+
 - Bold/normal weight for read/unread distinction
 - List + side panel layout (keep work items visible during detail view)
 - Auto-scroll to newest content in side panel
 - Batch section operations ("Mark all as read" in section headers)
 
 **From Datadog:**
+
 - Status color coding (green=merged, gray=closed, blue=open)
 - Badge indicators (small, unobtrusive NEW badge)
 - Severity-style grouping (Issues and MRs in separate sections)
@@ -956,22 +1752,26 @@ Both Gmail and Datadog excel at:
 **Adapt (Modify for Our Needs):**
 
 **From Gmail:**
+
 - Keyboard shortcuts (post-MVP, but plan architecture to support)
 - Density control (let content determine density, no arbitrary limits)
 
 **From Datadog:**
+
 - Hover context pattern → NEW badge transforms to Mark Read button
 - Time + priority sorting → Recent first, but unread items float to top regardless
 
 **Avoid (Anti-patterns):**
 
 **From Email:**
+
 - No auto-marking based on time/scrolling (desktop - mobile uses scroll-into-view)
 - No hidden filtering or mystery algorithms
 - No anxiety-inducing notification styling
 - No forced workflows without escape hatches
 
 **From Monitoring:**
+
 - No alert fatigue patterns (red everywhere, urgent styling overuse)
 - No complexity creep (stick to MVP scope)
 - No hidden context (collapsed card sufficient for decision)
@@ -979,6 +1779,7 @@ Both Gmail and Datadog excel at:
 **Unique to Work Item Grouping:**
 
 We're creating an **organizational intelligence** tool that combines proven patterns with unique value:
+
 - Three-way read marking (more flexible than Gmail or Datadog)
 - Context signals as first-class (repo, component, keywords)
 - Proactive discovery vs. reactive notification
@@ -986,4 +1787,4 @@ We're creating an **organizational intelligence** tool that combines proven patt
 
 This strategy grounds us in proven UX patterns while maintaining our unique value proposition of discovering conversations users weren't tagged in but should know about.
 
----
+______________________________________________________________________
