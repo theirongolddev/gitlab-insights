@@ -1,0 +1,603 @@
+/**
+ * Work Items tRPC Router
+ *
+ * Handles work-item-centric grouped queries for the catch-up view.
+ * Returns top-level issues/MRs with activity summaries and unread counts.
+ */
+
+import { z } from "zod";
+import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import type {
+  WorkItem,
+  ActivitySummary,
+  ActivityItem,
+  GroupedWorkItems,
+  GetWorkItemsGroupedResponse,
+  GetWorkItemWithActivityResponse,
+  Participant,
+} from "~/types/work-items";
+
+const workItemFiltersSchema = z.object({
+  status: z.array(z.enum(["open", "closed", "merged"])).optional(),
+  type: z.array(z.enum(["issue", "merge_request"])).optional(),
+  repository: z.array(z.string()).optional(),
+  unreadOnly: z.boolean().optional(),
+  search: z.string().optional(),
+});
+
+const cursorSchema = z.object({
+  lastActivityAt: z.date(),
+  id: z.string(),
+});
+
+export const workItemsRouter = createTRPCRouter({
+  /**
+   * Get work items grouped by type with activity summaries
+   *
+   * Returns top-level issues and MRs (items where parentEventId IS NULL)
+   * with computed activity summaries and unread status.
+   *
+   * Sorting: Unread items first, then by lastActivityAt descending
+   */
+  getGrouped: protectedProcedure
+    .input(
+      z.object({
+        filters: workItemFiltersSchema.optional(),
+        cursor: cursorSchema.optional(),
+        limit: z.number().min(1).max(100).default(20),
+      })
+    )
+    .query(async ({ ctx, input }): Promise<GetWorkItemsGroupedResponse> => {
+      const userId = ctx.session.user.id;
+      const { filters, cursor, limit } = input;
+
+      // Build where clause for top-level work items only
+      const where: Record<string, unknown> = {
+        userId,
+        parentEventId: null, // Only top-level items (not comments)
+        type: {
+          in: filters?.type ?? ["issue", "merge_request"],
+        },
+      };
+
+      // Status filter
+      if (filters?.status && filters.status.length > 0) {
+        where.status = { in: filters.status };
+      }
+
+      // Repository filter
+      if (filters?.repository && filters.repository.length > 0) {
+        where.projectId = { in: filters.repository };
+      }
+
+      // Search filter (basic title/body search)
+      if (filters?.search) {
+        where.OR = [
+          { title: { contains: filters.search, mode: "insensitive" } },
+          { body: { contains: filters.search, mode: "insensitive" } },
+        ];
+      }
+
+      // Cursor-based pagination - use AND to combine with existing filters
+      // This fixes the bug where cursor OR was overwriting search OR
+      if (cursor) {
+        where.AND = [
+          {
+            OR: [
+              { lastActivityAt: { lt: cursor.lastActivityAt } },
+              {
+                lastActivityAt: cursor.lastActivityAt,
+                id: { lt: cursor.id },
+              },
+            ],
+          },
+        ];
+      }
+
+      // Fetch work items with children (comments) and read status
+      const events = await ctx.db.event.findMany({
+        where,
+        include: {
+          children: {
+            select: {
+              id: true,
+              author: true,
+              authorAvatar: true,
+              body: true,
+              createdAt: true,
+              isSystemNote: true,
+            },
+            orderBy: { createdAt: "desc" },
+          },
+          readBy: {
+            where: { userId },
+            select: { readAt: true },
+          },
+        },
+        orderBy: [{ lastActivityAt: "desc" }, { id: "desc" }],
+        take: limit + 1, // Fetch one extra to check if there are more
+      });
+
+      // Check if there are more results
+      const hasMore = events.length > limit;
+      const items = hasMore ? events.slice(0, limit) : events;
+
+      // Transform to WorkItem type
+      const workItems: WorkItem[] = items.map((event) => {
+        const lastReadAt = event.readBy[0]?.readAt ?? null;
+
+        // Compute activity summary
+        const children = event.children;
+        const newChildren = lastReadAt
+          ? children.filter((c) => c.createdAt > lastReadAt)
+          : children;
+
+        // Get unique participants
+        const participantMap = new Map<string, Participant>();
+        for (const child of children) {
+          if (!participantMap.has(child.author)) {
+            participantMap.set(child.author, {
+              username: child.author,
+              avatarUrl: child.authorAvatar,
+            });
+          }
+        }
+
+        const latestChild = children[0];
+        const activitySummary: ActivitySummary = {
+          totalCount: event.commentCount,
+          newCount: newChildren.length,
+          latestActivity: latestChild
+            ? {
+                author: latestChild.author,
+                authorAvatar: latestChild.authorAvatar,
+                timestamp: latestChild.createdAt,
+                preview: latestChild.body?.slice(0, 100) ?? "",
+              }
+            : null,
+          participants: Array.from(participantMap.values()),
+        };
+
+        // Determine unread status
+        const isUnread = lastReadAt
+          ? event.lastActivityAt
+            ? event.lastActivityAt > lastReadAt
+            : false
+          : true; // Never read = unread
+
+        // Extract issue number from gitlabEventId (e.g., "issue-123" -> 123)
+        const numberMatch = event.gitlabEventId.match(/\d+$/);
+        const number = numberMatch ? parseInt(numberMatch[0], 10) : 0;
+
+        return {
+          id: event.id,
+          gitlabEventId: event.gitlabEventId,
+          type: event.type as "issue" | "merge_request",
+          status: (event.status as "open" | "closed" | "merged") ?? "open",
+          title: event.title,
+          number,
+          repositoryName: event.project,
+          repositoryPath: event.projectId,
+          labels: event.labels,
+          author: event.author,
+          authorAvatar: event.authorAvatar,
+          assignees: event.assignees,
+          createdAt: event.createdAt,
+          lastActivityAt: event.lastActivityAt ?? event.createdAt,
+          gitlabUrl: event.gitlabUrl,
+          closesIssueIds: event.closesIssueIds,
+          closedByMRIds: [], // TODO: Compute from other MRs' closesIssueIds
+          mentionedInIds: event.mentionedInIds,
+          activitySummary,
+          isUnread,
+          lastReadAt,
+        };
+      });
+
+      // NOTE: We intentionally do NOT sort by unread status here.
+      // Client-side sorting would break cursor-based pagination invariants,
+      // causing items to be skipped or duplicated across pages.
+      // The database ordering (lastActivityAt DESC, id DESC) is authoritative.
+      // If unread-first sorting is needed, it should be done at the DB level
+      // or the UI should handle grouping separately.
+
+      // Group by type
+      const grouped: GroupedWorkItems = {
+        issues: workItems.filter((w) => w.type === "issue"),
+        mergeRequests: workItems.filter((w) => w.type === "merge_request"),
+        totalCount: workItems.length,
+        unreadCount: workItems.filter((w) => w.isUnread).length,
+      };
+
+      // Build next cursor from the LAST item in the response (after filtering)
+      // This must match the database ordering to maintain pagination correctness
+      const lastWorkItem = workItems[workItems.length - 1];
+      const nextCursor =
+        hasMore && lastWorkItem
+          ? {
+              lastActivityAt: lastWorkItem.lastActivityAt,
+              id: lastWorkItem.id,
+            }
+          : null;
+
+      return {
+        items: grouped,
+        nextCursor,
+        hasMore,
+      };
+    }),
+
+  /**
+   * Get a single work item with full activity timeline
+   *
+   * Returns the work item with all child events (comments, status changes)
+   * in chronological order, with read status for each activity.
+   * Also includes related work items (closes, closedBy, mentions).
+   */
+  getWithActivity: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        includeRelated: z.boolean().default(true),
+      })
+    )
+    .query(async ({ ctx, input }): Promise<GetWorkItemWithActivityResponse> => {
+      const userId = ctx.session.user.id;
+      const { id, includeRelated } = input;
+
+      // Fetch the work item with all children and read status
+      const event = await ctx.db.event.findFirst({
+        where: {
+          id,
+          userId,
+          parentEventId: null, // Must be a top-level work item
+        },
+        include: {
+          children: {
+            select: {
+              id: true,
+              type: true,
+              author: true,
+              authorAvatar: true,
+              body: true,
+              createdAt: true,
+              isSystemNote: true,
+              gitlabUrl: true,
+            },
+            orderBy: { createdAt: "asc" }, // Chronological for timeline
+          },
+          readBy: {
+            where: { userId },
+            select: { readAt: true },
+          },
+        },
+      });
+
+      if (!event) {
+        throw new Error("Work item not found");
+      }
+
+      const lastReadAt = event.readBy[0]?.readAt ?? null;
+
+      // Transform children to ActivityItem[]
+      const activities: ActivityItem[] = event.children.map((child) => ({
+        id: child.id,
+        type: child.isSystemNote ? "system" : "comment",
+        author: child.author,
+        authorAvatar: child.authorAvatar,
+        body: child.body,
+        timestamp: child.createdAt,
+        isSystemNote: child.isSystemNote,
+        isUnread: lastReadAt ? child.createdAt > lastReadAt : true,
+        gitlabUrl: child.gitlabUrl,
+      }));
+
+      // Build activity summary
+      const participantMap = new Map<string, Participant>();
+      for (const child of event.children) {
+        if (!participantMap.has(child.author)) {
+          participantMap.set(child.author, {
+            username: child.author,
+            avatarUrl: child.authorAvatar,
+          });
+        }
+      }
+
+      const newActivities = activities.filter((a) => a.isUnread);
+      const latestChild = event.children[event.children.length - 1];
+
+      const activitySummary: ActivitySummary = {
+        totalCount: event.commentCount,
+        newCount: newActivities.length,
+        latestActivity: latestChild
+          ? {
+              author: latestChild.author,
+              authorAvatar: latestChild.authorAvatar,
+              timestamp: latestChild.createdAt,
+              preview: latestChild.body?.slice(0, 100) ?? "",
+            }
+          : null,
+        participants: Array.from(participantMap.values()),
+      };
+
+      // Extract number from gitlabEventId
+      const numberMatch = event.gitlabEventId.match(/\d+$/);
+      const number = numberMatch ? parseInt(numberMatch[0], 10) : 0;
+
+      // Determine unread status
+      const isUnread = lastReadAt
+        ? event.lastActivityAt
+          ? event.lastActivityAt > lastReadAt
+          : false
+        : true;
+
+      const workItem: WorkItem = {
+        id: event.id,
+        gitlabEventId: event.gitlabEventId,
+        type: event.type as "issue" | "merge_request",
+        status: (event.status as "open" | "closed" | "merged") ?? "open",
+        title: event.title,
+        number,
+        repositoryName: event.project,
+        repositoryPath: event.projectId,
+        labels: event.labels,
+        author: event.author,
+        authorAvatar: event.authorAvatar,
+        assignees: event.assignees,
+        createdAt: event.createdAt,
+        lastActivityAt: event.lastActivityAt ?? event.createdAt,
+        gitlabUrl: event.gitlabUrl,
+        closesIssueIds: event.closesIssueIds,
+        closedByMRIds: [],
+        mentionedInIds: event.mentionedInIds,
+        activitySummary,
+        activities,
+        isUnread,
+        lastReadAt,
+      };
+
+      // Fetch related work items if requested
+      let relatedWorkItems: GetWorkItemWithActivityResponse["relatedWorkItems"] = {
+        closes: [],
+        closedBy: [],
+        mentioned: [],
+      };
+
+      if (includeRelated) {
+        // Find issues this MR closes (by closesIssueIds)
+        if (event.closesIssueIds.length > 0) {
+          const closesEvents = await ctx.db.event.findMany({
+            where: {
+              userId,
+              type: "issue",
+              gitlabEventId: {
+                in: event.closesIssueIds.map((iid) => `issue-${iid}`),
+              },
+            },
+            select: {
+              id: true,
+              gitlabEventId: true,
+              type: true,
+              status: true,
+              title: true,
+              project: true,
+              projectId: true,
+              labels: true,
+              author: true,
+              authorAvatar: true,
+              assignees: true,
+              createdAt: true,
+              lastActivityAt: true,
+              gitlabUrl: true,
+              closesIssueIds: true,
+              mentionedInIds: true,
+              commentCount: true,
+            },
+          });
+
+          relatedWorkItems.closes = closesEvents.map((e) => ({
+            id: e.id,
+            gitlabEventId: e.gitlabEventId,
+            type: e.type as "issue" | "merge_request",
+            status: (e.status as "open" | "closed" | "merged") ?? "open",
+            title: e.title,
+            number: parseInt(e.gitlabEventId.match(/\d+$/)?.[0] ?? "0", 10),
+            repositoryName: e.project,
+            repositoryPath: e.projectId,
+            labels: e.labels,
+            author: e.author,
+            authorAvatar: e.authorAvatar,
+            assignees: e.assignees,
+            createdAt: e.createdAt,
+            lastActivityAt: e.lastActivityAt ?? e.createdAt,
+            gitlabUrl: e.gitlabUrl,
+            closesIssueIds: e.closesIssueIds,
+            closedByMRIds: [],
+            mentionedInIds: e.mentionedInIds,
+            activitySummary: {
+              totalCount: e.commentCount,
+              newCount: 0,
+              latestActivity: null,
+              participants: [],
+            },
+            isUnread: false,
+            lastReadAt: null,
+          }));
+        }
+
+        // Find MRs that close this issue (if this is an issue)
+        if (event.type === "issue") {
+          const issueIid = number;
+          const closedByEvents = await ctx.db.event.findMany({
+            where: {
+              userId,
+              type: "merge_request",
+              closesIssueIds: { has: issueIid },
+            },
+            select: {
+              id: true,
+              gitlabEventId: true,
+              type: true,
+              status: true,
+              title: true,
+              project: true,
+              projectId: true,
+              labels: true,
+              author: true,
+              authorAvatar: true,
+              assignees: true,
+              createdAt: true,
+              lastActivityAt: true,
+              gitlabUrl: true,
+              closesIssueIds: true,
+              mentionedInIds: true,
+              commentCount: true,
+            },
+          });
+
+          relatedWorkItems.closedBy = closedByEvents.map((e) => ({
+            id: e.id,
+            gitlabEventId: e.gitlabEventId,
+            type: e.type as "issue" | "merge_request",
+            status: (e.status as "open" | "closed" | "merged") ?? "open",
+            title: e.title,
+            number: parseInt(e.gitlabEventId.match(/\d+$/)?.[0] ?? "0", 10),
+            repositoryName: e.project,
+            repositoryPath: e.projectId,
+            labels: e.labels,
+            author: e.author,
+            authorAvatar: e.authorAvatar,
+            assignees: e.assignees,
+            createdAt: e.createdAt,
+            lastActivityAt: e.lastActivityAt ?? e.createdAt,
+            gitlabUrl: e.gitlabUrl,
+            closesIssueIds: e.closesIssueIds,
+            closedByMRIds: [],
+            mentionedInIds: e.mentionedInIds,
+            activitySummary: {
+              totalCount: e.commentCount,
+              newCount: 0,
+              latestActivity: null,
+              participants: [],
+            },
+            isUnread: false,
+            lastReadAt: null,
+          }));
+        }
+      }
+
+      return {
+        workItem,
+        activities,
+        relatedWorkItems,
+      };
+    }),
+
+  /**
+   * Mark a single work item as read
+   *
+   * Creates or updates a ReadEvent record with the current timestamp.
+   * If the work item was already read, updates the readAt timestamp.
+   */
+  markAsRead: protectedProcedure
+    .input(z.object({ workItemId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+      const { workItemId } = input;
+
+      // Verify the work item exists and belongs to the user
+      const event = await ctx.db.event.findFirst({
+        where: { id: workItemId, userId, parentEventId: null },
+        select: { id: true },
+      });
+
+      if (!event) {
+        throw new Error("Work item not found");
+      }
+
+      // Upsert the ReadEvent record
+      const readEvent = await ctx.db.readEvent.upsert({
+        where: {
+          userId_eventId: { userId, eventId: workItemId },
+        },
+        create: {
+          userId,
+          eventId: workItemId,
+          readAt: new Date(),
+        },
+        update: {
+          readAt: new Date(),
+        },
+      });
+
+      return { success: true, readAt: readEvent.readAt };
+    }),
+
+  /**
+   * Mark multiple work items as read (batch operation)
+   *
+   * Used for "Mark all as read" in section headers.
+   */
+  markMultipleAsRead: protectedProcedure
+    .input(z.object({ workItemIds: z.array(z.string()) }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+      const { workItemIds } = input;
+
+      if (workItemIds.length === 0) {
+        return { success: true, count: 0 };
+      }
+
+      // Verify all work items exist and belong to the user
+      const events = await ctx.db.event.findMany({
+        where: {
+          id: { in: workItemIds },
+          userId,
+          parentEventId: null,
+        },
+        select: { id: true },
+      });
+
+      const validIds = events.map((e) => e.id);
+      const now = new Date();
+
+      // Use a transaction to upsert all ReadEvent records
+      await ctx.db.$transaction(
+        validIds.map((eventId) =>
+          ctx.db.readEvent.upsert({
+            where: {
+              userId_eventId: { userId, eventId },
+            },
+            create: {
+              userId,
+              eventId,
+              readAt: now,
+            },
+            update: {
+              readAt: now,
+            },
+          })
+        )
+      );
+
+      return { success: true, count: validIds.length };
+    }),
+
+  /**
+   * Clear read status for a work item (for testing/undo)
+   *
+   * Deletes the ReadEvent record, making the item appear unread again.
+   */
+  clearReadStatus: protectedProcedure
+    .input(z.object({ workItemId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+      const { workItemId } = input;
+
+      await ctx.db.readEvent.deleteMany({
+        where: { userId, eventId: workItemId },
+      });
+
+      return { success: true };
+    }),
+});
