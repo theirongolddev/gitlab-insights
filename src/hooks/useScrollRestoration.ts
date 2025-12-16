@@ -33,6 +33,8 @@ export function useScrollRestoration(key: string): UseScrollRestorationReturn {
     const container = scrollContainerRef.current;
     if (!container) return;
 
+    let restoreTimeout: NodeJS.Timeout | undefined;
+
     const savedScrollY = sessionStorage.getItem(`scroll-${key}`);
     if (savedScrollY) {
       // Use requestAnimationFrame to ensure content is rendered before scrolling
@@ -40,7 +42,7 @@ export function useScrollRestoration(key: string): UseScrollRestorationReturn {
       requestAnimationFrame(() => {
         container.scrollTop = parseInt(savedScrollY, 10);
         // Allow scrollIntoView after a brief delay
-        setTimeout(() => {
+        restoreTimeout = setTimeout(() => {
           isRestoringRef.current = false;
         }, 100);
       });
@@ -49,11 +51,17 @@ export function useScrollRestoration(key: string): UseScrollRestorationReturn {
       isRestoringRef.current = true;
       requestAnimationFrame(() => {
         container.scrollTop = 0;
-        setTimeout(() => {
+        restoreTimeout = setTimeout(() => {
           isRestoringRef.current = false;
         }, 100);
       });
     }
+
+    return () => {
+      if (restoreTimeout) {
+        clearTimeout(restoreTimeout);
+      }
+    };
   }, [key]);
 
   // Cleanup timeout on unmount to prevent memory leak

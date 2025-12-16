@@ -44,9 +44,17 @@ export async function highlightEventContent(
   }
 
   // Simple client-side highlighting: wrap each search term with <mark> tags
-  // Case-insensitive matching with protection against nested <mark> tags
+  // Case-insensitive matching using placeholder tokens to avoid ReDoS and nested tags
   const highlightText = (text: string | null): string | null => {
     if (!text) return null;
+
+    // First, escape HTML entities to prevent XSS from DB content
+    let escaped = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
 
     // Sort terms by length (longest first) to handle overlapping matches correctly
     const sortedTerms = [...searchTerms]
@@ -54,20 +62,24 @@ export async function highlightEventContent(
       .filter(Boolean)
       .sort((a, b) => b.length - a.length);
 
-    let highlighted = text;
+    // Use placeholder tokens that won't appear in normal text
+    const MARK_START = '\u0000MARK_START\u0000';
+    const MARK_END = '\u0000MARK_END\u0000';
+
+    let highlighted = escaped;
     for (const term of sortedTerms) {
       // Escape special regex characters in the search term
       const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-      // Create regex that ONLY matches text NOT already inside <mark> tags
-      // Negative lookahead/lookbehind to avoid matching content already wrapped
-      const regex = new RegExp(
-        `(?!<mark>)(?![^<]*>)(${escapedTerm})(?![^<]*<\/mark>)`,
-        'gi'
-      );
-
-      highlighted = highlighted.replace(regex, '<mark>$1</mark>');
+      // Simple case-insensitive match without complex lookaheads (prevents ReDoS)
+      const regex = new RegExp(`(${escapedTerm})`, 'gi');
+      highlighted = highlighted.replace(regex, `${MARK_START}$1${MARK_END}`);
     }
+
+    // Replace placeholders with actual tags, collapsing adjacent markers
+    highlighted = highlighted
+      .replace(new RegExp(`${MARK_END}${MARK_START}`, 'g'), '')
+      .replace(new RegExp(MARK_START, 'g'), '<mark>')
+      .replace(new RegExp(MARK_END, 'g'), '</mark>');
 
     return highlighted;
   };

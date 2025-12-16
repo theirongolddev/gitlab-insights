@@ -5,6 +5,8 @@ import {
   useContext,
   useState,
   useCallback,
+  useRef,
+  useEffect,
   type ReactNode,
 } from "react";
 
@@ -28,22 +30,40 @@ interface ToastProviderProps {
   children: ReactNode;
 }
 
+let toastCounter = 0;
+
 export function ToastProvider({ children }: ToastProviderProps) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const timerRefs = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
+  useEffect(() => {
+    const timers = timerRefs.current;
+    return () => {
+      timers.forEach((timer) => clearTimeout(timer));
+      timers.clear();
+    };
+  }, []);
 
   const showToast = useCallback((message: string, type: ToastType) => {
-    const id = Math.random().toString(36).substring(7);
+    const id = `toast-${Date.now()}-${++toastCounter}`;
     const newToast: Toast = { id, message, type };
 
     setToasts((prev) => [...prev, newToast]);
 
-    // Auto-dismiss after 5 seconds
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
+      timerRefs.current.delete(id);
     }, 5000);
+
+    timerRefs.current.set(id, timer);
   }, []);
 
   const hideToast = useCallback((id: string) => {
+    const timer = timerRefs.current.get(id);
+    if (timer) {
+      clearTimeout(timer);
+      timerRefs.current.delete(id);
+    }
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 

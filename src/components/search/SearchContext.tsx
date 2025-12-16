@@ -123,7 +123,7 @@ export function SearchProvider({ children }: SearchProviderProps) {
     setKeywords: setKeywordsCallback,
     clearSearch,
     searchResults: searchData?.events ?? [],
-    searchResultsTotal: searchData?.total ?? 0,
+    searchResultsTotal: searchData?.count ?? 0,
     isSearchLoading: isSearchActive && (isSearchLoading || isSearchFetching),
     isSearchActive,
   };

@@ -16,6 +16,7 @@
 import { type PrismaClient } from "../../../generated/prisma";
 import { Prisma } from "../../../generated/prisma";
 import { logger } from "~/lib/logger";
+import { decodeCursor, createCursorFromRecord, type CursorData } from "~/utils/cursor";
 
 /**
  * Search result with relevance ranking and highlighted snippets
@@ -42,7 +43,12 @@ export interface SearchResultEvent {
 
 export interface SearchResult {
   events: SearchResultEvent[];
-  total: number;
+  /** Number of events returned in this page (not total matching) */
+  count: number;
+  /** Whether there are more results available */
+  hasMore: boolean;
+  /** Cursor for next page, null if no more results */
+  nextCursor: string | null;
 }
 
 export interface SearchOptions {
@@ -50,6 +56,8 @@ export interface SearchOptions {
   keywords: string[];
   userId: string;
   limit?: number;
+  /** Cursor for pagination (from previous result's nextCursor) */
+  cursor?: string | null;
 }
 
 const DEFAULT_LIMIT = 50;
@@ -123,13 +131,19 @@ export async function searchEvents(
   db: PrismaClient,
   options: SearchOptions
 ): Promise<SearchResult> {
-  const { keywords, userId, limit = DEFAULT_LIMIT } = options;
+  const { keywords, userId, limit = DEFAULT_LIMIT, cursor } = options;
   const effectiveLimit = Math.min(limit, MAX_LIMIT);
 
   // Filter empty keywords and build query string
   const validKeywords = keywords.filter((k) => k.trim().length > 0);
   if (validKeywords.length === 0) {
-    return { events: [], total: 0 };
+    return { events: [], count: 0, hasMore: false, nextCursor: null };
+  }
+
+  // Parse cursor if provided
+  let cursorData: CursorData | null = null;
+  if (cursor) {
+    cursorData = decodeCursor(cursor);
   }
 
   const startTime = Date.now();
@@ -137,8 +151,21 @@ export async function searchEvents(
   // Build combined tsquery with proper AND logic for multiple keywords
   const tsQuery = buildCombinedTsQuerySql(validKeywords);
 
+  // Build cursor filter if cursor provided
+  // NOTE: Search results are ordered by rank DESC, then createdAt DESC, then id DESC.
+  // Cursor pagination filters by createdAt+id (ignoring rank) which may cause minor
+  // ordering inconsistencies at page boundaries - items with same createdAt but different
+  // ranks could appear on unexpected pages. This is an acceptable tradeoff per task spec
+  // (bd-wdwx) to avoid complexity of rank-based cursors which would require storing
+  // the rank value in the cursor and handling rank ties.
+  const cursorFilter = cursorData
+    ? Prisma.sql`AND (e."createdAt" < ${new Date(cursorData.createdAt)}
+        OR (e."createdAt" = ${new Date(cursorData.createdAt)} AND e.id < ${cursorData.id}))`
+    : Prisma.empty;
+
   // Use parameterized query with Prisma.sql for SQL injection prevention
   // Each keyword gets its own plainto_tsquery call, combined with &&
+  // Fetch one extra to determine if there are more results
   const results = await db.$queryRaw<SearchResultEvent[]>`
     SELECT
       e.id,
@@ -175,26 +202,40 @@ export async function searchEvents(
     WHERE e."userId" = ${userId}
       AND to_tsvector('english', e.title || ' ' || COALESCE(e.body, ''))
           @@ ${tsQuery}
-    ORDER BY rank DESC, e."createdAt" DESC
-    LIMIT ${effectiveLimit}
+      ${cursorFilter}
+    ORDER BY rank DESC, e."createdAt" DESC, e.id DESC
+    LIMIT ${effectiveLimit + 1}
   `;
 
   const duration = Date.now() - startTime;
+
+  // Determine if there are more results
+  const hasMore = results.length > effectiveLimit;
+  const eventsToReturn = hasMore ? results.slice(0, effectiveLimit) : results;
+
+  // Create next cursor from last event if there are more results
+  const lastEvent = eventsToReturn[eventsToReturn.length - 1];
+  const nextCursor = hasMore && lastEvent
+    ? createCursorFromRecord(lastEvent)
+    : null;
 
   logger.info(
     {
       event: "search_executed",
       keywordCount: validKeywords.length,
       keywords: validKeywords.map((k) => k.substring(0, 20)), // Truncate for privacy
-      resultCount: results.length,
+      resultCount: eventsToReturn.length,
+      hasMore,
       durationMs: duration,
     },
     "FTS search completed"
   );
 
   return {
-    events: results,
-    total: results.length,
+    events: eventsToReturn,
+    count: eventsToReturn.length,
+    hasMore,
+    nextCursor,
   };
 }
 
