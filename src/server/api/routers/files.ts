@@ -69,9 +69,9 @@ export const filesRouter = createTRPCRouter({
   getCommits: protectedProcedure
     .input(
       z.object({
-        fileId: z.string(),
+        fileId: z.string().min(1),
         limit: z.number().min(1).max(100).default(50),
-        cursor: z.string().optional(),
+        cursor: z.string().min(1).optional(),
       })
     )
     .query(async ({ ctx, input }) => {

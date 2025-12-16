@@ -27,7 +27,7 @@ export const peopleRouter = createTRPCRouter({
       z.object({
         search: z.string().trim().max(200).optional(),
         limit: z.number().min(1).max(100).default(50),
-        cursor: z.string().optional(),
+        cursor: z.string().min(1).optional(),
       })
     )
     .query(async ({ ctx, input }) => {
@@ -72,7 +72,7 @@ export const peopleRouter = createTRPCRouter({
    * Returns person with detailed stats including event counts
    */
   getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
+    .input(z.object({ id: z.string().min(1) }))
     .query(async ({ ctx, input }) => {
       const person = await ctx.db.person.findUnique({
         where: {
@@ -128,9 +128,9 @@ export const peopleRouter = createTRPCRouter({
   getActivity: protectedProcedure
     .input(
       z.object({
-        personId: z.string(),
+        personId: z.string().min(1),
         limit: z.number().min(1).max(100).default(50),
-        cursor: z.string().optional(),
+        cursor: z.string().min(1).optional(),
       })
     )
     .query(async ({ ctx, input }) => {
