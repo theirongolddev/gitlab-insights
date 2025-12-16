@@ -26,11 +26,11 @@ export const projectsRouter = createTRPCRouter({
       z.object({
         projects: z.array(
           z.object({
-            gitlabProjectId: z.string(),
-            projectName: z.string(),
-            projectPath: z.string(),
+            gitlabProjectId: z.string().max(50),
+            projectName: z.string().max(500),
+            projectPath: z.string().max(500),
           })
-        ),
+        ).max(50, "Maximum 50 projects allowed"),
       })
     )
     .mutation(async ({ ctx, input }) => {

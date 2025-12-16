@@ -37,6 +37,8 @@ export const env = createEnv({
     INNGEST_SIGNING_KEY: z.string().optional(),
     // Optional: Override polling schedule for testing (default: every 10 minutes)
     INNGEST_POLLING_CRON: z.string().optional(),
+    // Secret for HMAC signing cursor tokens (falls back to BETTER_AUTH_SECRET if not set)
+    CURSOR_SECRET: z.string().optional(),
   },
 
   /**
@@ -63,6 +65,7 @@ export const env = createEnv({
     INNGEST_EVENT_KEY: process.env.INNGEST_EVENT_KEY,
     INNGEST_SIGNING_KEY: process.env.INNGEST_SIGNING_KEY,
     INNGEST_POLLING_CRON: process.env.INNGEST_POLLING_CRON,
+    CURSOR_SECRET: process.env.CURSOR_SECRET,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

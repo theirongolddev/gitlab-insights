@@ -17,6 +17,10 @@ import {
   storeEvents,
   getProjectMap,
 } from "~/server/services/event-transformer";
+import {
+  transformCommit,
+  storeCommitsWithPersonLinks,
+} from "~/server/services/commit-transformer";
 import { searchEvents } from "~/lib/search/postgres-fts";
 
 export const eventsRouter = createTRPCRouter({
@@ -33,10 +37,36 @@ export const eventsRouter = createTRPCRouter({
    * 5. Update lastSync timestamp
    * 6. Return summary
    */
-  manualRefresh: protectedProcedure.mutation(async ({ ctx }) => {
+  manualRefresh: protectedProcedure
+    .input(
+      z.object({
+        includeCommits: z.boolean().default(true),
+        commitDepth: z.number().min(10).max(500).default(100),
+      }).optional()
+    )
+    .mutation(async ({ ctx, input }) => {
+      const includeCommits = input?.includeCommits ?? true;
+      const commitDepth = input?.commitDepth ?? 100;
     const startTime = Date.now();
 
     try {
+      // Rate limit: Allow at most one manual refresh per minute per user
+      const lastSync = await ctx.db.lastSync.findUnique({
+        where: { userId: ctx.session.user.id },
+      });
+
+      if (lastSync) {
+        const timeSinceLastSync = Date.now() - lastSync.lastSyncAt.getTime();
+        const RATE_LIMIT_MS = 60000; // 1 minute cooldown
+        if (timeSinceLastSync < RATE_LIMIT_MS) {
+          const waitSeconds = Math.ceil((RATE_LIMIT_MS - timeSinceLastSync) / 1000);
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message: `Please wait ${waitSeconds} seconds before refreshing again.`,
+          });
+        }
+      }
+
       // 1. Get user's GitLab access token (auto-refreshes if expired)
       const { accessToken } = await getGitLabAccessToken(ctx.session.user.id);
 
@@ -64,11 +94,7 @@ export const eventsRouter = createTRPCRouter({
       // 3. Fetch events from GitLab API
       const gitlabClient = new GitLabClient(accessToken);
 
-      // Get last sync time for incremental updates (optional optimization)
-      const lastSync = await ctx.db.lastSync.findUnique({
-        where: { userId: ctx.session.user.id },
-      });
-
+      // Reuse lastSync from rate limit check for incremental updates
       const updatedAfter = lastSync?.lastSyncAt.toISOString();
 
       logger.info({
@@ -107,6 +133,50 @@ export const eventsRouter = createTRPCRouter({
         allEvents
       );
 
+      // 4b. Fetch and store commits (if enabled)
+      let commitStats = { stored: 0, skipped: 0, linked: 0 };
+      if (includeCommits) {
+        logger.info(
+          { projectCount: projectIds.length, commitDepth },
+          "events.manualRefresh: Fetching commits"
+        );
+
+        for (const project of monitoredProjects) {
+          try {
+            const commitsWithDiffs = await gitlabClient.fetchCommitsWithDiffs(
+              project.gitlabProjectId,
+              {
+                since: updatedAfter,
+                maxCommits: commitDepth,
+              }
+            );
+
+            // Transform commits
+            const transformedCommits = commitsWithDiffs.map((c) =>
+              transformCommit(c, c.diffs, project.gitlabProjectId)
+            );
+
+            // Store commits with person links
+            const projectCommitStats = await storeCommitsWithPersonLinks(
+              ctx.db,
+              ctx.session.user.id,
+              transformedCommits
+            );
+
+            commitStats.stored += projectCommitStats.stored;
+            commitStats.skipped += projectCommitStats.skipped;
+            commitStats.linked += projectCommitStats.linked;
+          } catch (error) {
+            logger.warn(
+              { error, projectId: project.gitlabProjectId },
+              "events.manualRefresh: Failed to fetch commits for project"
+            );
+          }
+        }
+
+        logger.info(commitStats, "events.manualRefresh: Finished storing commits");
+      }
+
       // 5. Update lastSync timestamp
       await ctx.db.lastSync.upsert({
         where: { userId: ctx.session.user.id },
@@ -134,6 +204,7 @@ export const eventsRouter = createTRPCRouter({
         stored: storeResult.stored,
         skipped: storeResult.skipped,
         errors: storeResult.errors,
+        commits: commitStats,
         duration,
         lastSyncAt: new Date(),
       };
@@ -163,9 +234,14 @@ export const eventsRouter = createTRPCRouter({
           });
         }
 
+        logger.error({
+          error: error.message,
+          statusCode: error.statusCode,
+          userId: ctx.session.user.id,
+        }, "events.manualRefresh: GitLab API error");
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: error.message,
+          message: "An error occurred while communicating with GitLab. Please try again.",
         });
       }
 
@@ -223,34 +299,33 @@ export const eventsRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const filterLabel = input?.filterLabel;
 
-      // Build where clause - only add label filter if provided
-      const whereClause: { userId: string; labels?: { has: string } } = {
+      // Build base where clause
+      const baseWhere: { userId: string; labels?: { has: string } } = {
         userId: ctx.session.user.id,
       };
 
       if (filterLabel) {
-        whereClause.labels = { has: filterLabel };
+        baseWhere.labels = { has: filterLabel };
       }
 
-      // Fetch events, limited to 150 (50 * 3 sections max)
-      const events = await ctx.db.event.findMany({
-        where: whereClause,
-        orderBy: {
-          createdAt: "desc",
-        },
-        take: 150,
-      });
-
-      // Group by type and limit to 50 per section
-      const issues = events
-        .filter((e) => e.type === "issue")
-        .slice(0, 50);
-      const mergeRequests = events
-        .filter((e) => e.type === "merge_request")
-        .slice(0, 50);
-      const comments = events
-        .filter((e) => e.type === "comment")
-        .slice(0, 50);
+      // Run 3 separate queries in parallel - more efficient than fetching 150 and filtering
+      const [issues, mergeRequests, comments] = await Promise.all([
+        ctx.db.event.findMany({
+          where: { ...baseWhere, type: "issue" },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+        }),
+        ctx.db.event.findMany({
+          where: { ...baseWhere, type: "merge_request" },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+        }),
+        ctx.db.event.findMany({
+          where: { ...baseWhere, type: "comment" },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+        }),
+      ]);
 
       return { issues, mergeRequests, comments };
     }),
@@ -361,7 +436,7 @@ export const eventsRouter = createTRPCRouter({
             userId: ctx.session.user.id,
             keywordCount: input.keywords.length,
             keywords: input.keywords.map((k) => k.substring(0, 20)),
-            resultCount: result.total,
+            resultCount: result.count,
             durationMs: duration,
           },
           "events.search: Query completed"
