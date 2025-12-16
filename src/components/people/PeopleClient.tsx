@@ -36,7 +36,7 @@ export function PeopleClient() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - var(--header-height))' }}>
+    <div className="flex flex-col" style={{ height: 'calc(100vh - var(--header-height, 64px))' }}>
       <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between gap-4">
