@@ -5,7 +5,7 @@
  * Handles deduplication and determines which events are new
  */
 
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "../../../generated/prisma";
 import type {
   GitLabIssue,
   GitLabMergeRequest,
@@ -195,8 +195,8 @@ export function transformNotes(
     const projectName = project?.name ?? `Project ${note.project_id}`;
     const projectPath = project?.path ?? String(note.project_id);
 
-    // Extract first line of comment as title
-    const firstLine = note.body.split("\n")[0]?.trim() ?? "Comment";
+    // Extract first non-empty line of comment as title
+    const firstLine = note.body.split("\n").find(line => line.trim())?.trim() || "Comment";
     const title =
       firstLine.length > 100
         ? firstLine.substring(0, 97) + "..."
