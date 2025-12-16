@@ -123,11 +123,7 @@ model Event {
   readBy ReadEvent[]
 
   // Optimizes dashboard queries
-  // Fast duplicate checking
   @@index([userId, createdAt(sort: Desc)])
-  // Note: gitlabEventId has @unique which creates an index, so @@index is redundant
-  // but kept for explicitness
-  @@index([gitlabEventId])
   @@index([parentEventId, createdAt])
   @@index([gitlabParentId])
   @@index([status, lastActivityAt])
@@ -164,6 +160,7 @@ model MonitoredProject {
   projectName     String
   projectPath     String
   createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Prevent duplicate monitoring
