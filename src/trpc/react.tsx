@@ -18,19 +18,9 @@ let isHandlingAuthError = false;
  * Called from onError callbacks in QueryClient.
  */
 const handleUnauthorizedError = async (error: unknown) => {
-  // DEBUG: Log all errors that reach this handler
-  console.log("[AUTH DEBUG] handleUnauthorizedError called:", {
-    errorType: error?.constructor?.name,
-    isTRPCError: error instanceof TRPCClientError,
-    errorCode: error instanceof TRPCClientError ? error.data?.code : "N/A",
-    errorMessage: error instanceof Error ? error.message : String(error),
-    isHandlingAuthError,
-  });
-
   if (isHandlingAuthError) return;
 
   if (error instanceof TRPCClientError && error.data?.code === "UNAUTHORIZED") {
-    console.log("[AUTH DEBUG] UNAUTHORIZED detected - triggering logout flow");
     isHandlingAuthError = true;
     
     // Clear query cache first to prevent in-flight queries
