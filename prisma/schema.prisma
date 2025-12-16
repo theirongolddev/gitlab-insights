@@ -25,6 +25,10 @@ model User {
   queries       UserQuery[]
   projects      MonitoredProject[]
   readEvents    ReadEvent[]
+  people        Person[]
+  commits       Commit[]
+  files         File[]
+  lastSync      LastSync?
   dashboardView String             @default("grouped") // "grouped" | "flat"
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
@@ -106,12 +110,13 @@ model Event {
   participants String[] // Everyone who commented/interacted
 
   // Activity metadata
-  commentCount   Int       @default(0)
-  lastActivityAt DateTime?
-  status         String? // "open" | "closed" | "merged"
+  commentCount            Int       @default(0)
+  unresolvedCommentCount  Int       @default(0)
+  lastActivityAt          DateTime?
+  status                  String? // "open" | "closed" | "merged"
 
   // Self-relation for hierarchy
-  parent   Event?  @relation("EventHierarchy", fields: [parentEventId], references: [id])
+  parent   Event?  @relation("EventHierarchy", fields: [parentEventId], references: [id], onDelete: Cascade)
   children Event[] @relation("EventHierarchy")
 
   // Read tracking
@@ -120,11 +125,21 @@ model Event {
   // Optimizes dashboard queries
   // Fast duplicate checking
   @@index([userId, createdAt(sort: Desc)])
+  // Note: gitlabEventId has @unique which creates an index, so @@index is redundant
+  // but kept for explicitness
   @@index([gitlabEventId])
   @@index([parentEventId, createdAt])
   @@index([gitlabParentId])
   @@index([status, lastActivityAt])
   @@index([userId, type, status])
+  // Added indexes for people queries (getById counts by author)
+  @@index([userId, author])
+  // Added index for repository filtering in work items
+  @@index([userId, projectId])
+  // Work item grouping: composite index for listing top-level items
+  @@index([userId, parentEventId, lastActivityAt(sort: Desc)])
+  // Work item grouping: index for finding children of a work item
+  @@index([userId, parentEventId, createdAt(sort: Asc)])
 }
 
 model UserQuery {
@@ -162,8 +177,7 @@ model LastSync {
   lastSyncAt DateTime
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-
-  @@index([userId])
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Verification {
@@ -190,4 +204,98 @@ model ReadEvent {
   @@unique([userId, eventId])
   @@index([userId, readAt])
   @@index([eventId])
+}
+
+// Intelligence Platform models
+
+model Person {
+  id        String  @id @default(cuid())
+  userId    String // The app user who owns this data
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gitlabId  Int // GitLab user ID
+  username  String // GitLab username
+  name      String? // Display name (may be null)
+  email     String? // Email (may be null/hidden)
+  avatarUrl String? // Avatar URL
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  commits Commit[]
+
+  @@unique([userId, gitlabId])
+  @@index([userId])
+  @@index([userId, username])
+}
+
+model Commit {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  sha        String   // Full commit SHA
+  shortSha   String   // First 8 chars for display
+  message    String   @db.Text // Full commit message
+  title      String   // First line of message
+  authoredAt DateTime // When authored
+
+  // Author link - may be null if person not found
+  personId String?
+  person   Person? @relation(fields: [personId], references: [id])
+
+  // GitLab metadata
+  projectId String // GitLab project ID
+  webUrl    String // Link to GitLab
+
+  // Stats
+  additions Int @default(0)
+  deletions Int @default(0)
+
+  // Relationships
+  files CommitFile[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, sha])
+  @@index([userId, authoredAt])
+  @@index([userId, projectId])
+  @@index([personId])
+}
+
+model File {
+  id        String @id @default(cuid())
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  path      String  // Full file path (e.g., "src/components/Button.tsx")
+  directory String  // Parent directory (e.g., "src/components")
+  filename  String  // Just the filename (e.g., "Button.tsx")
+  extension String? // File extension (e.g., "tsx")
+  projectId String  // GitLab project ID
+
+  // Relationships
+  commits CommitFile[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, projectId, path])
+  @@index([userId, projectId])
+  @@index([userId, directory])
+  @@index([userId, extension])
+}
+
+model CommitFile {
+  id       String @id @default(cuid())
+  commitId String
+  commit   Commit @relation(fields: [commitId], references: [id], onDelete: Cascade)
+  fileId   String
+  file     File   @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  // Change type: 'added' | 'modified' | 'deleted' | 'renamed'
+  changeType String
+
+  @@unique([commitId, fileId])
+  @@index([fileId])
 }
