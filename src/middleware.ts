@@ -7,7 +7,6 @@ const PROTECTED_ROUTES = ["/dashboard", "/queries", "/settings", "/onboarding"];
 
 export function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
-  const referer = request.headers.get("referer");
 
   const isProtectedRoute = PROTECTED_ROUTES.some((route) =>
     pathname.startsWith(route)
@@ -16,17 +15,10 @@ export function middleware(request: NextRequest) {
   const hasSession = !!sessionToken;
   const hasInvalidSessionFlag = searchParams.get("invalid_session") === "1";
 
-  // Detect redirect loops: if we're on a protected route and came from the same route
-  const isRedirectLoop =
-    isProtectedRoute && referer && new URL(referer).pathname === pathname;
-
-  // If we detect a redirect loop, clear the session cookie and allow through
-  // The page's requireAuth will handle the redirect properly
-  if (isRedirectLoop && hasSession) {
-    const response = NextResponse.next();
-    response.cookies.delete(SESSION_COOKIE_NAME);
-    return response;
-  }
+  // NOTE: Removed overly aggressive "redirect loop" detection that was deleting
+  // session cookies on normal same-page navigation (e.g., /dashboard to /dashboard?detail=xxx).
+  // If actual redirect loops occur, they should be debugged properly rather than
+  // blindly deleting session cookies.
 
   // If we have an invalid session flag, clear the cookie and remove the flag
   if (hasInvalidSessionFlag) {

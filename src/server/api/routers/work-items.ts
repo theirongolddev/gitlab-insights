@@ -6,6 +6,7 @@
  */
 
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import type {
   WorkItem,
@@ -274,7 +275,10 @@ export const workItemsRouter = createTRPCRouter({
       });
 
       if (!event) {
-        throw new Error("Work item not found");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Work item not found",
+        });
       }
 
       const lastReadAt = event.readBy[0]?.readAt ?? null;
@@ -512,7 +516,10 @@ export const workItemsRouter = createTRPCRouter({
       });
 
       if (!event) {
-        throw new Error("Work item not found");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Work item not found",
+        });
       }
 
       // Upsert the ReadEvent record
@@ -548,39 +555,45 @@ export const workItemsRouter = createTRPCRouter({
         return { success: true, count: 0 };
       }
 
-      // Verify all work items exist and belong to the user
-      const events = await ctx.db.event.findMany({
-        where: {
-          id: { in: workItemIds },
-          userId,
-          parentEventId: null,
-        },
-        select: { id: true },
+      // Use interactive transaction to ensure atomicity between validation and upsert
+      // This prevents race conditions where events could be modified between check and update
+      const count = await ctx.db.$transaction(async (tx) => {
+        // Verify all work items exist and belong to the user (within transaction)
+        const events = await tx.event.findMany({
+          where: {
+            id: { in: workItemIds },
+            userId,
+            parentEventId: null,
+          },
+          select: { id: true },
+        });
+
+        const validIds = events.map((e) => e.id);
+        const now = new Date();
+
+        // Upsert all ReadEvent records
+        await Promise.all(
+          validIds.map((eventId) =>
+            tx.readEvent.upsert({
+              where: {
+                userId_eventId: { userId, eventId },
+              },
+              create: {
+                userId,
+                eventId,
+                readAt: now,
+              },
+              update: {
+                readAt: now,
+              },
+            })
+          )
+        );
+
+        return validIds.length;
       });
 
-      const validIds = events.map((e) => e.id);
-      const now = new Date();
-
-      // Use a transaction to upsert all ReadEvent records
-      await ctx.db.$transaction(
-        validIds.map((eventId) =>
-          ctx.db.readEvent.upsert({
-            where: {
-              userId_eventId: { userId, eventId },
-            },
-            create: {
-              userId,
-              eventId,
-              readAt: now,
-            },
-            update: {
-              readAt: now,
-            },
-          })
-        )
-      );
-
-      return { success: true, count: validIds.length };
+      return { success: true, count };
     }),
 
   /**

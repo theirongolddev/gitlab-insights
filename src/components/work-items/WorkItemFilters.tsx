@@ -54,10 +54,22 @@ export const WorkItemFilters = memo(function WorkItemFilters({
   
   // Debounced search value
   const debouncedSearchValue = useDebounce(searchValue, 300);
-  
+
   // Update filters when debounced value changes
+  // Uses cleanup flag to prevent stale updates after unmount
   useEffect(() => {
-    onFiltersChange({ ...filters, search: debouncedSearchValue || undefined });
+    let isActive = true;
+
+    // Use microtask to batch with other state updates
+    queueMicrotask(() => {
+      if (isActive) {
+        onFiltersChange({ ...filters, search: debouncedSearchValue || undefined });
+      }
+    });
+
+    return () => {
+      isActive = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearchValue]); // Only depend on debounced value to avoid infinite loops
   

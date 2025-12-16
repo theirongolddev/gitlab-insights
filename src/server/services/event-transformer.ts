@@ -395,11 +395,19 @@ export async function linkParentEvents(
       for (const lookup of parentLookups) {
         const parentId = parentMap.get(lookup.parentGitlabEventId);
         if (parentId) {
-          await db.event.update({
-            where: { id: lookup.childId },
-            data: { parentEventId: parentId },
-          });
-          linkedCount++;
+          try {
+            await db.event.update({
+              where: { id: lookup.childId },
+              data: { parentEventId: parentId },
+            });
+            linkedCount++;
+          } catch (error) {
+            logger.error(
+              { error, childId: lookup.childId, parentId },
+              "event-transformer: Failed to update child with parent ID"
+            );
+            // Continue processing remaining items - don't let one failure break the batch
+          }
         } else {
           logger.warn(
             { childId: lookup.childId, parentGitlabEventId: lookup.parentGitlabEventId },

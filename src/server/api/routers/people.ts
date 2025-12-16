@@ -25,7 +25,7 @@ export const peopleRouter = createTRPCRouter({
   list: protectedProcedure
     .input(
       z.object({
-        search: z.string().optional(),
+        search: z.string().trim().max(200).optional(),
         limit: z.number().min(1).max(100).default(50),
         cursor: z.string().optional(),
       })
@@ -88,30 +88,24 @@ export const peopleRouter = createTRPCRouter({
         });
       }
 
-      // Get activity stats by counting events authored by this person
-      const [issueCount, mrCount, commentCount] = await Promise.all([
-        ctx.db.event.count({
-          where: {
-            userId: ctx.session.user.id,
-            author: person.username,
-            type: "issue",
-          },
-        }),
-        ctx.db.event.count({
-          where: {
-            userId: ctx.session.user.id,
-            author: person.username,
-            type: "merge_request",
-          },
-        }),
-        ctx.db.event.count({
-          where: {
-            userId: ctx.session.user.id,
-            author: person.username,
-            type: "comment",
-          },
-        }),
-      ]);
+      // Get activity stats by counting events authored by this person (single query)
+      const eventCounts = await ctx.db.event.groupBy({
+        by: ["type"],
+        where: {
+          userId: ctx.session.user.id,
+          author: person.username,
+          type: { in: ["issue", "merge_request", "comment"] },
+        },
+        _count: { id: true },
+      });
+
+      // Convert grouped results to counts
+      const countMap = new Map(
+        eventCounts.map((e) => [e.type, e._count.id])
+      );
+      const issueCount = countMap.get("issue") ?? 0;
+      const mrCount = countMap.get("merge_request") ?? 0;
+      const commentCount = countMap.get("comment") ?? 0;
 
       return {
         ...person,

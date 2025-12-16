@@ -67,9 +67,27 @@ export const createTRPCContext = async (opts: CreateNextContextOptions) => {
     }
   });
 
+  // DEBUG: Log cookie header to trace session issues
+  const cookieHeader = headers.get('cookie');
+  const hasBetterAuthCookie = cookieHeader?.includes('better-auth.session_token') ?? false;
+  const hasNextAuthCookie = cookieHeader?.includes('next-auth') ?? false;
+  logger.info({
+    hasCookie: !!cookieHeader,
+    hasBetterAuthCookie,
+    hasNextAuthCookie,
+    cookieLength: cookieHeader?.length ?? 0,
+  }, "TRPC context: Cookie header");
+
   const session = await auth.api.getSession({
     headers,
   });
+
+  // DEBUG: Log session result
+  logger.info({
+    hasSession: !!session,
+    hasUser: !!session?.user,
+    userId: session?.user?.id?.substring(0, 8),
+  }, "TRPC context: Session result");
 
   return createInnerTRPCContext({
     session,

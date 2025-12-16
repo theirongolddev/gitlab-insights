@@ -2,6 +2,7 @@ import { auth } from "~/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
+import { logger } from "~/lib/logger";
 
 const SESSION_COOKIE_NAME = "better-auth.session_token";
 
@@ -23,7 +24,7 @@ async function getServerSessionWithError(): Promise<SessionResult> {
   } catch (error) {
     // Return error information instead of throwing
     // This allows callers to distinguish between "no session" and "error"
-    console.error("Failed to get server session:", error);
+    logger.error({ error }, "auth-server: Failed to get server session");
     return {
       session: null,
       error: error instanceof Error ? error : new Error(String(error)),
@@ -51,7 +52,7 @@ export async function requireAuth() {
   // The session might still be valid, we just can't verify it right now
   // Throw the error so Next.js can handle it (shows error page, doesn't log user out)
   if (result.error) {
-    console.error("Error getting session in requireAuth:", result.error);
+    logger.error({ error: result.error }, "auth-server: Error getting session in requireAuth");
     throw result.error;
   }
 

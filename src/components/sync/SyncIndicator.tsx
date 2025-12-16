@@ -136,26 +136,20 @@ export function SyncIndicator({ isSyncing = false }: SyncIndicatorProps) {
   );
 
   // Track current timestamp for time calculations
-  // Initialize with current time, updates via interval callback (lint-compliant)
+  // Updates every 10 seconds for smoother "X minutes ago" updates
+  // Separate from query refetch to avoid stale display between refreshes
   const [currentTimestamp, setCurrentTimestamp] = useState(() => Date.now());
 
-  // Update timestamp on interval, synced with tRPC refetch interval
-  // Both the interval and tRPC refetch run at 30s, keeping them roughly aligned
-  // The dataUpdatedAt dependency ensures we also update when query refetches
+  // Update timestamp more frequently for accurate relative time display
+  // This is independent of query refetch to ensure UI stays fresh
   useEffect(() => {
-    // Reset timestamp when data updates (via callback, not synchronous setState)
-    const handleDataUpdate = () => {
-      setCurrentTimestamp(Date.now());
-    };
+    // Update immediately when component mounts or data changes
+    setCurrentTimestamp(Date.now());
 
-    // Initial update when dataUpdatedAt changes
-    if (dataUpdatedAt > 0) {
-      handleDataUpdate();
-    }
-
+    // Update every 10 seconds for smooth relative time display
     const id = setInterval(() => {
       setCurrentTimestamp(Date.now());
-    }, REFRESH_INTERVAL_MS);
+    }, 10000);
 
     return () => clearInterval(id);
   }, [dataUpdatedAt]);

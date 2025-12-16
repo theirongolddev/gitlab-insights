@@ -134,7 +134,7 @@ export const eventsRouter = createTRPCRouter({
       );
 
       // 4b. Fetch and store commits (if enabled)
-      let commitStats = { stored: 0, skipped: 0, linked: 0 };
+      let commitStats = { stored: 0, skipped: 0, linked: 0, failed: 0 };
       if (includeCommits) {
         logger.info(
           { projectCount: projectIds.length, commitDepth },
@@ -166,6 +166,7 @@ export const eventsRouter = createTRPCRouter({
             commitStats.stored += projectCommitStats.stored;
             commitStats.skipped += projectCommitStats.skipped;
             commitStats.linked += projectCommitStats.linked;
+            commitStats.failed += projectCommitStats.failed;
           } catch (error) {
             logger.warn(
               { error, projectId: project.gitlabProjectId },

@@ -78,7 +78,8 @@ export function EventDetail({ eventId }: EventDetailProps) {
 
   const { data: event, isLoading, error } = api.events.getById.useQuery(
     {
-      id: eventId!,
+      // Use empty string as fallback - query is disabled when eventId is null anyway
+      id: eventId ?? "",
       searchTerms, // Use memoized version
     },
     { enabled: !!eventId }

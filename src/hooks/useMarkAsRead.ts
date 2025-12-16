@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-import { api } from "~/trpc/react";
+import { useQueryClient } from "@tanstack/react-query";
+import { api, type RouterOutputs } from "~/trpc/react";
 
 /**
  * useMarkAsRead - Hook for managing work item read state
@@ -18,17 +19,22 @@ import { api } from "~/trpc/react";
  * 2. Expand card in-place -> markAsRead
  * 3. Open side panel -> markAsRead
  */
+// Type alias for the getGrouped output
+type GetGroupedOutput = RouterOutputs["workItems"]["getGrouped"];
+
 export function useMarkAsRead() {
   const utils = api.useUtils();
+  const queryClient = useQueryClient();
 
   // Track pending mutations to prevent race conditions
   const pendingIdsRef = useRef<Set<string>>(new Set());
 
   // Helper to update work item in cache data
   const updateWorkItemInCache = (
-    data: NonNullable<ReturnType<typeof utils.workItems.getGrouped.getData>>,
+    data: GetGroupedOutput | undefined,
     workItemId: string
-  ) => {
+  ): GetGroupedOutput | undefined => {
+    if (!data) return data;
     const updateItem = (items: typeof data.items.issues) =>
       items.map((item) =>
         item.id === workItemId
@@ -69,14 +75,11 @@ export function useMarkAsRead() {
       // Cancel outgoing refetches to prevent overwriting optimistic update
       await utils.workItems.getGrouped.cancel();
 
-      // Get all cached queries and update them optimistically
-      const queryClient = utils.workItems.getGrouped;
-      
-      // We can't easily snapshot all queries, so we'll rely on invalidation for rollback
-      // Update all cached getGrouped queries regardless of their input params
-      queryClient.setData(
-        { limit: 50, filters: { status: ["open"] } },
-        (old) => (old ? updateWorkItemInCache(old, workItemId) : old)
+      // Update ALL cached getGrouped queries regardless of their input params
+      // This fixes the race condition where different filter views had inconsistent state
+      queryClient.setQueriesData<GetGroupedOutput>(
+        { queryKey: [["workItems", "getGrouped"]] },
+        (old) => updateWorkItemInCache(old, workItemId)
       );
 
       return { previousData: undefined };
@@ -95,9 +98,10 @@ export function useMarkAsRead() {
 
   // Helper to update multiple work items in cache data
   const updateMultipleWorkItemsInCache = (
-    data: NonNullable<ReturnType<typeof utils.workItems.getGrouped.getData>>,
+    data: GetGroupedOutput | undefined,
     workItemIds: string[]
-  ) => {
+  ): GetGroupedOutput | undefined => {
+    if (!data) return data;
     const idsSet = new Set(workItemIds);
     const updateItem = (items: typeof data.items.issues) =>
       items.map((item) =>
@@ -139,10 +143,11 @@ export function useMarkAsRead() {
       // Cancel outgoing refetches
       await utils.workItems.getGrouped.cancel();
 
-      // Update cached query with the params used by CatchUpClient
-      utils.workItems.getGrouped.setData(
-        { limit: 50, filters: { status: ["open"] } },
-        (old) => (old ? updateMultipleWorkItemsInCache(old, newIds) : old)
+      // Update ALL cached getGrouped queries regardless of their input params
+      // This fixes the race condition where different filter views had inconsistent state
+      queryClient.setQueriesData<GetGroupedOutput>(
+        { queryKey: [["workItems", "getGrouped"]] },
+        (old) => updateMultipleWorkItemsInCache(old, newIds)
       );
 
       return { newIds };

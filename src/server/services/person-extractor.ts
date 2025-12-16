@@ -77,6 +77,9 @@ export async function upsertPerson(
  * Batch upsert multiple people efficiently
  * Uses individual upserts wrapped in a transaction for consistency
  */
+// Maximum people to process in a single transaction to prevent long-running locks
+const BATCH_SIZE = 100;
+
 export async function upsertPeople(
   db: PrismaClient,
   userId: string,
@@ -89,51 +92,68 @@ export async function upsertPeople(
   // Deduplicate by gitlabId before processing
   const uniquePeople = deduplicatePeople(people);
 
-  // Check which people already exist
-  const existingPeople = await db.person.findMany({
-    where: {
-      userId,
-      gitlabId: { in: uniquePeople.map((p) => p.gitlabId) },
-    },
-    select: { gitlabId: true },
-  });
+  let totalCreated = 0;
+  let totalUpdated = 0;
 
-  const existingIds = new Set(existingPeople.map((p) => p.gitlabId));
+  // Process in batches to prevent long-running transactions that lock the DB
+  for (let i = 0; i < uniquePeople.length; i += BATCH_SIZE) {
+    const batch = uniquePeople.slice(i, i + BATCH_SIZE);
 
-  // Perform upserts in an interactive transaction with timeout
-  await db.$transaction(
-    async (tx) => {
-      for (const person of uniquePeople) {
-        await tx.person.upsert({
+    const { created, updated } = await db.$transaction(
+      async (tx) => {
+        // Check which people already exist (inside transaction for consistency)
+        const existingPeople = await tx.person.findMany({
           where: {
-            userId_gitlabId: {
+            userId,
+            gitlabId: { in: batch.map((p) => p.gitlabId) },
+          },
+          select: { gitlabId: true },
+        });
+
+        const existingIds = new Set(existingPeople.map((p) => p.gitlabId));
+
+        // Perform upserts
+        for (const person of batch) {
+          await tx.person.upsert({
+            where: {
+              userId_gitlabId: {
+                userId,
+                gitlabId: person.gitlabId,
+              },
+            },
+            create: {
               userId,
               gitlabId: person.gitlabId,
+              username: person.username,
+              name: person.name,
+              avatarUrl: person.avatarUrl,
             },
-          },
-          create: {
-            userId,
-            gitlabId: person.gitlabId,
-            username: person.username,
-            name: person.name,
-            avatarUrl: person.avatarUrl,
-          },
-          update: {
-            username: person.username,
-            name: person.name,
-            avatarUrl: person.avatarUrl,
-          },
-        });
-      }
-    },
-    {
-      timeout: 30000, // 30 second timeout
-      maxWait: 5000, // 5 second max wait to acquire connection
-    }
-  );
+            update: {
+              username: person.username,
+              name: person.name,
+              avatarUrl: person.avatarUrl,
+            },
+          });
+        }
 
-  const created = uniquePeople.filter((p) => !existingIds.has(p.gitlabId)).length;
-  const updated = uniquePeople.filter((p) => existingIds.has(p.gitlabId)).length;
+        // Calculate stats inside transaction for accuracy
+        return {
+          created: batch.filter((p) => !existingIds.has(p.gitlabId)).length,
+          updated: batch.filter((p) => existingIds.has(p.gitlabId)).length,
+        };
+      },
+      {
+        timeout: 15000, // 15 second timeout per batch
+        maxWait: 5000, // 5 second max wait to acquire connection
+      }
+    );
+
+    totalCreated += created;
+    totalUpdated += updated;
+  }
+
+  const created = totalCreated;
+  const updated = totalUpdated;
 
   logger.info(
     { userId, created, updated, total: uniquePeople.length },
@@ -219,7 +239,7 @@ export function extractPeopleFromGitLabResponses(
 }
 
 /**
- * Deduplicate people by gitlabId, keeping the most recent/complete data
+ * Deduplicate people by gitlabId, merging the most complete data from all records
  */
 function deduplicatePeople(people: ExtractedPerson[]): ExtractedPerson[] {
   const personMap = new Map<number, ExtractedPerson>();
@@ -227,9 +247,16 @@ function deduplicatePeople(people: ExtractedPerson[]): ExtractedPerson[] {
   for (const person of people) {
     const existing = personMap.get(person.gitlabId);
 
-    // Keep entry with more complete data (prefer non-null name)
-    if (!existing || (person.name && !existing.name)) {
+    if (!existing) {
       personMap.set(person.gitlabId, person);
+    } else {
+      // Merge fields, preferring non-null/non-empty values
+      personMap.set(person.gitlabId, {
+        gitlabId: person.gitlabId,
+        username: person.username || existing.username,
+        name: person.name ?? existing.name,
+        avatarUrl: person.avatarUrl ?? existing.avatarUrl,
+      });
     }
   }
 

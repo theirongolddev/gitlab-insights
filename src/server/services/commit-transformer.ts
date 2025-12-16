@@ -96,15 +96,16 @@ export function transformCommit(
  * @param db - Prisma client
  * @param userId - User ID for data isolation
  * @param commits - Transformed commits to store
- * @returns Count of stored and skipped commits
+ * @returns Count of stored, skipped, and failed commits
  */
 export async function storeCommits(
   db: PrismaClient,
   userId: string,
   commits: TransformResult[]
-): Promise<{ stored: number; skipped: number }> {
+): Promise<{ stored: number; skipped: number; failed: number }> {
   let stored = 0;
   let skipped = 0;
+  let failed = 0;
 
   for (const { commit, files } of commits) {
     try {
@@ -181,19 +182,20 @@ export async function storeCommits(
 
       stored++;
     } catch (error) {
-      logger.warn(
-        { error, sha: commit.shortSha },
+      failed++;
+      logger.error(
+        { error, sha: commit.shortSha, projectId: commit.projectId },
         "commit-transformer: Failed to store commit"
       );
     }
   }
 
   logger.info(
-    { stored, skipped, total: commits.length },
+    { stored, skipped, failed, total: commits.length },
     "commit-transformer: Finished storing commits"
   );
 
-  return { stored, skipped };
+  return { stored, skipped, failed };
 }
 
 /**
@@ -202,16 +204,17 @@ export async function storeCommits(
  * @param db - Prisma client
  * @param userId - User ID for data isolation
  * @param commits - Transformed commits to store
- * @returns Count of stored and skipped commits
+ * @returns Count of stored, skipped, linked, and failed commits
  */
 export async function storeCommitsWithPersonLinks(
   db: PrismaClient,
   userId: string,
   commits: TransformResult[]
-): Promise<{ stored: number; skipped: number; linked: number }> {
+): Promise<{ stored: number; skipped: number; linked: number; failed: number }> {
   let stored = 0;
   let skipped = 0;
   let linked = 0;
+  let failed = 0;
 
   // Build a cache of people by email for efficient lookup
   const people = await db.person.findMany({
@@ -317,17 +320,18 @@ export async function storeCommitsWithPersonLinks(
 
       stored++;
     } catch (error) {
-      logger.warn(
-        { error, sha: commit.shortSha },
+      failed++;
+      logger.error(
+        { error, sha: commit.shortSha, projectId: commit.projectId },
         "commit-transformer: Failed to store commit"
       );
     }
   }
 
   logger.info(
-    { stored, skipped, linked, total: commits.length },
+    { stored, skipped, linked, failed, total: commits.length },
     "commit-transformer: Finished storing commits with person links"
   );
 
-  return { stored, skipped, linked };
+  return { stored, skipped, linked, failed };
 }

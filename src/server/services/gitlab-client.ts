@@ -286,16 +286,29 @@ export class GitLabClient {
       };
     }));
 
-    const results = await Promise.all(projectPromises);
+    // Use allSettled to preserve partial results when some projects fail
+    const settledResults = await Promise.allSettled(projectPromises);
 
-    // Combine results from all projects
-    for (const result of results) {
-      issues.push(...result.issues);
-      mergeRequests.push(...result.mergeRequests);
-      notes.push(...result.notes);
-    }
+    // Combine successful results, log failures
+    let failedCount = 0;
+    settledResults.forEach((result, i) => {
+      if (result.status === "fulfilled") {
+        issues.push(...result.value.issues);
+        mergeRequests.push(...result.value.mergeRequests);
+        notes.push(...result.value.notes);
+      } else {
+        failedCount++;
+        logger.error(
+          { error: result.reason, projectId: projectIds[i] },
+          "GitLabClient: Failed to fetch events for project"
+        );
+      }
+    });
 
-    logger.info({ issueCount: issues.length, mrCount: mergeRequests.length, noteCount: notes.length }, "GitLabClient: Fetched events");
+    logger.info(
+      { issueCount: issues.length, mrCount: mergeRequests.length, noteCount: notes.length, failedProjects: failedCount },
+      "GitLabClient: Fetched events"
+    );
 
     return { issues, mergeRequests, notes };
   }
@@ -374,19 +387,27 @@ export class GitLabClient {
     // Fetch notes for first 30 issues (most recently updated)
     const limitedIssues = issues.slice(0, 30);
 
-    // Fetch notes for each issue
+    // Fetch notes for each issue with error handling to preserve partial results
     const notePromises = limitedIssues.map(async (issue) => {
-      const url = `${this.baseUrl}/projects/${encodeURIComponent(projectId)}/issues/${issue.iid}/notes?per_page=20&order_by=created_at&sort=desc`;
-      const rawNotes = await this.fetchPaginated<GitLabNote>(url, 1); // 20 most recent notes per issue
-      const notes = z.array(GitLabNoteSchema).parse(rawNotes) as GitLabNote[];
+      try {
+        const url = `${this.baseUrl}/projects/${encodeURIComponent(projectId)}/issues/${issue.iid}/notes?per_page=20&order_by=created_at&sort=desc`;
+        const rawNotes = await this.fetchPaginated<GitLabNote>(url, 1); // 20 most recent notes per issue
+        const notes = z.array(GitLabNoteSchema).parse(rawNotes) as GitLabNote[];
 
-      // Attach project_id and construct web_url for each note
-      return notes.map((note) => ({
-        ...note,
-        project_id: issue.project_id,
-        web_url: `${issue.web_url}#note_${note.id}`,
-        noteable_type: "Issue" as const,
-      }));
+        // Attach project_id and construct web_url for each note
+        return notes.map((note) => ({
+          ...note,
+          project_id: issue.project_id,
+          web_url: `${issue.web_url}#note_${note.id}`,
+          noteable_type: "Issue" as const,
+        }));
+      } catch (error) {
+        logger.warn(
+          { error, projectId, issueIid: issue.iid },
+          "GitLabClient: Failed to fetch notes for issue"
+        );
+        return [];
+      }
     });
 
     const allNotes = await Promise.all(notePromises);
@@ -403,19 +424,27 @@ export class GitLabClient {
     // Fetch notes for first 30 MRs (most recently updated)
     const limitedMRs = mergeRequests.slice(0, 30);
 
-    // Fetch notes for each MR
+    // Fetch notes for each MR with error handling to preserve partial results
     const notePromises = limitedMRs.map(async (mr) => {
-      const url = `${this.baseUrl}/projects/${encodeURIComponent(projectId)}/merge_requests/${mr.iid}/notes?per_page=20&order_by=created_at&sort=desc`;
-      const rawNotes = await this.fetchPaginated<GitLabNote>(url, 1); // 20 most recent notes per MR
-      const notes = z.array(GitLabNoteSchema).parse(rawNotes) as GitLabNote[];
+      try {
+        const url = `${this.baseUrl}/projects/${encodeURIComponent(projectId)}/merge_requests/${mr.iid}/notes?per_page=20&order_by=created_at&sort=desc`;
+        const rawNotes = await this.fetchPaginated<GitLabNote>(url, 1); // 20 most recent notes per MR
+        const notes = z.array(GitLabNoteSchema).parse(rawNotes) as GitLabNote[];
 
-      // Attach project_id and construct web_url for each note
-      return notes.map((note) => ({
-        ...note,
-        project_id: mr.project_id,
-        web_url: `${mr.web_url}#note_${note.id}`,
-        noteable_type: "MergeRequest" as const,
-      }));
+        // Attach project_id and construct web_url for each note
+        return notes.map((note) => ({
+          ...note,
+          project_id: mr.project_id,
+          web_url: `${mr.web_url}#note_${note.id}`,
+          noteable_type: "MergeRequest" as const,
+        }));
+      } catch (error) {
+        logger.warn(
+          { error, projectId, mrIid: mr.iid },
+          "GitLabClient: Failed to fetch notes for MR"
+        );
+        return [];
+      }
     });
 
     const allNotes = await Promise.all(notePromises);
@@ -525,17 +554,21 @@ export class GitLabClient {
   private parseRetryAfter(retryAfter: string | null): number | null {
     if (!retryAfter) return null;
 
+    // Minimum backoff to avoid tight retry loops when Retry-After is 0
+    const MIN_BACKOFF_MS = 100;
+
     // Try parsing as integer (seconds)
     const seconds = parseInt(retryAfter, 10);
-    if (!isNaN(seconds) && seconds > 0) {
-      return seconds * 1000;
+    if (!isNaN(seconds) && seconds >= 0) {
+      // If server says retry immediately (0), use minimum backoff
+      return Math.max(seconds * 1000, MIN_BACKOFF_MS);
     }
 
     // Try parsing as HTTP-date
     const date = Date.parse(retryAfter);
     if (!isNaN(date)) {
       const waitMs = date - Date.now();
-      return waitMs > 0 ? waitMs : null;
+      return waitMs > 0 ? waitMs : MIN_BACKOFF_MS;
     }
 
     return null;
