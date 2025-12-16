@@ -3,7 +3,7 @@
 import { Avatar, Card, CardBody, Chip } from "@heroui/react";
 import { PersonActivityStats, type PersonStats } from "./PersonActivityStats";
 
-export interface Person {
+export interface PersonCardData {
   id: string;
   gitlabId: number;
   username: string;
@@ -12,7 +12,7 @@ export interface Person {
 }
 
 export interface PersonCardProps {
-  person: Person;
+  person: PersonCardData;
   stats?: PersonStats;
   variant?: "default" | "compact" | "detailed";
   isSelected?: boolean;
