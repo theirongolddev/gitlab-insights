@@ -5,8 +5,125 @@
  * Handles pagination, rate limiting, and error conditions
  */
 
+import { z } from "zod";
 import { env } from "~/env";
 import { logger } from "~/lib/logger";
+
+/**
+ * Simple concurrency limiter to prevent API rate limit exhaustion.
+ * Limits concurrent promises to avoid overwhelming GitLab API.
+ */
+function createConcurrencyLimiter(maxConcurrent: number) {
+  let active = 0;
+  const queue: Array<() => void> = [];
+
+  return async <T>(fn: () => Promise<T>): Promise<T> => {
+    return new Promise((resolve, reject) => {
+      const run = async () => {
+        active++;
+        try {
+          const result = await fn();
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        } finally {
+          active--;
+          if (queue.length > 0) {
+            const next = queue.shift();
+            next?.();
+          }
+        }
+      };
+
+      if (active < maxConcurrent) {
+        void run();
+      } else {
+        queue.push(run);
+      }
+    });
+  };
+}
+
+// Limit concurrent project fetches to prevent rate limit exhaustion
+const projectConcurrencyLimit = createConcurrencyLimiter(3);
+// Limit concurrent note fetches per batch
+const noteConcurrencyLimit = createConcurrencyLimiter(5);
+
+// Zod schemas for GitLab API response validation
+const GitLabAuthorSchema = z.object({
+  id: z.number(),
+  username: z.string(),
+  name: z.string().optional(),
+  avatar_url: z.string(),
+});
+
+const GitLabIssueSchema = z.object({
+  id: z.number(),
+  iid: z.number(),
+  title: z.string(),
+  description: z.string().nullable(),
+  author: GitLabAuthorSchema,
+  assignees: z.array(z.object({ username: z.string() })),
+  project_id: z.number(),
+  labels: z.array(z.string()),
+  state: z.enum(["opened", "closed"]),
+  user_notes_count: z.number(),
+  web_url: z.string(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
+const GitLabMergeRequestSchema = z.object({
+  id: z.number(),
+  iid: z.number(),
+  title: z.string(),
+  description: z.string().nullable(),
+  author: GitLabAuthorSchema,
+  assignees: z.array(z.object({ username: z.string() })),
+  project_id: z.number(),
+  labels: z.array(z.string()),
+  state: z.enum(["opened", "closed", "merged"]),
+  user_notes_count: z.number(),
+  web_url: z.string(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
+const GitLabNoteSchema = z.object({
+  id: z.number(),
+  body: z.string(),
+  author: GitLabAuthorSchema,
+  noteable_id: z.number(),
+  noteable_iid: z.number(),
+  noteable_type: z.enum(["Issue", "MergeRequest"]),
+  system: z.boolean(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
+const GitLabCommitSchema = z.object({
+  id: z.string(),
+  short_id: z.string(),
+  title: z.string(),
+  message: z.string(),
+  author_name: z.string(),
+  author_email: z.string(),
+  authored_date: z.string(),
+  web_url: z.string(),
+  stats: z.object({
+    additions: z.number(),
+    deletions: z.number(),
+    total: z.number(),
+  }).optional(),
+});
+
+const GitLabCommitDiffSchema = z.object({
+  old_path: z.string(),
+  new_path: z.string(),
+  new_file: z.boolean(),
+  renamed_file: z.boolean(),
+  deleted_file: z.boolean(),
+});
 
 // GitLab API response types
 export interface GitLabIssue {
@@ -15,11 +132,16 @@ export interface GitLabIssue {
   title: string;
   description: string | null;
   author: {
+    id: number;
     username: string;
+    name?: string;
     avatar_url: string;
   };
+  assignees: Array<{ username: string }>;
   project_id: number;
   labels: string[];
+  state: "opened" | "closed";
+  user_notes_count: number;
   web_url: string;
   created_at: string;
   updated_at: string;
@@ -31,11 +153,16 @@ export interface GitLabMergeRequest {
   title: string;
   description: string | null;
   author: {
+    id: number;
     username: string;
+    name?: string;
     avatar_url: string;
   };
+  assignees: Array<{ username: string }>;
   project_id: number;
   labels: string[];
+  state: "opened" | "closed" | "merged";
+  user_notes_count: number;
   web_url: string;
   created_at: string;
   updated_at: string;
@@ -45,11 +172,15 @@ export interface GitLabNote {
   id: number;
   body: string;
   author: {
+    id: number;
     username: string;
+    name?: string;
     avatar_url: string;
   };
   noteable_id: number;
+  noteable_iid: number;
   noteable_type: "Issue" | "MergeRequest";
+  system: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -58,6 +189,30 @@ export interface GitLabProject {
   id: number;
   name: string;
   path_with_namespace: string;
+}
+
+export interface GitLabCommit {
+  id: string;           // Full SHA
+  short_id: string;     // Short SHA (8 chars)
+  title: string;        // First line of message
+  message: string;      // Full commit message
+  author_name: string;
+  author_email: string;
+  authored_date: string;
+  web_url: string;
+  stats?: {
+    additions: number;
+    deletions: number;
+    total: number;
+  };
+}
+
+export interface GitLabCommitDiff {
+  old_path: string;
+  new_path: string;
+  new_file: boolean;
+  renamed_file: boolean;
+  deleted_file: boolean;
 }
 
 export interface FetchEventsResult {
@@ -107,21 +262,29 @@ export class GitLabClient {
     const mergeRequests: GitLabMergeRequest[] = [];
     const notes: Array<GitLabNote & { project_id: number; web_url: string }> = [];
 
-    // Fetch events for each project in parallel
-    // Notes re-enabled with strict limits (10 notes per issue/MR, max 20 issues/MRs)
-    const projectPromises = projectIds.map(async (projectId) => {
-      const [projectIssues, projectMRs, projectNotes] = await Promise.all([
+    // Fetch events for each project with concurrency limiting
+    // Prevents API rate limit exhaustion by limiting concurrent requests
+    const projectPromises = projectIds.map((projectId) =>
+      projectConcurrencyLimit(async () => {
+      // First fetch issues and MRs
+      const [projectIssues, projectMRs] = await Promise.all([
         this.fetchIssues(projectId, updatedAfter),
         this.fetchMergeRequests(projectId, updatedAfter),
-        this.fetchNotes(projectId, updatedAfter),
       ]);
+
+      // Then fetch notes using the already-fetched issues/MRs
+      const projectNotes = await this.fetchNotesForItems(
+        projectId,
+        projectIssues,
+        projectMRs
+      );
 
       return {
         issues: projectIssues,
         mergeRequests: projectMRs,
         notes: projectNotes,
       };
-    });
+    }));
 
     const results = await Promise.all(projectPromises);
 
@@ -156,7 +319,8 @@ export class GitLabClient {
     }
 
     const url = `${this.baseUrl}/projects/${encodeURIComponent(projectId)}/issues?${params}`;
-    return this.fetchPaginated<GitLabIssue>(url, 2); // 2 pages = up to 100 issues
+    const data = await this.fetchPaginated<GitLabIssue>(url, 2); // 2 pages = up to 100 issues
+    return z.array(GitLabIssueSchema).parse(data) as GitLabIssue[];
   }
 
   /**
@@ -178,44 +342,43 @@ export class GitLabClient {
     }
 
     const url = `${this.baseUrl}/projects/${encodeURIComponent(projectId)}/merge_requests?${params}`;
-    return this.fetchPaginated<GitLabMergeRequest>(url, 2); // 2 pages = up to 100 MRs
+    const data = await this.fetchPaginated<GitLabMergeRequest>(url, 2); // 2 pages = up to 100 MRs
+    return z.array(GitLabMergeRequestSchema).parse(data) as GitLabMergeRequest[];
   }
 
   /**
-   * Fetch notes (comments) for a single project
-   * Notes on both issues and merge requests
+   * Fetch notes (comments) for a single project using already-fetched issues/MRs
+   * This avoids duplicate API calls since issues/MRs are already fetched in fetchEvents
    */
-  private async fetchNotes(
+  private async fetchNotesForItems(
     projectId: string,
-    updatedAfter?: string
+    issues: GitLabIssue[],
+    mergeRequests: GitLabMergeRequest[]
   ): Promise<Array<GitLabNote & { project_id: number; web_url: string }>> {
     // Fetch notes from issues and MRs separately, then combine
     const [issueNotes, mrNotes] = await Promise.all([
-      this.fetchIssueNotes(projectId, updatedAfter),
-      this.fetchMRNotes(projectId, updatedAfter),
+      this.fetchIssueNotesForItems(projectId, issues),
+      this.fetchMRNotesForItems(projectId, mergeRequests),
     ]);
 
     return [...issueNotes, ...mrNotes];
   }
 
   /**
-   * Fetch notes from all issues in a project
+   * Fetch notes from provided issues (avoids re-fetching issues)
    */
-  private async fetchIssueNotes(
+  private async fetchIssueNotesForItems(
     projectId: string,
-    updatedAfter?: string
+    issues: GitLabIssue[]
   ): Promise<Array<GitLabNote & { project_id: number; web_url: string }>> {
-    // First fetch issues to get their IIDs
-    // Issues are already sorted by updated_at desc, so recent comments bump issues up
-    const issues = await this.fetchIssues(projectId, updatedAfter);
-
-    // Fetch notes for first 30 issues (increased to catch more recent activity)
+    // Fetch notes for first 30 issues (most recently updated)
     const limitedIssues = issues.slice(0, 30);
 
-    // Then fetch notes for each issue
+    // Fetch notes for each issue
     const notePromises = limitedIssues.map(async (issue) => {
       const url = `${this.baseUrl}/projects/${encodeURIComponent(projectId)}/issues/${issue.iid}/notes?per_page=20&order_by=created_at&sort=desc`;
-      const notes = await this.fetchPaginated<GitLabNote>(url, 1); // 20 most recent notes per issue
+      const rawNotes = await this.fetchPaginated<GitLabNote>(url, 1); // 20 most recent notes per issue
+      const notes = z.array(GitLabNoteSchema).parse(rawNotes) as GitLabNote[];
 
       // Attach project_id and construct web_url for each note
       return notes.map((note) => ({
@@ -227,27 +390,24 @@ export class GitLabClient {
     });
 
     const allNotes = await Promise.all(notePromises);
-    return allNotes.flat();
+    return allNotes.flat() as Array<GitLabNote & { project_id: number; web_url: string }>;
   }
 
   /**
-   * Fetch notes from all merge requests in a project
+   * Fetch notes from provided merge requests (avoids re-fetching MRs)
    */
-  private async fetchMRNotes(
+  private async fetchMRNotesForItems(
     projectId: string,
-    updatedAfter?: string
+    mergeRequests: GitLabMergeRequest[]
   ): Promise<Array<GitLabNote & { project_id: number; web_url: string }>> {
-    // First fetch MRs to get their IIDs
-    // MRs are already sorted by updated_at desc, so recent comments bump MRs up
-    const mrs = await this.fetchMergeRequests(projectId, updatedAfter);
+    // Fetch notes for first 30 MRs (most recently updated)
+    const limitedMRs = mergeRequests.slice(0, 30);
 
-    // Fetch notes for first 30 MRs (increased to catch more recent activity)
-    const limitedMRs = mrs.slice(0, 30);
-
-    // Then fetch notes for each MR
+    // Fetch notes for each MR
     const notePromises = limitedMRs.map(async (mr) => {
       const url = `${this.baseUrl}/projects/${encodeURIComponent(projectId)}/merge_requests/${mr.iid}/notes?per_page=20&order_by=created_at&sort=desc`;
-      const notes = await this.fetchPaginated<GitLabNote>(url, 1); // 20 most recent notes per MR
+      const rawNotes = await this.fetchPaginated<GitLabNote>(url, 1); // 20 most recent notes per MR
+      const notes = z.array(GitLabNoteSchema).parse(rawNotes) as GitLabNote[];
 
       // Attach project_id and construct web_url for each note
       return notes.map((note) => ({
@@ -259,7 +419,7 @@ export class GitLabClient {
     });
 
     const allNotes = await Promise.all(notePromises);
-    return allNotes.flat();
+    return allNotes.flat() as Array<GitLabNote & { project_id: number; web_url: string }>;
   }
 
   /**
@@ -281,8 +441,12 @@ export class GitLabClient {
         throw await this.handleErrorResponse(response);
       }
 
-      const data = (await response.json()) as T[];
-      results.push(...data);
+      const data = (await response.json()) as unknown;
+      // Validate response is an array before pushing
+      if (!Array.isArray(data)) {
+        throw new GitLabAPIError("Invalid API response: expected array", 500);
+      }
+      results.push(...(data as T[]));
       pageCount++;
 
       // Check for next page in Link header
@@ -414,5 +578,139 @@ export class GitLabClient {
     }
 
     return null;
+  }
+
+  /**
+   * Fetch commits for a project
+   *
+   * @param projectId - GitLab project ID
+   * @param options - Optional filters for commits
+   * @returns Array of commits with stats
+   */
+  async fetchCommits(
+    projectId: string,
+    options?: {
+      since?: string;      // ISO date - only commits after this date
+      until?: string;      // ISO date - only commits before this date
+      refName?: string;    // Branch name (default: default branch)
+      perPage?: number;    // Results per page (default: 100)
+      maxPages?: number;   // Max pages to fetch (default: 2 = 200 commits)
+    }
+  ): Promise<GitLabCommit[]> {
+    const params = new URLSearchParams({
+      per_page: String(options?.perPage ?? 100),
+      with_stats: "true",  // Include additions/deletions stats
+    });
+
+    if (options?.since) {
+      params.set("since", options.since);
+    }
+    if (options?.until) {
+      params.set("until", options.until);
+    }
+    if (options?.refName) {
+      params.set("ref_name", options.refName);
+    }
+
+    const url = `${this.baseUrl}/projects/${encodeURIComponent(projectId)}/repository/commits?${params}`;
+    const maxPages = options?.maxPages ?? 2; // Default: 200 commits max
+
+    logger.debug({ projectId, maxPages }, "GitLabClient: Fetching commits");
+
+    const rawCommits = await this.fetchPaginated<GitLabCommit>(url, maxPages);
+    const commits = z.array(GitLabCommitSchema).parse(rawCommits) as GitLabCommit[];
+
+    logger.info(
+      { projectId, commitCount: commits.length },
+      "GitLabClient: Fetched commits"
+    );
+
+    return commits;
+  }
+
+  /**
+   * Fetch the diff (files changed) for a specific commit
+   *
+   * @param projectId - GitLab project ID
+   * @param sha - Commit SHA
+   * @returns Array of file diffs showing what changed
+   */
+  async fetchCommitDiff(
+    projectId: string,
+    sha: string
+  ): Promise<GitLabCommitDiff[]> {
+    const url = `${this.baseUrl}/projects/${encodeURIComponent(projectId)}/repository/commits/${sha}/diff`;
+
+    logger.debug({ projectId, sha: sha.substring(0, 8) }, "GitLabClient: Fetching commit diff");
+
+    const response = await this.fetchWithRetry(url);
+
+    if (!response.ok) {
+      throw await this.handleErrorResponse(response);
+    }
+
+    const rawDiffs = (await response.json()) as unknown;
+    const diffs = z.array(GitLabCommitDiffSchema).parse(rawDiffs) as GitLabCommitDiff[];
+
+    logger.debug(
+      { projectId, sha: sha.substring(0, 8), fileCount: diffs.length },
+      "GitLabClient: Fetched commit diff"
+    );
+
+    return diffs;
+  }
+
+  /**
+   * Fetch commits with their diffs for a project
+   * Combines fetchCommits and fetchCommitDiff for convenience
+   * Uses concurrency limiting to avoid rate limits
+   *
+   * @param projectId - GitLab project ID
+   * @param options - Optional filters
+   * @returns Commits with their file diffs attached
+   */
+  async fetchCommitsWithDiffs(
+    projectId: string,
+    options?: {
+      since?: string;
+      until?: string;
+      refName?: string;
+      maxCommits?: number;  // Limit how many commits to fetch diffs for
+    }
+  ): Promise<Array<GitLabCommit & { diffs: GitLabCommitDiff[] }>> {
+    const commits = await this.fetchCommits(projectId, {
+      since: options?.since,
+      until: options?.until,
+      refName: options?.refName,
+      maxPages: 2,
+    });
+
+    // Limit commits to fetch diffs for (diffs are expensive)
+    const commitsToProcess = commits.slice(0, options?.maxCommits ?? 50);
+
+    // Fetch diffs with concurrency limiting
+    const commitsWithDiffs = await Promise.all(
+      commitsToProcess.map((commit) =>
+        noteConcurrencyLimit(async () => {
+          try {
+            const diffs = await this.fetchCommitDiff(projectId, commit.id);
+            return { ...commit, diffs };
+          } catch (error) {
+            logger.warn(
+              { error, sha: commit.short_id },
+              "GitLabClient: Failed to fetch diff for commit"
+            );
+            return { ...commit, diffs: [] };
+          }
+        })
+      )
+    );
+
+    logger.info(
+      { projectId, commitCount: commitsWithDiffs.length },
+      "GitLabClient: Fetched commits with diffs"
+    );
+
+    return commitsWithDiffs;
   }
 }

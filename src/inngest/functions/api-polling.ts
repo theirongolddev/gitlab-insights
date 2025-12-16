@@ -20,8 +20,14 @@ import {
   transformMergeRequests,
   transformNotes,
   storeEvents,
+  linkParentEvents,
+  updateActivityMetadata,
   getProjectMap,
 } from "~/server/services/event-transformer";
+import {
+  extractPeopleFromGitLabResponses,
+  upsertPeople,
+} from "~/server/services/person-extractor";
 import { logger } from "~/lib/logger";
 import { TRPCError } from "@trpc/server";
 
@@ -86,6 +92,20 @@ export const apiPollingJob = inngest.createFunction(
 
           const result = await storeEvents(db, user.id, allEvents);
 
+          // Link parent-child relationships (comments -> issues/MRs)
+          const linkedCount = await linkParentEvents(db, user.id);
+
+          // Update activity metadata (lastActivityAt, commentCount, participants)
+          const metadataCount = await updateActivityMetadata(db, user.id);
+
+          // Extract and upsert people from GitLab responses
+          const extractedPeople = extractPeopleFromGitLabResponses(
+            issues,
+            mergeRequests,
+            notes
+          );
+          const peopleResult = await upsertPeople(db, user.id, extractedPeople);
+
           await db.lastSync.upsert({
             where: { userId: user.id },
             create: { userId: user.id, lastSyncAt: new Date() },
@@ -97,6 +117,8 @@ export const apiPollingJob = inngest.createFunction(
               userId: user.id,
               stored: result.stored,
               skipped: result.skipped,
+              linked: linkedCount,
+              metadataUpdated: metadataCount,
               projectCount: projectIds.length,
             },
             "api-polling: User events synced"
@@ -133,8 +155,18 @@ export const apiPollingJob = inngest.createFunction(
       "api-polling: Job completed"
     );
 
-    // Success if we processed at least one user, or if there were no users to process
-    const success = processed > 0 || users.length === 0;
+    // Calculate success based on failure rate
+    // Success if: no users to process, OR processed at least one AND failure rate < 50%
+    const usersAttempted = processed + failed; // excluding skipped (they need re-auth)
+    const failureRate = usersAttempted > 0 ? failed / usersAttempted : 0;
+    const success = users.length === 0 || (processed > 0 && failureRate < 0.5);
+
+    if (!success) {
+      logger.error(
+        { processed, failed, skipped, failureRate: Math.round(failureRate * 100) },
+        "api-polling: High failure rate detected"
+      );
+    }
 
     return {
       success,
@@ -142,6 +174,7 @@ export const apiPollingJob = inngest.createFunction(
       failed,
       skipped,
       total: users.length,
+      failureRate: Math.round(failureRate * 100),
     };
   }
 );
