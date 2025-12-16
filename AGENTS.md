@@ -28,13 +28,15 @@ Absolutely forbidden unless the user gives **exact command and explicit approval
 
 - `git reset --hard`
 - `git clean -fd`
+- git stash
+- jj restore
 - `rm -rf`
 - Any command that can delete or overwrite code/data
 
 Rules:
 
 1. If you are not 100% sure what a command will delete, do not run it. Ask first.
-1. Prefer safe tools: `jj status`, `jj diff`, `git stash`, copying to backups.
+1. Prefer safe tools: `jj status`, `jj diff`, copying to backups.
 1. After approval, restate the command verbatim, list what it will affect, wait for confirmation.
 
 ______________________________________________________________________
@@ -66,7 +68,7 @@ Your configuration is split across these locations:
 Rules in `.claude/rules/*.md` are automatically enforced. Check what's there:
 
 - `safety.md` — File deletion, destructive commands
-- [Add your rules here]
+- `jj-vcs/` - How to use jj in place of git
 
 ### Skills (On-Demand)
 
@@ -221,35 +223,6 @@ cass index --full                  # Rebuild index (if search returns nothing)
 
 ______________________________________________________________________
 
-## cass-memory — Cross-Agent Learning
-
-Before starting any non-trivial task:
-
-```bash
-cm context "your task description" --json
-```
-
-This returns:
-
-- **Relevant rules** from the playbook
-- **Historical context** from past sessions
-- **Anti-patterns** to avoid
-- **Suggested searches** for deeper investigation
-
-```bash
-cm doctor                          # Health check
-```
-
-You do NOT need to:
-
-- Run `cm reflect` (automation handles this)
-- Manually add rules to the playbook
-- Worry about the learning pipeline
-
-The system learns from your sessions automatically.
-
-______________________________________________________________________
-
 ## UBS — Bug Scanner
 
 ### Pre-Commit (Required)
@@ -297,102 +270,6 @@ ubs --comparison baseline.json .   # Regression detection
 **Suppress false positives**: `// ubs:ignore`
 
 **Health check**: `ubs doctor --fix`
-
-______________________________________________________________________
-
-## MCP Agent Mail — Multi-Agent Coordination
-
-Agent Mail is available as an MCP server for coordinating multiple agents.
-
-### Registration (Required First)
-
-```python
-ensure_project(project_key="/abs/path/to/project")
-register_agent(project_key, program="claude-code", model="opus-4.5")
-# Returns auto-generated name like "GreenCastle"
-```
-
-### File Reservations
-
-```python
-# Reserve before editing
-file_reservation_paths(
-    project_key, agent_name,
-    paths=["src/**/*.ts"],
-    ttl_seconds=3600,
-    exclusive=True,
-    reason="bd-123"
-)
-
-# Extend if needed
-renew_file_reservations(project_key, agent_name, extend_seconds=1800)
-
-# Release when done
-release_file_reservations(project_key, agent_name)
-```
-
-### Messaging
-
-```python
-# Send
-send_message(
-    project_key, sender_name,
-    to=["OtherAgent"],
-    subject="[bd-123] Starting auth refactor",
-    body_md="Working on login module...",
-    thread_id="bd-123",
-    importance="normal"  # low, normal, high, urgent
-)
-
-# Reply
-reply_message(project_key, message_id, sender_name, body_md="Done!")
-
-# Check inbox
-fetch_inbox(project_key, agent_name, limit=10)
-fetch_inbox(project_key, agent_name, urgent_only=True)
-
-# Acknowledge
-acknowledge_message(project_key, agent_name, message_id)
-```
-
-### Search & Discovery
-
-```python
-# Full-text search
-search_messages(project_key, query="authentication", limit=20)
-
-# Thread summary
-summarize_thread(project_key, thread_id="bd-123")
-
-# Who is this agent?
-whois(project_key, agent_name="BlueLake")
-```
-
-### Build Coordination
-
-```python
-# Acquire build slot (prevents concurrent builds)
-acquire_build_slot(project_key, agent_name, slot="main", exclusive=True)
-release_build_slot(project_key, agent_name, slot="main")
-```
-
-### Quick Start Macros
-
-```python
-# Start session with reservation in one call
-macro_start_session(
-    human_key="/abs/path",
-    program="claude-code",
-    model="opus-4.5",
-    file_reservation_paths=["src/**"],
-    inbox_limit=10
-)
-```
-
-Common pitfalls:
-
-- "from_agent not registered" → call `register_agent` first
-- `FILE_RESERVATION_CONFLICT` → wait for expiry or coordinate with holder
 
 ______________________________________________________________________
 
@@ -496,7 +373,7 @@ fetch_inbox(project_key, agent_name)
 ubs --staged                       # Scan for bugs
 bd close <id> --reason "Completed: ..."
 bd sync                            # Sync .beads
-git add -A && git commit && git push
+jj commit -m "<message>" 
 release_file_reservations(...)     # If multi-agent
 ```
 
