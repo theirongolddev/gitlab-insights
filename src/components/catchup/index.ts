@@ -1,4 +1,4 @@
 export { CatchUpView } from "./CatchUpView";
-export { CatchUpModeToggle } from "./CatchUpModeToggle";
+export { ViewModeToggle } from "./ViewModeToggle";
 export { MarkAsReviewedButton } from "./MarkAsReviewedButton";
 export { MarkAllAsReviewedButton } from "./MarkAllAsReviewedButton";

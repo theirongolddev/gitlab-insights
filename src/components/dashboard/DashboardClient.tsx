@@ -6,6 +6,9 @@
  * Story 3.4: Sidebar New Item Badges
  * AC 3.4.5: Uses shared NewItemsContext for totalNewCount (no duplicate fetching)
  * AC 3.4.8: Data fetched once at AuthenticatedLayout level
+ * 
+ * PRD FR24: Default view shows grouped WorkItemCards (Issues/MRs sections)
+ * PRD FR38: Dashboard shows only open cards by default
  */
 
 import { useEffect, useCallback, useRef } from "react";
@@ -13,7 +16,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { type DashboardEvent } from "~/components/dashboard/ItemRow";
 import { EventTable } from "~/components/dashboard/EventTable";
 import { useSearch } from "~/components/search/SearchContext";
-import { CatchUpModeToggle } from "~/components/catchup";
+import { ViewModeToggle } from "~/components/catchup";
 import { CatchUpWorkItems } from "~/components/dashboard/CatchUpWorkItems";
 import { useShortcutHandler } from "~/hooks/useShortcutHandler";
 import { LoadingSpinner } from "~/components/ui/LoadingSpinner";
@@ -28,19 +31,23 @@ export function DashboardClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const isCatchUpMode = searchParams?.get("mode") === "catchup";
+  // Default is card view (grouped). Flat mode is opt-in via ?mode=flat
+  const isFlatMode = searchParams?.get("mode") === "flat";
+
+  // Show closed items toggle (default: false/hidden)
+  const showClosed = searchParams?.get("showClosed") === "true";
 
   // Split pane state for event details
   const { selectedEventId, handleRowClick } = useEventDetailPane({
     baseUrl: '/dashboard',
-    preserveParams: ['mode'], // Preserve ?mode=catchup in URLs
+    preserveParams: ['mode'], // Preserve ?mode=flat in URLs
   });
 
-  const prevCatchUpModeRef = useRef(isCatchUpMode);
+  const prevFlatModeRef = useRef(isFlatMode);
 
   useEffect(() => {
-    prevCatchUpModeRef.current = isCatchUpMode;
-  }, [isCatchUpMode]);
+    prevFlatModeRef.current = isFlatMode;
+  }, [isFlatMode]);
 
   const { data: monitoredProjects, isLoading: isLoadingMonitored } =
     api.projects.getMonitored.useQuery();
@@ -51,33 +58,48 @@ export function DashboardClient() {
     }
   }, [monitoredProjects, isLoadingMonitored, router]);
 
-  const { searchResults, isSearchActive, clearSearch } = useSearch();
+  const { searchResults, isSearchActive, clearSearch, keywords } = useSearch();
 
-  const toggleCatchUpMode = useCallback(() => {
-    if (isCatchUpMode) {
+  // Convert keywords array to search string for WorkItems query
+  const searchQuery = keywords.length > 0 ? keywords.join(" ") : undefined;
+
+  // Handler for showClosed toggle - updates URL param
+  const handleShowClosedChange = useCallback((newShowClosed: boolean) => {
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
+    if (newShowClosed) {
+      params.set("showClosed", "true");
+    } else {
+      params.delete("showClosed");
+    }
+    const paramString = params.toString();
+    router.push(`/dashboard${paramString ? `?${paramString}` : ""}`);
+  }, [router, searchParams]);
+
+  const toggleFlatMode = useCallback(() => {
+    if (isFlatMode) {
       router.push("/dashboard");
     } else {
       if (isSearchActive) {
         clearSearch();
       }
-      router.push("/dashboard?mode=catchup");
+      router.push("/dashboard?mode=flat");
     }
-  }, [isCatchUpMode, router, isSearchActive, clearSearch]);
+  }, [isFlatMode, router, isSearchActive, clearSearch]);
 
-  useShortcutHandler('toggleCatchUpMode', toggleCatchUpMode);
+  useShortcutHandler('toggleFlatMode', toggleFlatMode);
 
   const { showToast } = useToast();
 
   useEffect(() => {
-    if (!isCatchUpMode || !isSearchActive) return;
+    if (!isFlatMode || !isSearchActive) return;
 
-    const justEntered = !prevCatchUpModeRef.current;
+    const justEntered = !prevFlatModeRef.current;
     if (justEntered) {
       clearSearch();
     } else {
       router.push("/dashboard");
     }
-  }, [isCatchUpMode, isSearchActive, clearSearch, router]);
+  }, [isFlatMode, isSearchActive, clearSearch, router]);
 
   const { data: dashboardData, isLoading: eventsLoading } =
     api.events.getForDashboard.useQuery({});
@@ -166,13 +188,13 @@ export function DashboardClient() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50">
-              {isCatchUpMode ? "Catch-Up Mode" : "Dashboard"}
+              {isFlatMode ? "Flat Mode" : "Dashboard"}
             </h1>
           </div>
           <div className="flex items-center gap-2">
-            <CatchUpModeToggle
-              isCatchUpMode={isCatchUpMode}
-              onToggle={toggleCatchUpMode}
+            <ViewModeToggle
+              isFlatMode={isFlatMode}
+              onToggle={toggleFlatMode}
               newItemsCount={totalNewCount}
             />
           </div>
@@ -180,23 +202,29 @@ export function DashboardClient() {
       </div>
 
       <div className="flex-1 overflow-hidden">
-        {isCatchUpMode ? (
-          <CatchUpWorkItems />
-        ) : eventsLoading && !isSearchActive ? (
-          <div className="flex items-center justify-center py-12">
-            <p className="text-lg text-gray-400">Loading events...</p>
-          </div>
+        {isFlatMode ? (
+          eventsLoading && !isSearchActive ? (
+            <div className="flex items-center justify-center py-12">
+              <p className="text-lg text-gray-400">Loading events...</p>
+            </div>
+          ) : (
+            <SplitView
+              listContent={
+                <EventTable
+                  events={displayEvents}
+                  selectedEventId={selectedEventId}
+                  onRowClick={handleRowClick}
+                />
+              }
+              detailContent={<EventDetail eventId={selectedEventId} />}
+              selectedEventId={selectedEventId}
+            />
+          )
         ) : (
-          <SplitView
-            listContent={
-              <EventTable
-                events={displayEvents}
-                selectedEventId={selectedEventId}
-                onRowClick={handleRowClick}
-              />
-            }
-            detailContent={<EventDetail eventId={selectedEventId} />}
-            selectedEventId={selectedEventId}
+          <CatchUpWorkItems
+            searchQuery={searchQuery}
+            showClosed={showClosed}
+            onShowClosedChange={handleShowClosedChange}
           />
         )}
       </div>

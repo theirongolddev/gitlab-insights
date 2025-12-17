@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback, lazy, Suspense } from "react";
-import { Button, Skeleton, Chip } from "@heroui/react";
+import { useState, useCallback, lazy, Suspense, useMemo } from "react";
+import { Button, Skeleton, Chip, Checkbox } from "@heroui/react";
 import { CheckCheck } from "lucide-react";
 import { api } from "~/trpc/react";
 import { WorkItemList } from "~/components/work-items/WorkItemList";
@@ -17,6 +17,12 @@ const SidePanelDetail = lazy(() =>
   }))
 );
 
+interface CatchUpWorkItemsProps {
+  searchQuery?: string;
+  showClosed?: boolean;
+  onShowClosedChange?: (showClosed: boolean) => void;
+}
+
 /**
  * CatchUpWorkItems - Work-item-based catch-up view
  *
@@ -27,11 +33,28 @@ const SidePanelDetail = lazy(() =>
  * - Read tracking integration
  * - "Mark All as Read" button
  * - Responsive layout
+ * - Optional search filter via searchQuery prop
+ * - Optional showClosed toggle for closed/merged items
  */
-export function CatchUpWorkItems() {
+export function CatchUpWorkItems({ searchQuery, showClosed = false, onShowClosedChange }: CatchUpWorkItemsProps) {
   const [selectedItem, setSelectedItem] = useState<WorkItem | null>(null);
   const { isOpen, setIsOpen } = useDetailPane();
   const isMobile = useMediaQuery("(max-width: 767px)");
+
+  // Memoize filters to prevent unnecessary re-renders
+  const filters = useMemo(() => {
+    const statusFilter = searchQuery
+      ? undefined
+      : showClosed
+        ? undefined
+        : (["open"] as ("open" | "closed" | "merged")[]);
+
+    return {
+      status: statusFilter,
+      unreadOnly: searchQuery ? undefined : true,
+      search: searchQuery,
+    };
+  }, [searchQuery, showClosed]);
 
   // Fetch grouped work items
   const {
@@ -40,10 +63,7 @@ export function CatchUpWorkItems() {
     error,
   } = api.workItems.getGrouped.useQuery({
     limit: 50,
-    filters: {
-      status: ["open"],
-      unreadOnly: true,
-    },
+    filters,
   });
 
   // Fetch details for selected item
@@ -169,18 +189,32 @@ export function CatchUpWorkItems() {
               )}
             </span>
           </div>
-          {unreadCount > 0 && (
-            <Button
-              size="sm"
-              variant="flat"
-              color="primary"
-              startContent={<CheckCheck className="w-4 h-4" />}
-              onPress={handleMarkAllAsRead}
-              isLoading={isMarkingMultiple}
-            >
-              Mark All as Read
-            </Button>
-          )}
+          <div className="flex items-center gap-4">
+            {onShowClosedChange && (
+              <Checkbox
+                size="sm"
+                isSelected={showClosed}
+                onValueChange={onShowClosedChange}
+                classNames={{
+                  label: "text-sm text-default-600",
+                }}
+              >
+                Show closed
+              </Checkbox>
+            )}
+            {unreadCount > 0 && (
+              <Button
+                size="sm"
+                variant="flat"
+                color="primary"
+                startContent={<CheckCheck className="w-4 h-4" />}
+                onPress={handleMarkAllAsRead}
+                isLoading={isMarkingMultiple}
+              >
+                Mark All as Read
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 

@@ -17,6 +17,7 @@ export type ShortcutHandlerName =
   | 'clearFocusAndModals'
   | 'openSaveModal'
   | 'toggleCatchUpMode'
+  | 'toggleFlatMode'
   | 'triggerManualRefresh'
   | 'toggleDetailPane'
   | 'openInGitLab'
@@ -182,6 +183,7 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
         openSaveModalRef.current = handler;
         break;
       case 'toggleCatchUpMode':
+      case 'toggleFlatMode':
         toggleCatchUpModeRef.current = handler;
         break;
       case 'triggerManualRefresh':
@@ -231,6 +233,7 @@ export function ShortcutProvider({ children }: ShortcutProviderProps) {
           openSaveModalRef.current = null;
           break;
         case 'toggleCatchUpMode':
+        case 'toggleFlatMode':
           toggleCatchUpModeRef.current = null;
           break;
         case 'triggerManualRefresh':

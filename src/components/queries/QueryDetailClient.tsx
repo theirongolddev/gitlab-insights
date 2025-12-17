@@ -13,8 +13,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "~/trpc/react";
-import { EventTable } from "~/components/dashboard/EventTable";
-import type { DashboardEvent } from "~/components/dashboard/ItemRow";
 import {
   Modal,
   ModalContent,
@@ -25,11 +23,8 @@ import {
 } from "@heroui/react";
 import { useSearch } from "~/components/search/SearchContext";
 import { useToast } from "~/components/ui/Toast/ToastContext";
-import { SplitView } from "~/components/layout/SplitView";
-import { EventDetail } from "~/components/events/EventDetail";
+import { CatchUpWorkItems } from "~/components/dashboard/CatchUpWorkItems";
 import { Check, Pencil, Trash2 } from "lucide-react";
-import { useEventDetailPane } from "~/hooks/useEventDetailPane";
-import { useShortcutHandler } from "~/hooks/useShortcutHandler";
 
 interface QueryDetailClientProps {
   queryId: string;
@@ -43,11 +38,8 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
   // Story 2.10: Use live keywords from SearchContext instead of saved query
   const { keywords: liveKeywords } = useSearch();
 
-  // Story 4.3: Use custom hook for split pane functionality
-  const { selectedEventId, handleRowClick } = useEventDetailPane({
-    baseUrl: `/queries/${queryId}`,
-    persistenceKey: `query-${queryId}`, // Enable localStorage for this query
-  });
+  // Convert keywords array to search string for WorkItems query
+  const searchQuery = liveKeywords.length > 0 ? liveKeywords.join(" ") : undefined;
 
   // State for inline editing
   const [isEditingName, setIsEditingName] = useState(false);
@@ -63,17 +55,6 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
     isLoading: isQueryLoading,
     error: queryError,
   } = api.queries.getById.useQuery({ id: queryId });
-
-  // Fetch search results based on LIVE keywords from SearchContext
-  const {
-    data: searchData,
-    isLoading: isSearchLoading,
-  } = api.events.search.useQuery(
-    { keywords: liveKeywords },
-    {
-      enabled: liveKeywords.length > 0,
-    }
-  );
 
   // Update mutation for renaming query
   const updateMutation = api.queries.update.useMutation({
@@ -158,36 +139,6 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
     deleteMutation.mutate({ id: queryId });
     setIsDeleteDialogOpen(false);
   };
-
-  // Story 5.1 (AC 5.1.1): 'o' key opens selected event in GitLab
-  // Fixed: Added popup blocker error handling
-  useShortcutHandler('openInGitLab', () => {
-    if (!selectedEventId) {
-      showToast("No event selected", "error");
-      return;
-    }
-    if (!searchData?.events) {
-      showToast("No events loaded", "error");
-      return;
-    }
-    const selectedEvent = searchData.events.find(e => e.id === selectedEventId);
-    if (!selectedEvent) {
-      showToast("Event not found", "error");
-      return;
-    }
-    const result = window.open(selectedEvent.gitlabUrl, '_blank');
-    if (!result) {
-      showToast("Failed to open link. Please check popup blocker settings.", "error");
-    }
-  });
-
-  // Story 5.1 (AC 5.1.6): 1/2/3 keys scroll to sections in detail pane
-  useShortcutHandler('scrollToSection', (sectionId: 'title' | 'body' | 'metadata') => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  });
 
   // Loading state for query
   if (isQueryLoading) {
@@ -328,16 +279,13 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
           )}
         </div>
         <div className="flex items-center gap-3 mt-3">
-          <span className="text-sm text-gray-500 dark:text-gray-400">
-            {searchData?.events.length ?? 0} {(searchData?.events.length ?? 0) === 1 ? "result" : "results"}
-          </span>
           <Button
             onPress={() => router.push(`/queries/${queryId}/details`)}
             variant="light"
             size="sm"
             className="text-gray-600 hover:text-olive dark:text-gray-400 dark:hover:text-olive-light"
           >
-            Query Details →
+            Query Details
           </Button>
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-gray-500 dark:text-gray-500">Keywords:</span>
@@ -353,44 +301,17 @@ export function QueryDetailClient({ queryId }: QueryDetailClientProps) {
         </div>
       </div>
 
-      {/* Story 4.1: Search results with SplitView */}
+      {/* Work items matching query keywords */}
       <div className="flex-1 overflow-hidden">
-        {isSearchLoading ? (
-          <div className="space-y-2 p-6">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div
-                key={i}
-                className="h-[52px] animate-pulse rounded bg-gray-100 dark:bg-gray-800"
-              />
-            ))}
-          </div>
-        ) : liveKeywords.length === 0 ? (
+        {liveKeywords.length === 0 ? (
           <div className="text-center py-12 p-6">
             <p className="text-lg text-gray-500 dark:text-gray-400">No search keywords active</p>
             <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">
-              Use the search bar above to add keywords and filter events
+              Use the search bar above to add keywords and filter work items
             </p>
           </div>
-        ) : searchData?.events && searchData.events.length > 0 ? (
-          <SplitView
-          listContent={
-            <EventTable
-              events={searchData.events as DashboardEvent[]}
-              selectedEventId={selectedEventId}
-              onRowClick={handleRowClick}
-              queryId={queryId}
-            />
-          }
-          detailContent={<EventDetail eventId={selectedEventId} />}
-          selectedEventId={selectedEventId}
-        />
         ) : (
-          <div className="text-center py-12 p-6">
-            <p className="text-lg text-gray-500 dark:text-gray-400">No matching events</p>
-            <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">
-              Try syncing your GitLab projects or adjusting your search terms
-            </p>
-          </div>
+          <CatchUpWorkItems searchQuery={searchQuery} />
         )}
       </div>
     </div>
