@@ -2,10 +2,9 @@
 
 import { useState, useCallback, useMemo, memo } from "react";
 import { Card, CardBody, Chip, Avatar } from "@heroui/react";
+import { Bug, CircleDot, GitMerge, ChevronDown, MessageSquare, GitCommit, ArrowRightLeft, Clock } from "lucide-react";
 import type { WorkItem } from "~/types/work-items";
 import { formatRelativeTime } from "~/lib/utils";
-import { ActivityTimeline } from "./ActivityTimeline";
-import { ContextBadges, extractKeywords } from "./ContextBadges";
 import styles from "./WorkItemCard.module.css";
 
 interface WorkItemCardProps {
@@ -17,22 +16,15 @@ interface WorkItemCardProps {
 /**
  * WorkItemCard - Collapsible card for displaying work items (issues/MRs)
  *
- * Features:
- * - Collapsed state: Title, activity summary, context signals
- * - Expanded state: Full activity timeline
- * - Visual distinction for read/unread states
- * - Badge-specific hover interaction for mark as read
- *
- * Performance optimizations:
- * - Memoized with React.memo to prevent unnecessary re-renders
- * - Expensive computations (keywords, activity summaries) memoized with useMemo
+ * Design matches PRD wireframe:
+ * - Collapsed: icon + repo/number, title, body preview, author footer
+ * - Expanded: Activity timeline with event icons
  */
 export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkAsRead }: WorkItemCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isBadgeHovered, setIsBadgeHovered] = useState(false);
 
   const handleClick = useCallback(() => {
-    // Mark as read when selecting (opening side panel)
     if (item.isUnread && onMarkAsRead) {
       onMarkAsRead(item.id);
     }
@@ -44,7 +36,6 @@ export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkA
   const handleToggleExpand = useCallback(() => {
     const willExpand = !isExpanded;
     setIsExpanded(willExpand);
-    // Mark as read when expanding (if unread)
     if (willExpand && item.isUnread && onMarkAsRead) {
       onMarkAsRead(item.id);
     }
@@ -56,28 +47,48 @@ export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkA
     }
   }, [item.id, onMarkAsRead]);
 
-  // Memoize expensive computations
-  const keywords = useMemo(() => extractKeywords(item.title), [item.title]);
+  // Compute author initials for avatar fallback
+  const authorInitials = useMemo(() => {
+    const names = item.author.split(/[._-]/);
+    if (names.length >= 2) {
+      return (names[0]?.[0] ?? "") + (names[1]?.[0] ?? "");
+    }
+    return item.author.slice(0, 2).toUpperCase();
+  }, [item.author]);
 
-  // Filter activities to show only unread ones in expanded view (AC 1.2)
+  // Filter activities to show only unread ones in expanded view
   const newActivities = useMemo(() => {
     if (!item.activities) return [];
     return item.activities.filter((activity) => activity.isUnread);
   }, [item.activities]);
 
-  const typeIcon = item.type === "issue" ? "I" : "MR";
-  const typeColor = item.type === "issue" ? "success" : "secondary";
+  // Determine type icon and color
+  const isBug = item.labels.some(l => l.toLowerCase().includes('bug'));
+  const TypeIcon = item.type === "merge_request" ? GitMerge : (isBug ? Bug : CircleDot);
+  const typeIconColor = item.type === "merge_request"
+    ? "text-purple-500"
+    : (isBug ? "text-orange-500" : "text-blue-500");
+  const typeIconBg = item.type === "merge_request"
+    ? "bg-purple-500/20"
+    : (isBug ? "bg-orange-500/20" : "bg-blue-500/20");
 
-  const statusColor =
-    item.status === "open"
-      ? "success"
-      : item.status === "merged"
-        ? "secondary"
-        : "default";
+  // Get priority label if exists
+  const priorityLabel = item.labels.find(l =>
+    l.toLowerCase().includes('priority') ||
+    l.toLowerCase() === 'high' ||
+    l.toLowerCase() === 'medium' ||
+    l.toLowerCase() === 'low' ||
+    l.toLowerCase() === 'critical'
+  );
+  const priorityColor = priorityLabel?.toLowerCase().includes('high') || priorityLabel?.toLowerCase() === 'critical'
+    ? "danger"
+    : priorityLabel?.toLowerCase().includes('medium')
+      ? "warning"
+      : "default";
 
   return (
     <Card
-      className={`mb-2 transition-all duration-200 cursor-pointer ${
+      className={`w-full mb-2 transition-all duration-200 cursor-pointer ${
         item.isUnread
           ? "border-l-2 border-l-[#9DAA5F] bg-content1"
           : "border-l border-l-default-200 opacity-70"
@@ -85,26 +96,61 @@ export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkA
       isPressable
       onPress={handleClick}
     >
-      <CardBody className="p-3">
-        {/* Header row */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            {/* Type badge */}
-            <Chip size="sm" color={typeColor} variant="flat" className="shrink-0">
-              {typeIcon}
-            </Chip>
-
-            {/* Title */}
-            <h3
-              className={`text-sm truncate flex-1 ${
-                item.isUnread ? "font-semibold" : "font-normal"
-              }`}
-            >
-              {item.title}
-            </h3>
+      <CardBody className="p-4">
+        {/* Header: Type icon + repo · #number */}
+        <div className="flex items-start gap-3">
+          {/* Type icon */}
+          <div className={`w-10 h-10 rounded-lg ${typeIconBg} flex items-center justify-center shrink-0`}>
+            <TypeIcon className={`w-5 h-5 ${typeIconColor}`} />
           </div>
 
-          {/* Right side: NEW badge or Mark Read button */}
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            {/* Repo and number */}
+            <div className="flex items-center gap-1 text-xs text-default-500">
+              <span>{item.repositoryName}</span>
+              <span>·</span>
+              <span>#{item.number}</span>
+            </div>
+
+            {/* Title */}
+            <h3 className={`text-sm mt-0.5 ${item.isUnread ? "font-semibold" : "font-normal"}`}>
+              {item.title}
+            </h3>
+
+            {/* Body preview - show first ~100 chars if available */}
+            {item.activitySummary.latestActivity?.preview && (
+              <p className="text-xs text-default-400 mt-1 line-clamp-2">
+                {item.activitySummary.latestActivity.preview}
+              </p>
+            )}
+
+            {/* Footer: Avatar + @author · timestamp + priority */}
+            <div className="flex items-center gap-2 mt-3">
+              <Avatar
+                src={item.authorAvatar || undefined}
+                name={authorInitials}
+                showFallback
+                size="sm"
+                classNames={{
+                  base: "w-5 h-5",
+                  fallback: "text-[8px]",
+                }}
+              />
+              <span className="text-xs text-default-500">@{item.author}</span>
+              <span className="text-xs text-default-400">·</span>
+              <Clock className="w-3 h-3 text-default-400" />
+              <span className="text-xs text-default-400">{formatRelativeTime(item.lastActivityAt)}</span>
+
+              {priorityLabel && (
+                <Chip size="sm" color={priorityColor} variant="flat" className="ml-2 text-xs uppercase">
+                  {priorityLabel.replace(/priority::/i, '').replace(/priority/i, '').trim() || priorityLabel}
+                </Chip>
+              )}
+            </div>
+          </div>
+
+          {/* Right side: NEW badge + expand toggle */}
           <div className="flex items-center gap-2 shrink-0">
             {item.isUnread && (
               <div
@@ -127,22 +173,18 @@ export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkA
                         handleMarkAsRead();
                       }
                     }}
-                    className="text-xs px-2 py-1 rounded-md bg-success-100 text-success-700 hover:bg-success-200 cursor-pointer animate-in fade-in duration-200"
+                    className="text-xs px-2 py-1 rounded-md bg-success-100 text-success-700 hover:bg-success-200 cursor-pointer"
                   >
                     Mark Read
                   </div>
                 ) : (
-                  <Chip
-                    size="sm"
-                    className="bg-[#9DAA5F] text-white animate-in fade-in duration-200"
-                  >
+                  <Chip size="sm" className="bg-[#9DAA5F] text-white">
                     NEW
                   </Chip>
                 )}
               </div>
             )}
 
-            {/* Expand/collapse toggle */}
             <div
               role="button"
               tabIndex={0}
@@ -160,107 +202,29 @@ export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkA
               aria-label={isExpanded ? "Collapse" : "Expand"}
               className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-default-100 cursor-pointer"
             >
-              <span
-                className={`transform transition-transform duration-200 ${
+              <ChevronDown
+                className={`w-4 h-4 transform transition-transform duration-200 ${
                   isExpanded ? "rotate-180" : ""
                 }`}
-              >
-                v
-              </span>
+              />
             </div>
           </div>
         </div>
 
-        {/* Metadata row */}
-        <div className="flex items-center gap-2 mt-2 text-xs text-default-500">
-          {/* Repository */}
-          <span className="truncate max-w-[120px]">{item.repositoryName}</span>
-
-          <span>-</span>
-
-          {/* Number */}
-          <span>#{item.number}</span>
-
-          {/* Status */}
-          <Chip size="sm" color={statusColor} variant="dot" className="capitalize">
-            {item.status}
-          </Chip>
-
-          {/* Timestamp */}
-          <span className="ml-auto">{formatRelativeTime(item.lastActivityAt)}</span>
-        </div>
-
-        {/* Activity summary */}
-        {item.activitySummary.totalCount > 0 && (
-          <div className="flex items-center gap-2 mt-2 text-xs text-default-500">
-            <span>
-              {item.activitySummary.totalCount} comment
-              {item.activitySummary.totalCount !== 1 ? "s" : ""}
-            </span>
-            {item.activitySummary.newCount > 0 && (
-              <Chip size="sm" color="warning" variant="flat">
-                {item.activitySummary.newCount} new
-              </Chip>
-            )}
-            {item.activitySummary.latestActivity && (
-              <span className="truncate">
-                Latest by {item.activitySummary.latestActivity.author}
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Context badges (repo, keywords extracted from title) */}
-        <ContextBadges
-          repositoryName={item.repositoryName}
-          keywords={keywords}
-          className="mt-2"
-        />
-
-        {/* Labels */}
-        {item.labels.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2">
-            {item.labels.slice(0, 3).map((label) => (
-              <Chip key={label} size="sm" variant="bordered" className="text-xs">
-                {label}
-              </Chip>
-            ))}
-            {item.labels.length > 3 && (
-              <Chip size="sm" variant="flat" className="text-xs">
-                +{item.labels.length - 3}
-              </Chip>
-            )}
-          </div>
-        )}
-
-        {/* Participants */}
-        {item.activitySummary.participants.length > 0 && (
-          <div className="flex items-center gap-1 mt-2">
-            {item.activitySummary.participants.slice(0, 5).map((p) => (
-              <Avatar
-                key={p.username}
-                src={p.avatarUrl ?? undefined}
-                name={p.username}
-                size="sm"
-                className="w-6 h-6"
-              />
-            ))}
-            {item.activitySummary.participants.length > 5 && (
-              <span className="text-xs text-default-500">
-                +{item.activitySummary.participants.length - 5}
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Expanded content: Activity timeline with grid-based animation */}
-        <div
-          className={`${styles.expandContainer} ${isExpanded ? styles.expanded : ""}`}
-        >
+        {/* Expanded content: Activity timeline */}
+        <div className={`${styles.expandContainer} ${isExpanded ? styles.expanded : ""}`}>
           <div className={styles.expandContent}>
             <div className="mt-4 pt-4 border-t border-default-200">
+              <h4 className="text-xs font-semibold text-default-500 uppercase tracking-wider mb-3">
+                Activity
+              </h4>
+
               {newActivities.length > 0 ? (
-                <ActivityTimeline activities={newActivities} parentType={item.type} />
+                <div className="space-y-3">
+                  {newActivities.map((activity) => (
+                    <ActivityItem key={activity.id} activity={activity} />
+                  ))}
+                </div>
               ) : (
                 <p className="text-center py-4 text-sm text-default-500">
                   No new activity since you last viewed this item
@@ -273,3 +237,57 @@ export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkA
     </Card>
   );
 });
+
+// Activity item component for expanded view
+interface ActivityItemProps {
+  activity: {
+    id: string;
+    type: string;
+    author: string;
+    authorAvatar: string | null;
+    body: string | null;
+    timestamp: Date;
+    isSystemNote: boolean;
+  };
+}
+
+function ActivityItem({ activity }: ActivityItemProps) {
+  // Determine icon based on activity type
+  const getActivityIcon = () => {
+    if (activity.isSystemNote) {
+      if (activity.body?.toLowerCase().includes('status')) {
+        return <ArrowRightLeft className="w-4 h-4 text-blue-500" />;
+      }
+      if (activity.body?.toLowerCase().includes('mentioned')) {
+        return <GitMerge className="w-4 h-4 text-purple-500" />;
+      }
+      return <GitCommit className="w-4 h-4 text-default-400" />;
+    }
+    return <MessageSquare className="w-4 h-4 text-default-400" />;
+  };
+
+  // Format activity text
+  const getActivityText = () => {
+    if (activity.isSystemNote) {
+      return activity.body ?? "System update";
+    }
+    return `commented: "${activity.body?.slice(0, 100)}${(activity.body?.length ?? 0) > 100 ? '...' : ''}"`;
+  };
+
+  return (
+    <div className="flex items-start gap-3">
+      <div className="w-8 h-8 rounded-full bg-default-100 flex items-center justify-center shrink-0">
+        {getActivityIcon()}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm">
+          <span className="font-medium text-primary">@{activity.author}</span>
+          <span className="text-default-600 ml-1">{getActivityText()}</span>
+        </div>
+        <div className="text-xs text-default-400 mt-0.5">
+          {formatRelativeTime(activity.timestamp)}
+        </div>
+      </div>
+    </div>
+  );
+}

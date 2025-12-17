@@ -91,8 +91,10 @@ export function useMarkAsRead() {
     },
     onSettled: (_data, _error, { workItemId }) => {
       pendingIdsRef.current.delete(workItemId);
-      // Invalidate to ensure consistency
-      void utils.workItems.getGrouped.invalidate();
+      // NOTE: We intentionally do NOT invalidate here.
+      // The optimistic update keeps items visible with read styling.
+      // Items will be filtered out on next natural refetch (navigation, page reload).
+      // This prevents the jarring UX of items disappearing immediately after marking as read.
     },
   });
 
@@ -159,8 +161,9 @@ export function useMarkAsRead() {
     },
     onSettled: (_data, _error, _vars, context) => {
       context?.newIds?.forEach((id) => pendingIdsRef.current.delete(id));
-      // Invalidate to ensure consistency
-      void utils.workItems.getGrouped.invalidate();
+      // NOTE: We intentionally do NOT invalidate here.
+      // The optimistic update keeps items visible with read styling.
+      // Items will be filtered out on next natural refetch (navigation, page reload).
     },
   });
 

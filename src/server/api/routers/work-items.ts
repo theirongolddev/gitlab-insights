@@ -133,8 +133,16 @@ export const workItemsRouter = createTRPCRouter({
           ? children.filter((c) => c.createdAt > lastReadAt)
           : children;
 
-        // Get unique participants
+        // Get unique participants (including work item author)
         const participantMap = new Map<string, Participant>();
+        
+        // Add the work item author first
+        participantMap.set(event.author, {
+          username: event.author,
+          avatarUrl: event.authorAvatar,
+        });
+        
+        // Add comment authors
         for (const child of children) {
           if (!participantMap.has(child.author)) {
             participantMap.set(child.author, {

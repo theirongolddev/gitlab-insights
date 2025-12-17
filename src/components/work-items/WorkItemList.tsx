@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback, useMemo, memo } from "react";
-import { Button, Chip, Skeleton } from "@heroui/react";
+import { useState, useCallback, useMemo, memo, useRef, useEffect } from "react";
+import { Button, Chip, Skeleton, Tabs, Tab } from "@heroui/react";
 import type { WorkItem, GroupedWorkItems } from "~/types/work-items";
 import { WorkItemCard } from "./WorkItemCard";
 
@@ -105,12 +105,12 @@ interface WorkItemListProps {
  * WorkItemList - Container for displaying grouped work items
  *
  * Features:
- * - Grouped sections (Issues, Merge Requests)
- * - Unread count indicator at top (olive when >0, green when zero)
- * - Sort: unread items float to top, then by lastActivityAt desc
- * - Section headers with collapse/expand + "Mark all as read"
+ * - Tabbed sections (Issues, Merge Requests) - AC 5.1
+ * - Tabs show unread counts: "Issues (5)" - AC 5.2
+ * - Switching tabs resets scroll position to top - AC 5.3
+ * - Default tab is Issues - AC 5.4
+ * - "Mark all as read" button per tab
  * - Empty states (no items, all read, search no results)
- * - Max-width 1200px container, 16px spacing between cards
  */
 export function WorkItemList({
   items,
@@ -121,15 +121,19 @@ export function WorkItemList({
   emptyMessage = "No work items found",
   searchQuery,
 }: WorkItemListProps) {
-  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+  // AC 5.4: Default tab is Issues
+  const [selectedTab, setSelectedTab] = useState<string>("issues");
   const [markingAllAsRead, setMarkingAllAsRead] = useState<Record<string, boolean>>({});
-
-  const toggleSection = useCallback((section: string) => {
-    setCollapsedSections((prev) => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
-  }, []);
+  
+  // AC 5.3: Ref for scroll container to reset position
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  
+  // AC 5.3: Reset scroll position when tab changes
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+  }, [selectedTab]);
 
   const handleMarkAllAsRead = useCallback(
     async (section: "issues" | "mergeRequests") => {
@@ -150,24 +154,31 @@ export function WorkItemList({
     [items, onMarkMultipleAsRead]
   );
 
-  // Sort items: unread first, then by lastActivityAt desc
+  // Sort items by lastActivityAt desc only (maintain stable position when read status changes)
   const sortedItems = useMemo(() => {
     if (!items) return null;
 
-    const sortByUnreadThenDate = (a: WorkItem, b: WorkItem) => {
-      if (a.isUnread !== b.isUnread) {
-        return a.isUnread ? -1 : 1;
-      }
+    const sortByDate = (a: WorkItem, b: WorkItem) => {
       return new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime();
     };
 
     return {
-      issues: [...items.issues].sort(sortByUnreadThenDate),
-      mergeRequests: [...items.mergeRequests].sort(sortByUnreadThenDate),
+      issues: [...items.issues].sort(sortByDate),
+      mergeRequests: [...items.mergeRequests].sort(sortByDate),
       totalCount: items.totalCount,
       unreadCount: items.unreadCount,
     };
   }, [items]);
+
+  // Calculate unread counts for tab titles (AC 5.2)
+  const issuesUnreadCount = useMemo(() => 
+    sortedItems?.issues.filter((i) => i.isUnread).length ?? 0, 
+    [sortedItems?.issues]
+  );
+  const mrsUnreadCount = useMemo(() => 
+    sortedItems?.mergeRequests.filter((i) => i.isUnread).length ?? 0, 
+    [sortedItems?.mergeRequests]
+  );
 
   // Loading state
   if (isLoading) {
@@ -179,23 +190,14 @@ export function WorkItemList({
           <Skeleton className="h-6 w-24 rounded-full" />
         </div>
 
-        {/* Section skeletons */}
-        <div className="space-y-6">
-          <div>
-            <Skeleton className="h-6 w-32 rounded-lg mb-3" />
-            <div className="space-y-2">
-              <Skeleton className="h-24 w-full rounded-lg" />
-              <Skeleton className="h-24 w-full rounded-lg" />
-              <Skeleton className="h-24 w-full rounded-lg" />
-            </div>
-          </div>
-          <div>
-            <Skeleton className="h-6 w-40 rounded-lg mb-3" />
-            <div className="space-y-2">
-              <Skeleton className="h-24 w-full rounded-lg" />
-              <Skeleton className="h-24 w-full rounded-lg" />
-            </div>
-          </div>
+        {/* Tab skeleton */}
+        <Skeleton className="h-10 w-64 rounded-lg mb-4" />
+        
+        {/* Cards skeleton */}
+        <div className="space-y-2">
+          <Skeleton className="h-24 w-full rounded-lg" />
+          <Skeleton className="h-24 w-full rounded-lg" />
+          <Skeleton className="h-24 w-full rounded-lg" />
         </div>
       </div>
     );
@@ -234,13 +236,44 @@ export function WorkItemList({
     );
   }
 
-  // "All caught up" state - items exist but all are read
-  if (sortedItems.unreadCount === 0 && sortedItems.totalCount > 0) {
+  // Get current tab items
+  const currentItems = selectedTab === "issues" ? sortedItems.issues : sortedItems.mergeRequests;
+  const currentUnreadCount = selectedTab === "issues" ? issuesUnreadCount : mrsUnreadCount;
+  const currentSection = selectedTab === "issues" ? "issues" : "mergeRequests";
+
+  // Render tab content (cards)
+  const renderTabContent = (tabItems: WorkItem[]) => {
+    if (tabItems.length === 0) {
+      return (
+        <div className="py-8 text-center text-default-500">
+          No {selectedTab === "issues" ? "issues" : "merge requests"} to show
+        </div>
+      );
+    }
     return (
-      <div className="w-full max-w-[1200px] mx-auto px-4 py-6">
-        {/* Header with success state */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-semibold text-default-800">Work Items</h1>
+      <div className="space-y-0">
+        {tabItems.map((item) => (
+          <WorkItemCard
+            key={item.id}
+            item={item}
+            onSelect={onItemSelect}
+            onMarkAsRead={onMarkAsRead}
+          />
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <div className="w-full max-w-[1200px] mx-auto px-4 py-6">
+      {/* Header with unread count */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-xl font-semibold text-default-800">Work Items</h1>
+        {sortedItems.unreadCount > 0 ? (
+          <Chip size="md" className="bg-[#9DAA5F] text-white font-medium">
+            {sortedItems.unreadCount} unread
+          </Chip>
+        ) : (
           <Chip
             size="md"
             className="bg-[#22C55E] text-white font-medium"
@@ -256,67 +289,77 @@ export function WorkItemList({
           >
             All caught up!
           </Chip>
-        </div>
-
-        {/* Sections */}
-        <WorkItemSection
-          title="Issues"
-          items={sortedItems.issues}
-          isCollapsed={collapsedSections.issues ?? false}
-          onToggleCollapse={() => toggleSection("issues")}
-          onMarkAllAsRead={() => handleMarkAllAsRead("issues")}
-          onItemSelect={onItemSelect}
-          onItemMarkAsRead={onMarkAsRead}
-          isMarkingAllAsRead={markingAllAsRead.issues}
-        />
-
-        <WorkItemSection
-          title="Merge Requests"
-          items={sortedItems.mergeRequests}
-          isCollapsed={collapsedSections.mergeRequests ?? false}
-          onToggleCollapse={() => toggleSection("mergeRequests")}
-          onMarkAllAsRead={() => handleMarkAllAsRead("mergeRequests")}
-          onItemSelect={onItemSelect}
-          onItemMarkAsRead={onMarkAsRead}
-          isMarkingAllAsRead={markingAllAsRead.mergeRequests}
-        />
-      </div>
-    );
-  }
-
-  // Normal state - has unread items
-  return (
-    <div className="w-full max-w-[1200px] mx-auto px-4 py-6">
-      {/* Header with unread count */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-default-800">Work Items</h1>
-        <Chip size="md" className="bg-[#9DAA5F] text-white font-medium">
-          {sortedItems.unreadCount} unread
-        </Chip>
+        )}
       </div>
 
-      {/* Sections */}
-      <WorkItemSection
-        title="Issues"
-        items={sortedItems.issues}
-        isCollapsed={collapsedSections.issues ?? false}
-        onToggleCollapse={() => toggleSection("issues")}
-        onMarkAllAsRead={() => handleMarkAllAsRead("issues")}
-        onItemSelect={onItemSelect}
-        onItemMarkAsRead={onMarkAsRead}
-        isMarkingAllAsRead={markingAllAsRead.issues}
-      />
+      {/* AC 5.1, 5.2: Tabs with unread counts */}
+      <div className="flex items-center justify-between mb-4">
+        <Tabs
+          selectedKey={selectedTab}
+          onSelectionChange={(key) => setSelectedTab(key as string)}
+          aria-label="Work item types"
+          color="primary"
+          variant="underlined"
+          classNames={{
+            tabList: "gap-6",
+            cursor: "bg-[#9DAA5F]",
+            tab: "px-0 h-10",
+            tabContent: "group-data-[selected=true]:text-[#9DAA5F]",
+          }}
+        >
+          <Tab
+            key="issues"
+            title={
+              <div className="flex items-center gap-2">
+                <span>Issues</span>
+                <Chip size="sm" variant="flat" className="text-xs">
+                  {sortedItems.issues.length}
+                </Chip>
+                {issuesUnreadCount > 0 && (
+                  <Chip size="sm" className="bg-[#9DAA5F] text-white text-xs">
+                    {issuesUnreadCount} new
+                  </Chip>
+                )}
+              </div>
+            }
+          />
+          <Tab
+            key="mergeRequests"
+            title={
+              <div className="flex items-center gap-2">
+                <span>Merge Requests</span>
+                <Chip size="sm" variant="flat" className="text-xs">
+                  {sortedItems.mergeRequests.length}
+                </Chip>
+                {mrsUnreadCount > 0 && (
+                  <Chip size="sm" className="bg-[#9DAA5F] text-white text-xs">
+                    {mrsUnreadCount} new
+                  </Chip>
+                )}
+              </div>
+            }
+          />
+        </Tabs>
 
-      <WorkItemSection
-        title="Merge Requests"
-        items={sortedItems.mergeRequests}
-        isCollapsed={collapsedSections.mergeRequests ?? false}
-        onToggleCollapse={() => toggleSection("mergeRequests")}
-        onMarkAllAsRead={() => handleMarkAllAsRead("mergeRequests")}
-        onItemSelect={onItemSelect}
-        onItemMarkAsRead={onMarkAsRead}
-        isMarkingAllAsRead={markingAllAsRead.mergeRequests}
-      />
+        {/* Mark all as read button for current tab */}
+        {currentUnreadCount > 0 && (
+          <Button
+            size="sm"
+            variant="flat"
+            color="default"
+            onPress={() => handleMarkAllAsRead(currentSection as "issues" | "mergeRequests")}
+            isLoading={markingAllAsRead[currentSection]}
+            className="text-xs"
+          >
+            Mark all as read
+          </Button>
+        )}
+      </div>
+
+      {/* Tab content with scroll reset (AC 5.3) */}
+      <div ref={scrollContainerRef}>
+        {renderTabContent(currentItems)}
+      </div>
     </div>
   );
 }
