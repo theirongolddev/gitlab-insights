@@ -42,6 +42,7 @@ export function CatchUpWorkItems() {
     limit: 50,
     filters: {
       status: ["open"],
+      unreadOnly: true,
     },
   });
 

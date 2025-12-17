@@ -52,6 +52,7 @@ export interface WorkItem {
   type: "issue" | "merge_request";
   status: "open" | "closed" | "merged";
   title: string;
+  body: string | null;
   number: number;
   repositoryName: string;
   repositoryPath: string;

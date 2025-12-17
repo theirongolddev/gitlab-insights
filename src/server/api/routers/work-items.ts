@@ -184,6 +184,7 @@ export const workItemsRouter = createTRPCRouter({
           type: event.type as "issue" | "merge_request",
           status: (event.status as "open" | "closed" | "merged") ?? "open",
           title: event.title,
+          body: event.body,
           number,
           repositoryName: event.project,
           repositoryPath: event.projectId,
@@ -203,6 +204,12 @@ export const workItemsRouter = createTRPCRouter({
         };
       });
 
+      // Apply unreadOnly filter if requested
+      // This must be done after computing isUnread since it depends on lastReadAt comparison
+      const filteredWorkItems = filters?.unreadOnly
+        ? workItems.filter((w) => w.isUnread)
+        : workItems;
+
       // NOTE: We intentionally do NOT sort by unread status here.
       // Client-side sorting would break cursor-based pagination invariants,
       // causing items to be skipped or duplicated across pages.
@@ -212,15 +219,15 @@ export const workItemsRouter = createTRPCRouter({
 
       // Group by type
       const grouped: GroupedWorkItems = {
-        issues: workItems.filter((w) => w.type === "issue"),
-        mergeRequests: workItems.filter((w) => w.type === "merge_request"),
-        totalCount: workItems.length,
-        unreadCount: workItems.filter((w) => w.isUnread).length,
+        issues: filteredWorkItems.filter((w) => w.type === "issue"),
+        mergeRequests: filteredWorkItems.filter((w) => w.type === "merge_request"),
+        totalCount: filteredWorkItems.length,
+        unreadCount: filteredWorkItems.filter((w) => w.isUnread).length,
       };
 
       // Build next cursor from the LAST item in the response (after filtering)
       // This must match the database ordering to maintain pagination correctness
-      const lastWorkItem = workItems[workItems.length - 1];
+      const lastWorkItem = filteredWorkItems[filteredWorkItems.length - 1];
       const nextCursor =
         hasMore && lastWorkItem
           ? {
@@ -349,6 +356,7 @@ export const workItemsRouter = createTRPCRouter({
         type: event.type as "issue" | "merge_request",
         status: (event.status as "open" | "closed" | "merged") ?? "open",
         title: event.title,
+        body: event.body,
         number,
         repositoryName: event.project,
         repositoryPath: event.projectId,
@@ -392,6 +400,7 @@ export const workItemsRouter = createTRPCRouter({
               type: true,
               status: true,
               title: true,
+              body: true,
               project: true,
               projectId: true,
               labels: true,
@@ -413,6 +422,7 @@ export const workItemsRouter = createTRPCRouter({
             type: e.type as "issue" | "merge_request",
             status: (e.status as "open" | "closed" | "merged") ?? "open",
             title: e.title,
+            body: e.body,
             number: parseInt(e.gitlabEventId.match(/\d+$/)?.[0] ?? "0", 10),
             repositoryName: e.project,
             repositoryPath: e.projectId,
@@ -452,6 +462,7 @@ export const workItemsRouter = createTRPCRouter({
               type: true,
               status: true,
               title: true,
+              body: true,
               project: true,
               projectId: true,
               labels: true,
@@ -473,6 +484,7 @@ export const workItemsRouter = createTRPCRouter({
             type: e.type as "issue" | "merge_request",
             status: (e.status as "open" | "closed" | "merged") ?? "open",
             title: e.title,
+            body: e.body,
             number: parseInt(e.gitlabEventId.match(/\d+$/)?.[0] ?? "0", 10),
             repositoryName: e.project,
             repositoryPath: e.projectId,
