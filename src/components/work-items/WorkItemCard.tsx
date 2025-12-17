@@ -21,7 +21,7 @@ interface WorkItemCardProps {
  * - Collapsed state: Title, activity summary, context signals
  * - Expanded state: Full activity timeline
  * - Visual distinction for read/unread states
- * - Hover interaction for mark as read
+ * - Badge-specific hover interaction for mark as read
  *
  * Performance optimizations:
  * - Memoized with React.memo to prevent unnecessary re-renders
@@ -29,7 +29,7 @@ interface WorkItemCardProps {
  */
 export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkAsRead }: WorkItemCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
+  const [isBadgeHovered, setIsBadgeHovered] = useState(false);
 
   const handleClick = useCallback(() => {
     // Mark as read when selecting (opening side panel)
@@ -58,7 +58,13 @@ export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkA
 
   // Memoize expensive computations
   const keywords = useMemo(() => extractKeywords(item.title), [item.title]);
-  
+
+  // Filter activities to show only unread ones in expanded view (AC 1.2)
+  const newActivities = useMemo(() => {
+    if (!item.activities) return [];
+    return item.activities.filter((activity) => activity.isUnread);
+  }, [item.activities]);
+
   const typeIcon = item.type === "issue" ? "I" : "MR";
   const typeColor = item.type === "issue" ? "success" : "secondary";
 
@@ -74,12 +80,10 @@ export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkA
       className={`mb-2 transition-all duration-200 cursor-pointer ${
         item.isUnread
           ? "border-l-2 border-l-[#9DAA5F] bg-content1"
-          : "border-l border-l-default-200 opacity-80"
+          : "border-l border-l-default-200 opacity-70"
       }`}
       isPressable
       onPress={handleClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       <CardBody className="p-3">
         {/* Header row */}
@@ -103,8 +107,12 @@ export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkA
           {/* Right side: NEW badge or Mark Read button */}
           <div className="flex items-center gap-2 shrink-0">
             {item.isUnread && (
-              <div className="relative">
-                {isHovered ? (
+              <div
+                className="relative"
+                onMouseEnter={() => setIsBadgeHovered(true)}
+                onMouseLeave={() => setIsBadgeHovered(false)}
+              >
+                {isBadgeHovered ? (
                   <div
                     role="button"
                     tabIndex={0}
@@ -251,11 +259,11 @@ export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkA
         >
           <div className={styles.expandContent}>
             <div className="mt-4 pt-4 border-t border-default-200">
-              {item.activities && item.activities.length > 0 ? (
-                <ActivityTimeline activities={item.activities} parentType={item.type} />
+              {newActivities.length > 0 ? (
+                <ActivityTimeline activities={newActivities} parentType={item.type} />
               ) : (
                 <p className="text-center py-4 text-sm text-default-500">
-                  Click to open detail pane for full activity timeline
+                  No new activity since you last viewed this item
                 </p>
               )}
             </div>
