@@ -6,6 +6,7 @@ import type { WorkItem } from "~/types/work-items";
 import { formatRelativeTime } from "~/lib/utils";
 import { ActivityTimeline } from "./ActivityTimeline";
 import { ContextBadges, extractKeywords } from "./ContextBadges";
+import { useScrollIntoViewRead } from "~/hooks/useScrollIntoViewRead";
 import styles from "./WorkItemCard.module.css";
 
 interface WorkItemCardProps {
@@ -22,6 +23,7 @@ interface WorkItemCardProps {
  * - Expanded state: Full activity timeline
  * - Visual distinction for read/unread states
  * - Badge-specific hover interaction for mark as read
+ * - Mobile: Touch-friendly targets (min 44px), tighter padding
  *
  * Performance optimizations:
  * - Memoized with React.memo to prevent unnecessary re-renders
@@ -30,6 +32,9 @@ interface WorkItemCardProps {
 export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkAsRead }: WorkItemCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isBadgeHovered, setIsBadgeHovered] = useState(false);
+
+  // Mobile: scroll-into-view marks as read after 2s at 50% visibility
+  const scrollRef = useScrollIntoViewRead(item.id, item.isUnread, onMarkAsRead);
 
   const handleClick = useCallback(() => {
     // Mark as read when selecting (opening side panel)
@@ -76,16 +81,16 @@ export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkA
         : "default";
 
   return (
-    <Card
-      className={`w-full mb-2 transition-all duration-200 cursor-pointer ${
-        item.isUnread
-          ? "border-l-2 border-l-[#9DAA5F] bg-content1"
-          : "border-l border-l-default-200 opacity-70"
-      }`}
-      isPressable
-      onPress={handleClick}
-    >
-      <CardBody className="p-3">
+    <div ref={scrollRef}>
+      <Card
+        className={`w-full mb-2 transition-all duration-200 cursor-pointer ${item.isUnread
+            ? "border-l-2 border-l-[#9DAA5F] bg-content1"
+            : "border-l border-l-default-200 opacity-70"
+          }`}
+        isPressable
+        onPress={handleClick}
+      >
+        <CardBody className="p-3">
         {/* Header row */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -96,19 +101,19 @@ export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkA
 
             {/* Title */}
             <h3
-              className={`text-sm truncate flex-1 ${
-                item.isUnread ? "font-semibold" : "font-normal"
-              }`}
+              className={`text-sm truncate flex-1 ${item.isUnread ? "font-semibold" : "font-normal"
+                }`}
             >
               {item.title}
             </h3>
           </div>
 
           {/* Right side: NEW badge or Mark Read button */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Mobile: 12px dead zone around badge, 44px min touch target */}
+          <div className="flex items-center gap-2 shrink-0 -mr-1 md:mr-0">
             {item.isUnread && (
               <div
-                className="relative"
+                className="relative p-3 -m-3 md:p-0 md:m-0"
                 onMouseEnter={() => setIsBadgeHovered(true)}
                 onMouseLeave={() => setIsBadgeHovered(false)}
               >
@@ -127,7 +132,7 @@ export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkA
                         handleMarkAsRead();
                       }
                     }}
-                    className="text-xs px-2 py-1 rounded-md bg-success-100 text-success-700 hover:bg-success-200 cursor-pointer animate-in fade-in duration-200"
+                    className="text-xs px-3 py-2 min-h-[44px] flex items-center justify-center rounded-md bg-success-100 text-success-700 hover:bg-success-200 active:bg-success-300 cursor-pointer animate-in fade-in duration-200 md:px-2 md:py-1 md:min-h-0"
                   >
                     Mark Read
                   </div>
@@ -142,7 +147,7 @@ export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkA
               </div>
             )}
 
-            {/* Expand/collapse toggle */}
+            {/* Expand/collapse toggle - 44px touch target on mobile */}
             <div
               role="button"
               tabIndex={0}
@@ -158,12 +163,11 @@ export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkA
                 }
               }}
               aria-label={isExpanded ? "Collapse" : "Expand"}
-              className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-default-100 cursor-pointer"
+              className="w-11 h-11 md:w-8 md:h-8 flex items-center justify-center rounded-md hover:bg-default-100 active:bg-default-200 cursor-pointer"
             >
               <span
-                className={`transform transition-transform duration-200 ${
-                  isExpanded ? "rotate-180" : ""
-                }`}
+                className={`transform transition-transform duration-200 ${isExpanded ? "rotate-180" : ""
+                  }`}
               >
                 v
               </span>
@@ -229,7 +233,7 @@ export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkA
         {item.activitySummary.latestActivity && (
           <div className="mt-2 text-xs text-default-500 truncate">
             <span className="font-medium">{item.activitySummary.latestActivity.author}:</span>{" "}
-            <span className="italic">"{item.activitySummary.latestActivity.preview}"</span>
+            <span className="italic">&ldquo;{item.activitySummary.latestActivity.preview}&ldquo;</span>
           </div>
         )}
 
@@ -316,7 +320,8 @@ export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkA
             </div>
           </div>
         </div>
-      </CardBody>
-    </Card>
+        </CardBody>
+      </Card>
+    </div>
   );
 });

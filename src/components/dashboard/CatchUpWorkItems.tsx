@@ -277,9 +277,9 @@ export function CatchUpWorkItems({ searchQuery, showClosed = false, onShowClosed
           </div>
         )}
 
-        {/* Mobile: Full-screen overlay */}
+        {/* Mobile: Full-screen overlay with slide-up animation */}
         {isMobile && selectedItem && isOpen && (
-          <div className="fixed inset-0 z-50 bg-content1">
+          <div className="fixed inset-0 z-50 bg-content1 animate-in slide-in-from-bottom duration-200">
             <Suspense
               fallback={
                 <div className="h-full flex flex-col bg-content1">
