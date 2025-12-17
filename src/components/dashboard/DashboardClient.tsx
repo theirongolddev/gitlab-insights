@@ -13,7 +13,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { type DashboardEvent } from "~/components/dashboard/ItemRow";
 import { EventTable } from "~/components/dashboard/EventTable";
 import { useSearch } from "~/components/search/SearchContext";
-import { CatchUpView, CatchUpModeToggle } from "~/components/catchup";
+import { CatchUpModeToggle } from "~/components/catchup";
+import { CatchUpWorkItems } from "~/components/dashboard/CatchUpWorkItems";
 import { useShortcutHandler } from "~/hooks/useShortcutHandler";
 import { LoadingSpinner } from "~/components/ui/LoadingSpinner";
 import { useNewItems } from "~/contexts/NewItemsContext";
@@ -180,9 +181,7 @@ export function DashboardClient() {
 
       <div className="flex-1 overflow-hidden">
         {isCatchUpMode ? (
-          <div className="container mx-auto px-4 py-6">
-            <CatchUpView />
-          </div>
+          <CatchUpWorkItems />
         ) : eventsLoading && !isSearchActive ? (
           <div className="flex items-center justify-center py-12">
             <p className="text-lg text-gray-400">Loading events...</p>

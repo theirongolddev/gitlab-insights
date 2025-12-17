@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo, memo } from "react";
-import { Card, CardBody, Chip, Button, Avatar } from "@heroui/react";
+import { Card, CardBody, Chip, Avatar } from "@heroui/react";
 import type { WorkItem } from "~/types/work-items";
 import { formatRelativeTime } from "~/lib/utils";
 import { ActivityTimeline } from "./ActivityTimeline";
@@ -105,15 +105,24 @@ export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkA
             {item.isUnread && (
               <div className="relative">
                 {isHovered ? (
-                  <Button
-                    size="sm"
-                    variant="flat"
-                    color="success"
-                    onPress={handleMarkAsRead}
-                    className="text-xs animate-in fade-in duration-200"
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleMarkAsRead();
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        handleMarkAsRead();
+                      }
+                    }}
+                    className="text-xs px-2 py-1 rounded-md bg-success-100 text-success-700 hover:bg-success-200 cursor-pointer animate-in fade-in duration-200"
                   >
                     Mark Read
-                  </Button>
+                  </div>
                 ) : (
                   <Chip
                     size="sm"
@@ -126,12 +135,22 @@ export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkA
             )}
 
             {/* Expand/collapse toggle */}
-            <Button
-              isIconOnly
-              size="sm"
-              variant="light"
-              onPress={handleToggleExpand}
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleExpand();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  handleToggleExpand();
+                }
+              }}
               aria-label={isExpanded ? "Collapse" : "Expand"}
+              className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-default-100 cursor-pointer"
             >
               <span
                 className={`transform transition-transform duration-200 ${
@@ -140,7 +159,7 @@ export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkA
               >
                 v
               </span>
-            </Button>
+            </div>
           </div>
         </div>
 
