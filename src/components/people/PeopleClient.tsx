@@ -1,18 +1,19 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Input } from "@heroui/react";
+import { useState, useCallback, useMemo, useEffect } from "react";
+import { Input, Button } from "@heroui/react";
 import { api } from "~/trpc/react";
 import { PersonCard } from "./PersonCard";
 import { LoadingSpinner } from "~/components/ui/LoadingSpinner";
 import { SplitView } from "~/components/layout/SplitView";
 import { PersonDetail } from "./PersonDetail";
 import { useDebounce } from "~/hooks/useDebounce";
+import { useShortcutHandler } from "~/hooks/useShortcutHandler";
 
 export function PeopleClient() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
-  
+
   const debouncedSearch = useDebounce(searchQuery, 300);
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
@@ -23,7 +24,43 @@ export function PeopleClient() {
       }
     );
 
-  const people = data?.pages.flatMap((page) => page.items) ?? [];
+  const people = useMemo(
+    () => data?.pages.flatMap((page) => page.items) ?? [],
+    [data]
+  );
+
+  // Keyboard navigation (j/k) following existing patterns
+  const selectedIndex = useMemo(() => {
+    if (!selectedPersonId) return -1;
+    return people.findIndex((p) => p.id === selectedPersonId);
+  }, [selectedPersonId, people]);
+
+  // j key - move selection down
+  useShortcutHandler("moveSelectionDown", () => {
+    if (people.length === 0) return;
+    const nextIndex = selectedIndex === -1 ? 0 : Math.min(selectedIndex + 1, people.length - 1);
+    const nextPerson = people[nextIndex];
+    if (nextPerson) {
+      setSelectedPersonId(nextPerson.id);
+    }
+  });
+
+  // k key - move selection up
+  useShortcutHandler("moveSelectionUp", () => {
+    if (people.length === 0) return;
+    const prevIndex = selectedIndex === -1 ? people.length - 1 : Math.max(selectedIndex - 1, 0);
+    const prevPerson = people[prevIndex];
+    if (prevPerson) {
+      setSelectedPersonId(prevPerson.id);
+    }
+  });
+
+  // Auto-select first person when search results change
+  useEffect(() => {
+    if (people.length > 0 && !selectedPersonId) {
+      // Don't auto-select - let user navigate with j/k
+    }
+  }, [people, selectedPersonId]);
 
   const handlePersonClick = useCallback((personId: string) => {
     setSelectedPersonId((prev) => (prev === personId ? null : personId));
@@ -66,14 +103,13 @@ export function PeopleClient() {
             <LoadingSpinner size="lg" label="Loading people..." />
           </div>
         ) : people.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400">
-            <p className="text-lg">No people found</p>
-            {debouncedSearch && (
-              <p className="text-sm mt-2">
-                Try adjusting your search query
-              </p>
-            )}
-          </div>
+          <EmptyState
+            hasSearch={!!debouncedSearch}
+            onExtract={() => {
+              // Note: Extraction happens automatically during GitLab sync
+              // This is informational - people are extracted from events
+            }}
+          />
         ) : (
           <SplitView
             listContent={
@@ -130,19 +166,63 @@ function PersonList({
             showActivity={false}
           />
         ))}
-        
+
         {hasMore && (
           <div className="pt-4 flex justify-center">
             <button
               onClick={onLoadMore}
               disabled={isLoadingMore}
-              className="px-4 py-2 text-sm font-medium text-olive-light hover:text-olive-dark 
+              className="px-4 py-2 text-sm font-medium text-olive-light hover:text-olive-dark
                          disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoadingMore ? "Loading..." : "Load more"}
             </button>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+interface EmptyStateProps {
+  hasSearch: boolean;
+  onExtract: () => void;
+}
+
+function EmptyState({ hasSearch }: EmptyStateProps) {
+  if (hasSearch) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400">
+        <p className="text-lg">No people found</p>
+        <p className="text-sm mt-2">Try adjusting your search query</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-12 w-12 mb-4 text-gray-400"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={1.5}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+        />
+      </svg>
+      <p className="text-lg font-medium">No people extracted yet</p>
+      <p className="text-sm mt-2 max-w-md text-center">
+        People are automatically extracted from your GitLab activity during sync.
+        Run a manual refresh to fetch the latest data.
+      </p>
+      <div className="mt-4 flex items-center gap-2 text-xs text-gray-400">
+        <kbd className="rounded bg-gray-100 px-1.5 py-0.5 font-mono dark:bg-gray-700">r</kbd>
+        <span>to refresh</span>
       </div>
     </div>
   );

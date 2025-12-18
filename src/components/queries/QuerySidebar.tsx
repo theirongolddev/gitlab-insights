@@ -32,11 +32,50 @@ interface QuerySidebarProps {
 }
 
 /**
- * SidebarHeader - Section header for the sidebar
+ * NavigationSection - Quick links to main app sections
+ */
+function NavigationSection() {
+  const pathname = usePathname();
+
+  const navItems = [
+    { href: "/catch-up", label: "Catch Up" },
+    { href: "/people", label: "People" },
+    { href: "/files", label: "Files" },
+  ];
+
+  return (
+    <div className="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+      <h2 className="text-[11px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-500 px-2 mb-2">
+        Navigate
+      </h2>
+      <nav className="space-y-1">
+        {navItems.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <a
+              key={item.href}
+              href={item.href}
+              className={`block px-3 py-2 text-sm rounded-md transition-colors ${
+                isActive
+                  ? "bg-olive-light/10 text-olive-dark dark:text-olive-light font-medium"
+                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+              }`}
+            >
+              {item.label}
+            </a>
+          );
+        })}
+      </nav>
+    </div>
+  );
+}
+
+/**
+ * SidebarHeader - Section header for saved queries
  */
 function SidebarHeader() {
   return (
-    <h2 className="text-[11px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-500">
+    <h2 className="text-[11px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-500 px-2 mb-2">
       Saved Queries
     </h2>
   );
@@ -125,11 +164,14 @@ export function QuerySidebar({ className = "" }: QuerySidebarProps) {
 
   return (
     <Sidebar
-      aria-label="Saved queries"
-      header={<SidebarHeader />}
+      aria-label="Navigation and queries"
+      header={<NavigationSection />}
       footer={<SidebarFooter />}
       className={className}
     >
+      {/* Saved Queries section header */}
+      <SidebarHeader />
+
       {/* Loading state */}
       {isLoading && <LoadingSkeleton />}
 
