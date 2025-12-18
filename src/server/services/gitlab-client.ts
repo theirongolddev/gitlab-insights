@@ -125,6 +125,11 @@ const GitLabCommitDiffSchema = z.object({
   deleted_file: z.boolean(),
 });
 
+// MR changes response has the changes nested in a 'changes' field
+const GitLabMRChangesResponseSchema = z.object({
+  changes: z.array(GitLabCommitDiffSchema),
+});
+
 // GitLab API response types
 export interface GitLabIssue {
   id: number;
@@ -214,6 +219,9 @@ export interface GitLabCommitDiff {
   renamed_file: boolean;
   deleted_file: boolean;
 }
+
+// MR file changes use the same structure as commit diffs
+export type GitLabMRChange = GitLabCommitDiff;
 
 export interface FetchEventsResult {
   issues: GitLabIssue[];
@@ -745,5 +753,83 @@ export class GitLabClient {
     );
 
     return commitsWithDiffs;
+  }
+
+  /**
+   * Fetch file changes for a merge request
+   *
+   * Note: This endpoint can be expensive - use sparingly and cache results.
+   * Recommended to only fetch for open MRs or on-demand.
+   *
+   * @param projectId - GitLab project ID
+   * @param mrIid - Merge request IID (not ID)
+   * @returns Array of file changes showing what the MR modifies
+   */
+  async fetchMRChanges(
+    projectId: string,
+    mrIid: number
+  ): Promise<GitLabMRChange[]> {
+    const url = `${this.baseUrl}/projects/${encodeURIComponent(projectId)}/merge_requests/${mrIid}/changes`;
+
+    logger.debug({ projectId, mrIid }, "GitLabClient: Fetching MR changes");
+
+    const response = await this.fetchWithRetry(url);
+
+    if (!response.ok) {
+      throw await this.handleErrorResponse(response);
+    }
+
+    const rawResponse = (await response.json()) as unknown;
+    const parsed = GitLabMRChangesResponseSchema.parse(rawResponse);
+
+    logger.debug(
+      { projectId, mrIid, fileCount: parsed.changes.length },
+      "GitLabClient: Fetched MR changes"
+    );
+
+    return parsed.changes;
+  }
+
+  /**
+   * Fetch file changes for multiple MRs with concurrency limiting
+   *
+   * @param projectId - GitLab project ID
+   * @param mrIids - Array of MR IIDs to fetch changes for
+   * @returns Map of MR IID to file changes
+   */
+  async fetchMRChangesForMany(
+    projectId: string,
+    mrIids: number[]
+  ): Promise<Map<number, GitLabMRChange[]>> {
+    const results = new Map<number, GitLabMRChange[]>();
+
+    // Use existing concurrency limiter to prevent rate limit exhaustion
+    const changePromises = mrIids.map((mrIid) =>
+      noteConcurrencyLimit(async () => {
+        try {
+          const changes = await this.fetchMRChanges(projectId, mrIid);
+          return { mrIid, changes };
+        } catch (error) {
+          logger.warn(
+            { error, projectId, mrIid },
+            "GitLabClient: Failed to fetch MR changes"
+          );
+          return { mrIid, changes: [] };
+        }
+      })
+    );
+
+    const settledResults = await Promise.all(changePromises);
+
+    for (const result of settledResults) {
+      results.set(result.mrIid, result.changes);
+    }
+
+    logger.info(
+      { projectId, mrCount: mrIids.length },
+      "GitLabClient: Fetched changes for multiple MRs"
+    );
+
+    return results;
   }
 }
