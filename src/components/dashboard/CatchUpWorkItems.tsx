@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import { Button, Skeleton, Chip, Checkbox } from "@heroui/react";
-import { CheckCheck } from "lucide-react";
+import { CheckCheck, X } from "lucide-react";
 import { api } from "~/trpc/react";
 import { WorkItemList } from "~/components/work-items/WorkItemList";
+import { WorkItemDetailView } from "~/components/work-items/WorkItemDetailView";
 import { useMarkAsRead } from "~/hooks/useMarkAsRead";
 import type { WorkItem } from "~/types/work-items";
 
@@ -12,6 +13,8 @@ interface CatchUpWorkItemsProps {
   searchQuery?: string;
   showClosed?: boolean;
   onShowClosedChange?: (showClosed: boolean) => void;
+  /** When true, hides read/unread visual indicators (for dashboard view) */
+  hideReadIndicators?: boolean;
 }
 
 /**
@@ -19,13 +22,21 @@ interface CatchUpWorkItemsProps {
  *
  * Features:
  * - WorkItemList with grouped sections (Issues, MRs)
+ * - Full-width detail view when item is selected
  * - Read tracking integration
  * - "Mark All as Read" button
  * - Responsive layout
- * - Optional search filter via searchQuery prop
- * - Optional showClosed toggle for closed/merged items
+ * - Scroll position preservation on back navigation
  */
-export function CatchUpWorkItems({ searchQuery, showClosed = false, onShowClosedChange }: CatchUpWorkItemsProps) {
+export function CatchUpWorkItems({ searchQuery, showClosed = false, onShowClosedChange, hideReadIndicators = false }: CatchUpWorkItemsProps) {
+  // Detail view state
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const scrollPositionRef = useRef<number>(0);
+  const listContainerRef = useRef<HTMLDivElement>(null);
+
+  // Multi-select state (Gmail-style, catchup view only)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
   // Memoize filters to prevent unnecessary re-renders
   const filters = useMemo(() => {
     const statusFilter = searchQuery
@@ -54,10 +65,24 @@ export function CatchUpWorkItems({ searchQuery, showClosed = false, onShowClosed
   // Read tracking
   const { markAsRead, markMultipleAsRead, isMarkingMultiple } = useMarkAsRead();
 
-  // Handle item selection (placeholder for Bead 4 detail view)
+  // Handle item selection - show detail view
   const handleItemSelect = useCallback((item: WorkItem) => {
-    // Will be implemented in Bead 4 to show detail view
-    console.log("Item selected:", item.id);
+    // Save scroll position before switching to detail view
+    scrollPositionRef.current = listContainerRef.current?.scrollTop ?? 0;
+    // In catchup view, mark as read when opening detail
+    if (!hideReadIndicators && item.isUnread) {
+      markAsRead(item.id);
+    }
+    setSelectedItemId(item.id);
+  }, [hideReadIndicators, markAsRead]);
+
+  // Handle back from detail view - restore scroll position
+  const handleBack = useCallback(() => {
+    setSelectedItemId(null);
+    // Restore scroll position after DOM update
+    requestAnimationFrame(() => {
+      listContainerRef.current?.scrollTo(0, scrollPositionRef.current);
+    });
   }, []);
 
   // Handle marking item as read
@@ -76,6 +101,31 @@ export function CatchUpWorkItems({ searchQuery, showClosed = false, onShowClosed
     [markMultipleAsRead]
   );
 
+  // Toggle selection for multi-select (Gmail-style)
+  const handleToggleSelect = useCallback((itemId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) {
+        next.delete(itemId);
+      } else {
+        next.add(itemId);
+      }
+      return next;
+    });
+  }, []);
+
+  // Clear all selections
+  const handleClearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+  }, []);
+
+  // Mark selected items as read
+  const handleMarkSelectedAsRead = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    await markMultipleAsRead(Array.from(selectedIds));
+    setSelectedIds(new Set());
+  }, [selectedIds, markMultipleAsRead]);
+
   // Handle marking all visible items as read
   const handleMarkAllAsRead = useCallback(async () => {
     const items = workItemsData?.items;
@@ -93,8 +143,8 @@ export function CatchUpWorkItems({ searchQuery, showClosed = false, onShowClosed
 
   const unreadCount = workItemsData?.items.unreadCount ?? 0;
 
-  // Error state
-  if (error) {
+  // Error state (only for list view errors)
+  if (error && !selectedItemId) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <div className="w-16 h-16 mb-4 rounded-full bg-danger-100 flex items-center justify-center">
@@ -120,38 +170,24 @@ export function CatchUpWorkItems({ searchQuery, showClosed = false, onShowClosed
     );
   }
 
+  // Detail view - replaces list when item is selected
+  if (selectedItemId) {
+    return (
+      <div className="h-full">
+        <WorkItemDetailView workItemId={selectedItemId} onBack={handleBack} />
+      </div>
+    );
+  }
+
+  // List view
   return (
     <div className="flex flex-col h-full">
-      {/* Header with unread count and Mark All button */}
-      <div className="flex-shrink-0 px-4 py-3 border-b border-default-200 bg-content1">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-default-600">
-              {isLoading ? (
-                <Skeleton className="w-32 h-5 rounded" />
-              ) : (
-                <>
-                  {unreadCount > 0 ? (
-                    <>
-                      <Chip
-                        size="sm"
-                        color="danger"
-                        variant="flat"
-                        className="mr-2"
-                      >
-                        {unreadCount}
-                      </Chip>
-                      unread item{unreadCount !== 1 ? "s" : ""}
-                    </>
-                  ) : (
-                    "All caught up!"
-                  )}
-                </>
-              )}
-            </span>
-          </div>
-          <div className="flex items-center gap-4">
-            {onShowClosedChange && (
+      {/* Header - catchup view shows selection/unread UI, dashboard view shows only filter */}
+      {hideReadIndicators ? (
+        /* Dashboard view - minimal header with just filter toggle */
+        onShowClosedChange && (
+          <div className="flex-shrink-0 px-4 py-3 border-b border-default-200 bg-content1">
+            <div className="flex items-center justify-end">
               <Checkbox
                 size="sm"
                 isSelected={showClosed}
@@ -162,25 +198,103 @@ export function CatchUpWorkItems({ searchQuery, showClosed = false, onShowClosed
               >
                 Show closed
               </Checkbox>
-            )}
-            {unreadCount > 0 && (
-              <Button
-                size="sm"
-                variant="flat"
-                color="primary"
-                startContent={<CheckCheck className="w-4 h-4" />}
-                onPress={handleMarkAllAsRead}
-                isLoading={isMarkingMultiple}
-              >
-                Mark All as Read
-              </Button>
-            )}
+            </div>
           </div>
+        )
+      ) : (
+        /* Catchup view - full header with selection actions or unread count */
+        <div className="flex-shrink-0 px-4 py-3 border-b border-default-200 bg-content1">
+          {selectedIds.size > 0 ? (
+            /* Selection action bar */
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Chip size="sm" color="primary" variant="flat">
+                  {selectedIds.size} selected
+                </Chip>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="flat"
+                  color="primary"
+                  startContent={<CheckCheck className="w-4 h-4" />}
+                  onPress={handleMarkSelectedAsRead}
+                  isLoading={isMarkingMultiple}
+                >
+                  Mark as Read
+                </Button>
+                <Button
+                  size="sm"
+                  variant="light"
+                  isIconOnly
+                  onPress={handleClearSelection}
+                  aria-label="Clear selection"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          ) : (
+            /* Default header with unread count */
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-default-600">
+                  {isLoading ? (
+                    <Skeleton className="w-32 h-5 rounded" />
+                  ) : (
+                    <>
+                      {unreadCount > 0 ? (
+                        <>
+                          <Chip
+                            size="sm"
+                            color="danger"
+                            variant="flat"
+                            className="mr-2"
+                          >
+                            {unreadCount}
+                          </Chip>
+                          unread item{unreadCount !== 1 ? "s" : ""}
+                        </>
+                      ) : (
+                        "All caught up!"
+                      )}
+                    </>
+                  )}
+                </span>
+              </div>
+              <div className="flex items-center gap-4">
+                {onShowClosedChange && (
+                  <Checkbox
+                    size="sm"
+                    isSelected={showClosed}
+                    onValueChange={onShowClosedChange}
+                    classNames={{
+                      label: "text-sm text-default-600",
+                    }}
+                  >
+                    Show closed
+                  </Checkbox>
+                )}
+                {unreadCount > 0 && (
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    color="primary"
+                    startContent={<CheckCheck className="w-4 h-4" />}
+                    onPress={handleMarkAllAsRead}
+                    isLoading={isMarkingMultiple}
+                  >
+                    Mark All as Read
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* Work item list - full width */}
-      <div className="flex-1 overflow-y-auto">
+      <div ref={listContainerRef} className="flex-1 overflow-y-auto">
         <WorkItemList
           items={workItemsData?.items ?? null}
           isLoading={isLoading}
@@ -188,6 +302,9 @@ export function CatchUpWorkItems({ searchQuery, showClosed = false, onShowClosed
           onMarkAsRead={handleMarkAsRead}
           onMarkMultipleAsRead={handleMarkMultipleAsRead}
           emptyMessage="No work items to catch up on"
+          hideReadIndicators={hideReadIndicators}
+          selectedIds={hideReadIndicators ? undefined : selectedIds}
+          onToggleSelect={hideReadIndicators ? undefined : handleToggleSelect}
         />
       </div>
     </div>
