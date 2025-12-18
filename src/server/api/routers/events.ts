@@ -15,13 +15,21 @@ import {
   transformMergeRequests,
   transformNotes,
   storeEvents,
+  linkParentEvents,
+  updateActivityMetadata,
   getProjectMap,
+  queueEmbeddingGeneration,
 } from "~/server/services/event-transformer";
 import {
   transformCommit,
   storeCommitsWithPersonLinks,
 } from "~/server/services/commit-transformer";
 import { searchEvents } from "~/lib/search/postgres-fts";
+import {
+  embedEvent,
+  prepareTextForEmbedding,
+  generateEmbedding,
+} from "~/server/services/embedding-generator";
 
 export const eventsRouter = createTRPCRouter({
   /**
@@ -133,6 +141,17 @@ export const eventsRouter = createTRPCRouter({
         allEvents
       );
 
+      // Link parent-child relationships (comments -> issues/MRs)
+      const linkedCount = await linkParentEvents(ctx.db, ctx.session.user.id);
+
+      // Update activity metadata (lastActivityAt, commentCount, participants)
+      const metadataCount = await updateActivityMetadata(ctx.db, ctx.session.user.id);
+
+      logger.info(
+        { linked: linkedCount, metadataUpdated: metadataCount },
+        "events.manualRefresh: Parent linking and metadata complete"
+      );
+
       // 4b. Fetch and store commits (if enabled)
       let commitStats = { stored: 0, skipped: 0, linked: 0, failed: 0 };
       if (includeCommits) {
@@ -190,6 +209,10 @@ export const eventsRouter = createTRPCRouter({
         },
       });
 
+      // 6. Queue embedding generation for new events (fire-and-forget)
+      // This runs asynchronously and doesn't block the sync response
+      queueEmbeddingGeneration(ctx.db, ctx.session.user.id);
+
       const duration = Date.now() - startTime;
 
       logger.info({
@@ -199,7 +222,7 @@ export const eventsRouter = createTRPCRouter({
         errors: storeResult.errors,
       }, "events.manualRefresh: Completed");
 
-      // 6. Return summary
+      // 7. Return summary
       return {
         success: true,
         stored: storeResult.stored,
@@ -451,5 +474,116 @@ export const eventsRouter = createTRPCRouter({
           message: "Failed to execute search. Please try again.",
         });
       }
+    }),
+
+  /**
+   * Get embedding statistics
+   *
+   * Returns counts of events with and without embeddings
+   */
+  getEmbeddingStats: protectedProcedure.query(async ({ ctx }) => {
+    const totalEvents = await ctx.db.event.count({
+      where: { userId: ctx.session.user.id },
+    });
+
+    const eventsWithEmbedding = await ctx.db.$queryRaw<[{ count: bigint }]>`
+      SELECT COUNT(*) as count
+      FROM "Event"
+      WHERE "userId" = ${ctx.session.user.id}
+        AND embedding IS NOT NULL
+    `;
+
+    const embeddedCount = Number(eventsWithEmbedding[0]?.count ?? 0);
+
+    return {
+      total: totalEvents,
+      embedded: embeddedCount,
+      pending: totalEvents - embeddedCount,
+      percentComplete:
+        totalEvents > 0
+          ? Math.round((embeddedCount / totalEvents) * 100)
+          : 100,
+    };
+  }),
+
+  /**
+   * Backfill embeddings for events
+   *
+   * Generates embeddings for a batch of events that don't have them yet.
+   * Can be called repeatedly to process all events.
+   *
+   * @param batchSize - Number of events to process (default 50, max 200)
+   * @returns Number of events processed and any errors
+   */
+  backfillEmbeddings: protectedProcedure
+    .input(
+      z
+        .object({
+          batchSize: z.number().min(1).max(200).default(50),
+        })
+        .optional()
+    )
+    .mutation(async ({ ctx, input }) => {
+      const batchSize = input?.batchSize ?? 50;
+
+      logger.info(
+        { userId: ctx.session.user.id, batchSize },
+        "events.backfillEmbeddings: Starting batch"
+      );
+
+      // Fetch events without embeddings
+      const events = await ctx.db.$queryRaw<
+        Array<{ id: string; title: string; body: string | null }>
+      >`
+        SELECT id, title, body
+        FROM "Event"
+        WHERE "userId" = ${ctx.session.user.id}
+          AND embedding IS NULL
+        ORDER BY "createdAt" DESC
+        LIMIT ${batchSize}
+      `;
+
+      let succeeded = 0;
+      let failed = 0;
+      const errors: Array<{ eventId: string; error: string }> = [];
+
+      for (const event of events) {
+        try {
+          const text = prepareTextForEmbedding(event.title, event.body);
+          const embedding = await generateEmbedding(text);
+          const vectorString = `[${embedding.join(",")}]`;
+
+          await ctx.db.$executeRaw`
+            UPDATE "Event"
+            SET embedding = ${vectorString}::vector
+            WHERE id = ${event.id}
+          `;
+
+          succeeded++;
+        } catch (error) {
+          failed++;
+          const errorMsg =
+            error instanceof Error ? error.message : String(error);
+          errors.push({ eventId: event.id, error: errorMsg });
+
+          logger.error(
+            { eventId: event.id, error: errorMsg },
+            "events.backfillEmbeddings: Failed to embed event"
+          );
+        }
+      }
+
+      logger.info(
+        { userId: ctx.session.user.id, succeeded, failed },
+        "events.backfillEmbeddings: Batch complete"
+      );
+
+      return {
+        processed: events.length,
+        succeeded,
+        failed,
+        errors: errors.slice(0, 5), // Return first 5 errors
+        hasMore: events.length === batchSize,
+      };
     }),
 });

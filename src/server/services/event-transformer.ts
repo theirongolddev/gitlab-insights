@@ -12,6 +12,10 @@ import type {
   GitLabNote,
 } from "./gitlab-client";
 import { logger } from "~/lib/logger";
+import {
+  generateEmbedding,
+  prepareTextForEmbedding,
+} from "./embedding-generator";
 
 export interface TransformedEvent {
   type: "issue" | "merge_request" | "comment";
@@ -244,6 +248,13 @@ export function transformNotes(
   });
 }
 
+// Maximum events to process in a single batch to prevent long-running operations
+const STORE_BATCH_SIZE = 500;
+
+// Database operation timeouts (consistent with person-extractor)
+const DB_TIMEOUT = 30000; // 30 second timeout for batch operations
+const DB_MAX_WAIT = 5000; // 5 second max wait to acquire connection
+
 /**
  * Store transformed events in database with deduplication
  *
@@ -260,48 +271,63 @@ export async function storeEvents(
   }
 
   try {
-    // Use createMany with skipDuplicates for atomic batch insert
-    // This is more efficient than individual upserts
-    const result = await db.event.createMany({
-      data: events.map((event) => ({
-        userId,
-        type: event.type,
-        title: event.title,
-        body: event.body,
-        author: event.author,
-        authorAvatar: event.authorAvatar,
-        project: event.project,
-        projectId: event.projectId,
-        labels: event.labels,
-        gitlabEventId: event.gitlabEventId,
-        gitlabUrl: event.gitlabUrl,
-        createdAt: event.createdAt,
-        // Work item grouping fields
-        parentType: event.parentType,
-        gitlabParentId: event.gitlabParentId,
-        isSystemNote: event.isSystemNote,
-        // Issue/MR metadata fields
-        assignees: event.assignees,
-        participants: event.participants,
-        status: event.status,
-        lastActivityAt: event.lastActivityAt,
-        commentCount: event.commentCount,
-        unresolvedCommentCount: event.unresolvedCommentCount,
-        // Cross-references
-        mentionedInIds: event.mentionedInIds,
-        // MR -> Issue closing relationships
-        closesIssueIds: event.closesIssueIds,
-        // Note: parentEventId is NOT set here - will be resolved in linkParentEvents()
-      })),
-      skipDuplicates: true, // Skip events with duplicate gitlabEventId
-    });
+    let totalStored = 0;
+    let totalSkipped = 0;
 
-    const stored = result.count;
-    const skipped = events.length - stored;
+    // Process in batches to prevent long-running transactions
+    for (let i = 0; i < events.length; i += STORE_BATCH_SIZE) {
+      const batch = events.slice(i, i + STORE_BATCH_SIZE);
+
+      // Use transaction with timeout for reliability
+      const result = await db.$transaction(
+        async (tx) => {
+          return tx.event.createMany({
+            data: batch.map((event) => ({
+              userId,
+              type: event.type,
+              title: event.title,
+              body: event.body,
+              author: event.author,
+              authorAvatar: event.authorAvatar,
+              project: event.project,
+              projectId: event.projectId,
+              labels: event.labels,
+              gitlabEventId: event.gitlabEventId,
+              gitlabUrl: event.gitlabUrl,
+              createdAt: event.createdAt,
+              // Work item grouping fields
+              parentType: event.parentType,
+              gitlabParentId: event.gitlabParentId,
+              isSystemNote: event.isSystemNote,
+              // Issue/MR metadata fields
+              assignees: event.assignees,
+              participants: event.participants,
+              status: event.status,
+              lastActivityAt: event.lastActivityAt,
+              commentCount: event.commentCount,
+              unresolvedCommentCount: event.unresolvedCommentCount,
+              // Cross-references
+              mentionedInIds: event.mentionedInIds,
+              // MR -> Issue closing relationships
+              closesIssueIds: event.closesIssueIds,
+              // Note: parentEventId is NOT set here - will be resolved in linkParentEvents()
+            })),
+            skipDuplicates: true, // Skip events with duplicate gitlabEventId
+          });
+        },
+        {
+          timeout: DB_TIMEOUT,
+          maxWait: DB_MAX_WAIT,
+        }
+      );
+
+      totalStored += result.count;
+      totalSkipped += batch.length - result.count;
+    }
 
     return {
-      stored,
-      skipped,
+      stored: totalStored,
+      skipped: totalSkipped,
       errors: 0,
     };
   } catch (error) {
@@ -372,49 +398,54 @@ export async function linkParentEvents(
             : `mr-${child.gitlabParentId}`,
       }));
 
-      // Lookup all parent events in one query
-      const parentEvents = await db.event.findMany({
-        where: {
-          userId,
-          gitlabEventId: {
-            in: parentLookups.map((p: { parentGitlabEventId: string }) => p.parentGitlabEventId),
-          },
-        },
-        select: {
-          id: true,
-          gitlabEventId: true,
-        },
-      });
+      // Wrap batch operations in transaction with timeout
+      const batchLinked = await db.$transaction(
+        async (tx) => {
+          // Lookup all parent events in one query
+          const parentEvents = await tx.event.findMany({
+            where: {
+              userId,
+              gitlabEventId: {
+                in: parentLookups.map((p: { parentGitlabEventId: string }) => p.parentGitlabEventId),
+              },
+            },
+            select: {
+              id: true,
+              gitlabEventId: true,
+            },
+          });
 
-      // Build map for quick lookup
-      const parentMap = new Map(
-        parentEvents.map((p: { id: string; gitlabEventId: string }) => [p.gitlabEventId, p.id])
+          // Build map for quick lookup
+          const parentMap = new Map(
+            parentEvents.map((p: { id: string; gitlabEventId: string }) => [p.gitlabEventId, p.id])
+          );
+
+          let count = 0;
+          // Update each child with resolved parent ID
+          for (const lookup of parentLookups) {
+            const parentId = parentMap.get(lookup.parentGitlabEventId);
+            if (parentId) {
+              await tx.event.update({
+                where: { id: lookup.childId },
+                data: { parentEventId: parentId },
+              });
+              count++;
+            } else {
+              logger.warn(
+                { childId: lookup.childId, parentGitlabEventId: lookup.parentGitlabEventId },
+                "event-transformer: Parent event not found for child"
+              );
+            }
+          }
+          return count;
+        },
+        {
+          timeout: DB_TIMEOUT,
+          maxWait: DB_MAX_WAIT,
+        }
       );
 
-      // Update each child with resolved parent ID
-      for (const lookup of parentLookups) {
-        const parentId = parentMap.get(lookup.parentGitlabEventId);
-        if (parentId) {
-          try {
-            await db.event.update({
-              where: { id: lookup.childId },
-              data: { parentEventId: parentId },
-            });
-            linkedCount++;
-          } catch (error) {
-            logger.error(
-              { error, childId: lookup.childId, parentId },
-              "event-transformer: Failed to update child with parent ID"
-            );
-            // Continue processing remaining items - don't let one failure break the batch
-          }
-        } else {
-          logger.warn(
-            { childId: lookup.childId, parentGitlabEventId: lookup.parentGitlabEventId },
-            "event-transformer: Parent event not found for child"
-          );
-        }
-      }
+      linkedCount += batchLinked;
     }
 
     logger.info(
@@ -471,55 +502,69 @@ export async function updateActivityMetadata(
 
     let updatedCount = 0;
 
-    // Process in batches for performance
+    // Process in batches for performance with transaction timeout protection
     const batchSize = 50;
     for (let i = 0; i < workItems.length; i += batchSize) {
       const batch = workItems.slice(i, i + batchSize);
 
-      for (const workItem of batch) {
-        // Query all child comments (non-system notes)
-        const children = await db.event.findMany({
-          where: {
-            userId,
-            parentEventId: workItem.id,
-            type: "comment",
-          },
-          select: {
-            createdAt: true,
-            author: true,
-            isSystemNote: true,
-          },
-          orderBy: {
-            createdAt: "desc",
-          },
-        });
+      const batchUpdated = await db.$transaction(
+        async (tx) => {
+          let count = 0;
 
-        // Compute metadata
-        const userComments = children.filter((c: { isSystemNote: boolean }) => !c.isSystemNote);
-        const commentCount = userComments.length;
-        const lastActivityAt =
-          children.length > 0 ? children[0]!.createdAt : null;
+          for (const workItem of batch) {
+            // Query all child comments (non-system notes)
+            const children = await tx.event.findMany({
+              where: {
+                userId,
+                parentEventId: workItem.id,
+                type: "comment",
+              },
+              select: {
+                createdAt: true,
+                author: true,
+                isSystemNote: true,
+              },
+              orderBy: {
+                createdAt: "desc",
+              },
+            });
 
-        // Build participants array: work item author + all comment authors
-        const participantSet = new Set<string>([workItem.author]);
-        for (const child of userComments) {
-          participantSet.add(child.author);
+            // Compute metadata
+            const userComments = children.filter((c: { isSystemNote: boolean }) => !c.isSystemNote);
+            const commentCount = userComments.length;
+            const lastActivityAt =
+              children.length > 0 ? children[0]!.createdAt : null;
+
+            // Build participants array: work item author + all comment authors
+            const participantSet = new Set<string>([workItem.author]);
+            for (const child of userComments) {
+              participantSet.add(child.author);
+            }
+            const participants = Array.from(participantSet);
+
+            // Update work item with computed metadata
+            await tx.event.update({
+              where: { id: workItem.id },
+              data: {
+                lastActivityAt,
+                commentCount,
+                participants,
+                unresolvedCommentCount: 0, // TODO: Requires GitLab discussion threads API
+              },
+            });
+
+            count++;
+          }
+
+          return count;
+        },
+        {
+          timeout: DB_TIMEOUT,
+          maxWait: DB_MAX_WAIT,
         }
-        const participants = Array.from(participantSet);
+      );
 
-        // Update work item with computed metadata
-        await db.event.update({
-          where: { id: workItem.id },
-          data: {
-            lastActivityAt,
-            commentCount,
-            participants,
-            unresolvedCommentCount: 0, // TODO: Requires GitLab discussion threads API
-          },
-        });
-
-        updatedCount++;
-      }
+      updatedCount += batchUpdated;
     }
 
     logger.info(
@@ -568,4 +613,246 @@ export async function getProjectMap(
   }
 
   return projectMap;
+}
+
+/**
+ * MR file change type for storing in database
+ */
+export interface MRFileChangeInput {
+  filePath: string;
+  changeType: "added" | "modified" | "deleted" | "renamed";
+}
+
+/**
+ * Convert GitLab MR change flags to change type string
+ */
+function getChangeType(change: {
+  new_file: boolean;
+  deleted_file: boolean;
+  renamed_file: boolean;
+}): MRFileChangeInput["changeType"] {
+  if (change.new_file) return "added";
+  if (change.deleted_file) return "deleted";
+  if (change.renamed_file) return "renamed";
+  return "modified";
+}
+
+/**
+ * Store MR file changes in database
+ *
+ * Upserts file changes for MRs, using eventId as the link.
+ * Called after storeEvents to populate file change data.
+ *
+ * @param db - Prisma client
+ * @param mrChanges - Map of MR gitlabEventId to file changes from GitLab API
+ * @returns Number of file changes stored
+ */
+export async function storeMRFileChanges(
+  db: PrismaClient,
+  mrChanges: Map<
+    string,
+    Array<{
+      old_path: string;
+      new_path: string;
+      new_file: boolean;
+      renamed_file: boolean;
+      deleted_file: boolean;
+    }>
+  >
+): Promise<number> {
+  if (mrChanges.size === 0) {
+    return 0;
+  }
+
+  try {
+    // Get all event IDs for the MRs we have changes for
+    const gitlabEventIds = Array.from(mrChanges.keys());
+    const events = await db.event.findMany({
+      where: {
+        gitlabEventId: { in: gitlabEventIds },
+        type: "merge_request",
+      },
+      select: {
+        id: true,
+        gitlabEventId: true,
+      },
+    });
+
+    // Build a map of gitlabEventId -> database event ID
+    const eventIdMap = new Map(events.map((e) => [e.gitlabEventId, e.id]));
+
+    // Prepare all file change records
+    const fileChangeRecords: Array<{
+      eventId: string;
+      filePath: string;
+      changeType: string;
+    }> = [];
+
+    for (const [gitlabEventId, changes] of mrChanges) {
+      const eventId = eventIdMap.get(gitlabEventId);
+      if (!eventId) {
+        logger.warn(
+          { gitlabEventId },
+          "event-transformer: MR event not found for file changes"
+        );
+        continue;
+      }
+
+      for (const change of changes) {
+        // Use new_path as the file path (handles renames)
+        fileChangeRecords.push({
+          eventId,
+          filePath: change.new_path,
+          changeType: getChangeType(change),
+        });
+      }
+    }
+
+    if (fileChangeRecords.length === 0) {
+      return 0;
+    }
+
+    // Delete existing file changes for these events (to handle updates)
+    const eventIds = [...new Set(fileChangeRecords.map((r) => r.eventId))];
+    await db.mRFileChange.deleteMany({
+      where: {
+        eventId: { in: eventIds },
+      },
+    });
+
+    // Insert new file changes using transaction with timeout
+    const result = await db.$transaction(
+      async (tx) => {
+        return tx.mRFileChange.createMany({
+          data: fileChangeRecords,
+        });
+      },
+      {
+        timeout: DB_TIMEOUT,
+        maxWait: DB_MAX_WAIT,
+      }
+    );
+
+    logger.info(
+      { storedCount: result.count, mrCount: mrChanges.size },
+      "event-transformer: Stored MR file changes"
+    );
+
+    return result.count;
+  } catch (error) {
+    logger.error({ error }, "event-transformer: Failed to store MR file changes");
+    throw error;
+  }
+}
+
+// Batch size for embedding generation
+const EMBEDDING_BATCH_SIZE = 20;
+
+/**
+ * Generate embeddings for events without them
+ *
+ * Queries for issues and MRs without embeddings and generates them in batches.
+ * Comments are excluded as they are represented by their parent's embedding.
+ *
+ * This function is designed to be called after event storage and runs
+ * asynchronously (fire-and-forget) so it doesn't block the sync process.
+ *
+ * @param db - Prisma client
+ * @param userId - User ID to scope the query
+ * @param limit - Maximum number of events to process (default 100)
+ * @returns Promise with count of embeddings generated
+ */
+export async function generateEmbeddingsForNewEvents(
+  db: PrismaClient,
+  userId: string,
+  limit = 100
+): Promise<{ generated: number; failed: number }> {
+  try {
+    // Find issues and MRs without embeddings
+    const events = await db.$queryRaw<
+      Array<{ id: string; title: string; body: string | null }>
+    >`
+      SELECT id, title, body
+      FROM "Event"
+      WHERE "userId" = ${userId}
+        AND type IN ('issue', 'merge_request')
+        AND embedding IS NULL
+      ORDER BY "createdAt" DESC
+      LIMIT ${limit}
+    `;
+
+    if (events.length === 0) {
+      return { generated: 0, failed: 0 };
+    }
+
+    logger.info(
+      { eventCount: events.length, userId },
+      "event-transformer: Generating embeddings for new events"
+    );
+
+    let generated = 0;
+    let failed = 0;
+
+    // Process in batches
+    for (let i = 0; i < events.length; i += EMBEDDING_BATCH_SIZE) {
+      const batch = events.slice(i, i + EMBEDDING_BATCH_SIZE);
+
+      for (const event of batch) {
+        try {
+          const text = prepareTextForEmbedding(event.title, event.body);
+          const embedding = await generateEmbedding(text);
+          const vectorString = `[${embedding.join(",")}]`;
+
+          await db.$executeRaw`
+            UPDATE "Event"
+            SET embedding = ${vectorString}::vector
+            WHERE id = ${event.id}
+          `;
+
+          generated++;
+        } catch (error) {
+          failed++;
+          logger.warn(
+            { eventId: event.id, error },
+            "event-transformer: Failed to generate embedding for event"
+          );
+        }
+      }
+    }
+
+    logger.info(
+      { generated, failed, userId },
+      "event-transformer: Embedding generation complete"
+    );
+
+    return { generated, failed };
+  } catch (error) {
+    logger.error(
+      { error, userId },
+      "event-transformer: Failed to generate embeddings"
+    );
+    return { generated: 0, failed: 0 };
+  }
+}
+
+/**
+ * Fire-and-forget wrapper for embedding generation
+ *
+ * Calls generateEmbeddingsForNewEvents without awaiting, so it doesn't
+ * block the sync process. Errors are logged but not propagated.
+ *
+ * @param db - Prisma client
+ * @param userId - User ID to scope the query
+ */
+export function queueEmbeddingGeneration(
+  db: PrismaClient,
+  userId: string
+): void {
+  // Fire and forget - don't await
+  generateEmbeddingsForNewEvents(db, userId).catch((error) => {
+    logger.error(
+      { error, userId },
+      "event-transformer: Background embedding generation failed"
+    );
+  });
 }

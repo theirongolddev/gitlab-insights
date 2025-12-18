@@ -7,6 +7,7 @@ import { peopleRouter } from "~/server/api/routers/people";
 import { workItemsRouter } from "~/server/api/routers/work-items";
 import { filesRouter } from "~/server/api/routers/files";
 import { expertiseRouter } from "~/server/api/routers/expertise";
+import { similarityRouter } from "~/server/api/routers/similarity";
 
 /**
  * This is the primary router for your server.
@@ -22,6 +23,7 @@ export const appRouter = createTRPCRouter({
   workItems: workItemsRouter,
   files: filesRouter,
   expertise: expertiseRouter,
+  similarity: similarityRouter,
 });
 
 // export type definition of API
