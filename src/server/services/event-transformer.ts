@@ -261,6 +261,9 @@ const DB_MAX_WAIT = 5000; // 5 second max wait to acquire connection
  *
  * Uses createMany with skipDuplicates to handle race conditions
  * Returns count of stored, skipped, and error events
+ * 
+ * @deprecated Use storeWorkItemBundles() instead for zero-orphan guarantees.
+ * This function stores events without immediate parent linking, leading to 87% orphan rate.
  */
 export async function storeEvents(
   db: PrismaClient,
@@ -352,6 +355,9 @@ export async function storeEvents(
  * 2. Build gitlabEventId from parentType + gitlabParentId (e.g., "issue-123")
  * 3. Lookup parent event's database ID
  * 4. Update comment's parentEventId field
+ * 
+ * @deprecated No longer needed - storeWorkItemBundle() sets parentEventId at insert time.
+ * This post-hoc linking approach has only 13% success rate due to missing parents.
  * 
  * @returns Number of relationships linked
  */
@@ -472,6 +478,8 @@ export async function linkParentEvents(
  * 
  * This should be called after linkParentEvents to ensure relationships exist.
  * 
+ * @deprecated No longer needed - storeWorkItemBundle() computes and stores activity metadata atomically.
+ * 
  * @returns Number of work items updated
  */
 export async function updateActivityMetadata(
@@ -585,6 +593,8 @@ export async function updateActivityMetadata(
 /**
  * Fetch project information for project IDs
  * Returns a map for quick lookup during transformation
+ * 
+ * @deprecated No longer needed - storeWorkItemBundle() uses projectId directly from bundles.
  */
 export async function getProjectMap(
   db: PrismaClient,

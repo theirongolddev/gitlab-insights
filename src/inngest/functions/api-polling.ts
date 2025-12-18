@@ -16,13 +16,7 @@ import { db } from "~/server/db";
 import { GitLabClient, GitLabAPIError } from "~/server/services/gitlab-client";
 import { getGitLabAccessToken } from "~/server/services/gitlab-token";
 import {
-  transformIssues,
-  transformMergeRequests,
-  transformNotes,
-  storeEvents,
-  linkParentEvents,
-  updateActivityMetadata,
-  getProjectMap,
+  storeWorkItemBundles,
 } from "~/server/services/event-transformer";
 import {
   extractPeopleFromGitLabResponses,
@@ -70,41 +64,35 @@ export const apiPollingJob = inngest.createFunction(
           // Get fresh access token (auto-refreshes if expired)
           const { accessToken } = await getGitLabAccessToken(user.id);
 
-          const lastSync = await db.lastSync.findUnique({
-            where: { userId: user.id },
-          });
-
-          const updatedAfter = lastSync?.lastSyncAt?.toISOString();
           const projectIds = user.projects.map((p) => p.gitlabProjectId);
 
+          // NEW: Fetch work items with ALL their notes as bundles
           const client = new GitLabClient(accessToken);
-          const { issues, mergeRequests, notes } = await client.fetchEvents(
-            projectIds,
-            updatedAfter
-          );
+          const bundles = await client.fetchWorkItemsComplete(projectIds, {
+            issueLimit: 25,
+            mrLimit: 25,
+            state: "opened",
+          });
 
-          const projectMap = await getProjectMap(db, user.id, projectIds);
-          const allEvents = [
-            ...transformIssues(issues, projectMap),
-            ...transformMergeRequests(mergeRequests, projectMap),
-            ...transformNotes(notes, projectMap),
-          ];
+          // NEW: Store bundles atomically (no separate linking step needed!)
+          const result = await storeWorkItemBundles(db, user.id, bundles);
 
-          const result = await storeEvents(db, user.id, allEvents);
+          // Extract people from bundles for person linking
+          // Reconstruct raw arrays from bundles for compatibility with extractPeopleFromGitLabResponses
+          const issues = bundles
+            .filter((b) => b.type === "issue")
+            .map((b) => b.parent);
+          const mergeRequests = bundles
+            .filter((b) => b.type === "merge_request")
+            .map((b) => b.parent);
+          const notes = bundles.flatMap((b) => b.notes);
 
-          // Link parent-child relationships (comments -> issues/MRs)
-          const linkedCount = await linkParentEvents(db, user.id);
-
-          // Update activity metadata (lastActivityAt, commentCount, participants)
-          const metadataCount = await updateActivityMetadata(db, user.id);
-
-          // Extract and upsert people from GitLab responses
           const extractedPeople = extractPeopleFromGitLabResponses(
             issues,
             mergeRequests,
             notes
           );
-          const peopleResult = await upsertPeople(db, user.id, extractedPeople);
+          await upsertPeople(db, user.id, extractedPeople);
 
           await db.lastSync.upsert({
             where: { userId: user.id },
@@ -116,9 +104,8 @@ export const apiPollingJob = inngest.createFunction(
             {
               userId: user.id,
               stored: result.stored,
-              skipped: result.skipped,
-              linked: linkedCount,
-              metadataUpdated: metadataCount,
+              failed: result.failed,
+              totalNotes: result.totalNotes,
               projectCount: projectIds.length,
             },
             "api-polling: User events synced"

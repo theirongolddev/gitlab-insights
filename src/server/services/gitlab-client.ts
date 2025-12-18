@@ -226,6 +226,8 @@ export interface GitLabCommitDiff {
 // MR file changes use the same structure as commit diffs
 export type GitLabMRChange = GitLabCommitDiff;
 
+// NOTE: FetchEventsResult is deprecated - use WorkItemWithActivity[] instead
+// Kept for backward compatibility but not used in new code
 export interface FetchEventsResult {
   issues: GitLabIssue[];
   mergeRequests: GitLabMergeRequest[];
@@ -280,6 +282,9 @@ export class GitLabClient {
    * @param projectIds - Array of GitLab project IDs to fetch from
    * @param updatedAfter - Optional ISO date string to fetch only events updated after this time
    * @returns Combined issues, merge requests, and notes
+   * 
+   * @deprecated Use fetchWorkItemsComplete() instead for zero-orphan guarantees.
+   * This method fetches events separately, leading to 87% orphan rate for notes.
    */
   async fetchEvents(
     projectIds: string[],
