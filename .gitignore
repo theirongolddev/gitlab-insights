@@ -44,6 +44,8 @@ yarn-error.log*
 
 # Database
 generated/
+*.db
+prisma/*.db
 
 .playwright-mcp/
 .DS_Store
