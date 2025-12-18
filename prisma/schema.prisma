@@ -115,12 +115,19 @@ model Event {
   lastActivityAt          DateTime?
   status                  String? // "open" | "closed" | "merged"
 
+  // Vector embedding for similarity search (Story 12.2)
+  // Uses pgvector extension - 384 dimensions for all-MiniLM-L6-v2
+  embedding               Unsupported("vector(384)")?
+
   // Self-relation for hierarchy
   parent   Event?  @relation("EventHierarchy", fields: [parentEventId], references: [id], onDelete: Cascade)
   children Event[] @relation("EventHierarchy")
 
   // Read tracking
   readBy ReadEvent[]
+
+  // MR file changes for collision detection
+  mrFileChanges MRFileChange[]
 
   // Optimizes dashboard queries
   @@index([userId, createdAt(sort: Desc)])
@@ -295,4 +302,17 @@ model CommitFile {
 
   @@unique([commitId, fileId])
   @@index([fileId])
+}
+
+// MR file changes for collision detection (Story 11.1)
+model MRFileChange {
+  id       String @id @default(cuid())
+  eventId  String
+  event    Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  filePath   String // Full file path (e.g., "src/components/Button.tsx")
+  changeType String // 'added' | 'modified' | 'deleted' | 'renamed'
+
+  @@index([eventId])
+  @@index([filePath])
 }
