@@ -1,21 +1,12 @@
 "use client";
 
-import { useState, useCallback, lazy, Suspense, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Button, Skeleton, Chip, Checkbox } from "@heroui/react";
 import { CheckCheck } from "lucide-react";
 import { api } from "~/trpc/react";
 import { WorkItemList } from "~/components/work-items/WorkItemList";
 import { useMarkAsRead } from "~/hooks/useMarkAsRead";
-import { useDetailPane } from "~/contexts/DetailPaneContext";
-import { useMediaQuery } from "~/hooks/useMediaQuery";
 import type { WorkItem } from "~/types/work-items";
-
-// Lazy load SidePanelDetail for code splitting
-const SidePanelDetail = lazy(() =>
-  import("~/components/work-items/SidePanelDetail").then((module) => ({
-    default: module.SidePanelDetail,
-  }))
-);
 
 interface CatchUpWorkItemsProps {
   searchQuery?: string;
@@ -26,10 +17,8 @@ interface CatchUpWorkItemsProps {
 /**
  * CatchUpWorkItems - Work-item-based catch-up view
  *
- * Replaces the old query-based CatchUpView with type-based grouping (Issues/MRs).
  * Features:
  * - WorkItemList with grouped sections (Issues, MRs)
- * - Side panel for work item details
  * - Read tracking integration
  * - "Mark All as Read" button
  * - Responsive layout
@@ -37,10 +26,6 @@ interface CatchUpWorkItemsProps {
  * - Optional showClosed toggle for closed/merged items
  */
 export function CatchUpWorkItems({ searchQuery, showClosed = false, onShowClosedChange }: CatchUpWorkItemsProps) {
-  const [selectedItem, setSelectedItem] = useState<WorkItem | null>(null);
-  const { isOpen, setIsOpen } = useDetailPane();
-  const isMobile = useMediaQuery("(max-width: 767px)");
-
   // Memoize filters to prevent unnecessary re-renders
   const filters = useMemo(() => {
     const statusFilter = searchQuery
@@ -66,24 +51,14 @@ export function CatchUpWorkItems({ searchQuery, showClosed = false, onShowClosed
     filters,
   });
 
-  // Fetch details for selected item
-  const { data: detailData, isLoading: isDetailLoading } =
-    api.workItems.getWithActivity.useQuery(
-      { id: selectedItem?.id ?? "", includeRelated: true },
-      { enabled: !!selectedItem }
-    );
-
   // Read tracking
   const { markAsRead, markMultipleAsRead, isMarkingMultiple } = useMarkAsRead();
 
-  // Handle item selection
-  const handleItemSelect = useCallback(
-    (item: WorkItem) => {
-      setSelectedItem(item);
-      setIsOpen(true);
-    },
-    [setIsOpen]
-  );
+  // Handle item selection (placeholder for Bead 4 detail view)
+  const handleItemSelect = useCallback((item: WorkItem) => {
+    // Will be implemented in Bead 4 to show detail view
+    console.log("Item selected:", item.id);
+  }, []);
 
   // Handle marking item as read
   const handleMarkAsRead = useCallback(
@@ -103,30 +78,18 @@ export function CatchUpWorkItems({ searchQuery, showClosed = false, onShowClosed
 
   // Handle marking all visible items as read
   const handleMarkAllAsRead = useCallback(async () => {
-    if (!workItemsData?.items) return;
+    const items = workItemsData?.items;
+    if (!items) return;
 
     const allUnreadIds = [
-      ...workItemsData.items.issues.filter((i) => i.isUnread).map((i) => i.id),
-      ...workItemsData.items.mergeRequests
-        .filter((i) => i.isUnread)
-        .map((i) => i.id),
+      ...items.issues.filter((i) => i.isUnread).map((i) => i.id),
+      ...items.mergeRequests.filter((i) => i.isUnread).map((i) => i.id),
     ];
 
     if (allUnreadIds.length > 0) {
       await markMultipleAsRead(allUnreadIds);
     }
-  }, [workItemsData?.items, markMultipleAsRead]);
-
-  // Handle closing detail panel
-  const handleCloseDetail = useCallback(() => {
-    setIsOpen(false);
-    setSelectedItem(null);
-  }, [setIsOpen]);
-
-  // Handle clicking related item
-  const handleRelatedItemClick = useCallback((item: WorkItem) => {
-    setSelectedItem(item);
-  }, []);
+  }, [workItemsData, markMultipleAsRead]);
 
   const unreadCount = workItemsData?.items.unreadCount ?? 0;
 
@@ -156,8 +119,6 @@ export function CatchUpWorkItems({ searchQuery, showClosed = false, onShowClosed
       </div>
     );
   }
-
-  const shouldShowPane = isOpen && !isMobile && selectedItem;
 
   return (
     <div className="flex flex-col h-full">
@@ -218,99 +179,16 @@ export function CatchUpWorkItems({ searchQuery, showClosed = false, onShowClosed
         </div>
       </div>
 
-      {/* Main content with split view */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Work item list */}
-        <div
-          className={`flex-1 overflow-y-auto transition-all duration-200 ${
-            shouldShowPane ? "w-[60%]" : "w-full"
-          }`}
-        >
-          <WorkItemList
-            items={workItemsData?.items ?? null}
-            isLoading={isLoading}
-            onItemSelect={handleItemSelect}
-            onMarkAsRead={handleMarkAsRead}
-            onMarkMultipleAsRead={handleMarkMultipleAsRead}
-            emptyMessage="No work items to catch up on"
-          />
-        </div>
-
-        {/* Detail panel - slides in from right */}
-        {!isMobile && (
-          <div
-            className={`border-l border-default-200 bg-content1 overflow-hidden flex-shrink-0 transition-all duration-200 ease-out ${
-              shouldShowPane ? "w-[40%] min-w-[400px] max-w-[600px]" : "w-0"
-            }`}
-          >
-            {shouldShowPane && (
-              <Suspense
-                fallback={
-                  <div className="h-full flex flex-col bg-content1">
-                    <div className="flex items-center justify-between p-4 border-b border-default-200">
-                      <div className="flex items-center gap-2 flex-1">
-                        <Skeleton className="w-8 h-6 rounded" />
-                        <Skeleton className="w-3/4 h-6 rounded" />
-                      </div>
-                      <Skeleton className="w-8 h-8 rounded" />
-                    </div>
-                    <div className="flex-1 p-4 space-y-4">
-                      <Skeleton className="w-full h-20 rounded-lg" />
-                      <Skeleton className="w-full h-16 rounded-lg" />
-                      <Skeleton className="w-full h-16 rounded-lg" />
-                      <Skeleton className="w-3/4 h-16 rounded-lg" />
-                    </div>
-                  </div>
-                }
-              >
-                <SidePanelDetail
-                  workItem={detailData?.workItem ?? selectedItem}
-                  activities={detailData?.activities ?? []}
-                  relatedWorkItems={detailData?.relatedWorkItems}
-                  isLoading={isDetailLoading}
-                  onClose={handleCloseDetail}
-                  onMarkAsRead={handleMarkAsRead}
-                  onRelatedItemClick={handleRelatedItemClick}
-                />
-              </Suspense>
-            )}
-          </div>
-        )}
-
-        {/* Mobile: Full-screen overlay with slide-up animation */}
-        {isMobile && selectedItem && isOpen && (
-          <div className="fixed inset-0 z-50 bg-content1 animate-in slide-in-from-bottom duration-200">
-            <Suspense
-              fallback={
-                <div className="h-full flex flex-col bg-content1">
-                  <div className="flex items-center justify-between p-4 border-b border-default-200">
-                    <div className="flex items-center gap-2 flex-1">
-                      <Skeleton className="w-8 h-6 rounded" />
-                      <Skeleton className="w-3/4 h-6 rounded" />
-                    </div>
-                    <Skeleton className="w-8 h-8 rounded" />
-                  </div>
-                  <div className="flex-1 p-4 space-y-4">
-                    <Skeleton className="w-full h-20 rounded-lg" />
-                    <Skeleton className="w-full h-16 rounded-lg" />
-                    <Skeleton className="w-full h-16 rounded-lg" />
-                    <Skeleton className="w-3/4 h-16 rounded-lg" />
-                  </div>
-                </div>
-              }
-            >
-              <SidePanelDetail
-                workItem={detailData?.workItem ?? selectedItem}
-                activities={detailData?.activities ?? []}
-                relatedWorkItems={detailData?.relatedWorkItems}
-                isLoading={isDetailLoading}
-                onClose={handleCloseDetail}
-                onMarkAsRead={handleMarkAsRead}
-                onRelatedItemClick={handleRelatedItemClick}
-              />
-            </Suspense>
-          </div>
-        )}
+      {/* Work item list - full width */}
+      <div className="flex-1 overflow-y-auto">
+        <WorkItemList
+          items={workItemsData?.items ?? null}
+          isLoading={isLoading}
+          onItemSelect={handleItemSelect}
+          onMarkAsRead={handleMarkAsRead}
+          onMarkMultipleAsRead={handleMarkMultipleAsRead}
+          emptyMessage="No work items to catch up on"
+        />
       </div>
     </div>
   );

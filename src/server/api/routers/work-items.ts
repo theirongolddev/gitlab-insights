@@ -107,6 +107,7 @@ export const workItemsRouter = createTRPCRouter({
               body: true,
               createdAt: true,
               isSystemNote: true,
+              gitlabUrl: true,
             },
             orderBy: { createdAt: "desc" },
           },
@@ -174,6 +175,19 @@ export const workItemsRouter = createTRPCRouter({
             : false
           : true; // Never read = unread
 
+        // Transform children to ActivityItem[] for card expansion
+        const activities: ActivityItem[] = children.map((child) => ({
+          id: child.id,
+          type: child.isSystemNote ? "system" : "comment",
+          author: child.author,
+          authorAvatar: child.authorAvatar,
+          body: child.body,
+          timestamp: child.createdAt,
+          isSystemNote: child.isSystemNote,
+          isUnread: lastReadAt ? child.createdAt > lastReadAt : true,
+          gitlabUrl: child.gitlabUrl,
+        }));
+
         // Extract issue number from gitlabEventId (e.g., "issue-123" -> 123)
         const numberMatch = event.gitlabEventId.match(/\d+$/);
         const number = numberMatch ? parseInt(numberMatch[0], 10) : 0;
@@ -199,6 +213,7 @@ export const workItemsRouter = createTRPCRouter({
           closedByMRIds: [], // TODO: Compute from other MRs' closesIssueIds
           mentionedInIds: event.mentionedInIds,
           activitySummary,
+          activities,
           isUnread,
           lastReadAt,
         };
