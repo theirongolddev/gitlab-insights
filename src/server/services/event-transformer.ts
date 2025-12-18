@@ -10,6 +10,7 @@ import type {
   GitLabIssue,
   GitLabMergeRequest,
   GitLabNote,
+  WorkItemWithActivity,
 } from "./gitlab-client";
 import { logger } from "~/lib/logger";
 import {
@@ -745,6 +746,259 @@ export async function storeMRFileChanges(
     logger.error({ error }, "event-transformer: Failed to store MR file changes");
     throw error;
   }
+}
+
+/**
+ * Result of storing a work item bundle
+ */
+export interface StoreWorkItemBundleResult {
+  parentId: string;
+  notesStored: number;
+}
+
+/**
+ * Atomically store a work item bundle (parent + all notes) in one transaction.
+ * 
+ * This is the core storage method for work-item-centric fetching:
+ * 1. Upserts the parent (issue/MR) first
+ * 2. Upserts all notes with parentEventId set IMMEDIATELY (not post-hoc)
+ * 3. Updates activity metadata (commentCount, participants, lastActivityAt)
+ * 
+ * The transaction ensures atomicity - either all records are stored or none.
+ * 
+ * @param db - Prisma client
+ * @param userId - User ID to associate with the events
+ * @param bundle - Work item with all its notes
+ * @returns Object with parentId and count of notes stored
+ */
+export async function storeWorkItemBundle(
+  db: PrismaClient,
+  userId: string,
+  bundle: WorkItemWithActivity
+): Promise<StoreWorkItemBundleResult> {
+  const { parent, notes, type, projectId } = bundle;
+
+  // Build gitlabEventId for parent
+  const parentGitlabEventId = type === "issue" 
+    ? `issue-${parent.id}` 
+    : `mr-${parent.id}`;
+
+  // Determine status based on type
+  const status = type === "issue"
+    ? (parent.state === "opened" ? "open" : "closed")
+    : (parent.state === "opened" ? "open" : parent.state as "closed" | "merged");
+
+  return await db.$transaction(
+    async (tx) => {
+      // 1. Upsert parent (issue/MR) first
+      const parentRecord = await tx.event.upsert({
+        where: {
+          gitlabEventId: parentGitlabEventId,
+        },
+        create: {
+          userId,
+          type,
+          title: parent.title,
+          body: parent.description,
+          author: parent.author.username,
+          authorAvatar: parent.author.avatar_url,
+          project: parent.project_id.toString(), // Will be updated with actual name
+          projectId,
+          labels: parent.labels,
+          gitlabEventId: parentGitlabEventId,
+          gitlabUrl: parent.web_url,
+          createdAt: new Date(parent.created_at),
+          parentType: null,
+          gitlabParentId: null,
+          isSystemNote: false,
+          assignees: parent.assignees?.map((a) => a.username) ?? [],
+          participants: [], // Will be computed below
+          status,
+          lastActivityAt: new Date(parent.updated_at), // Will be updated below
+          commentCount: 0, // Will be computed below
+          unresolvedCommentCount: 0,
+          mentionedInIds: extractMentionedIds(parent.description),
+          closesIssueIds: type === "merge_request" 
+            ? parseClosesIssueIds(parent.description) 
+            : [],
+        },
+        update: {
+          title: parent.title,
+          body: parent.description,
+          author: parent.author.username,
+          authorAvatar: parent.author.avatar_url,
+          labels: parent.labels,
+          gitlabUrl: parent.web_url,
+          assignees: parent.assignees?.map((a) => a.username) ?? [],
+          status,
+          mentionedInIds: extractMentionedIds(parent.description),
+          closesIssueIds: type === "merge_request" 
+            ? parseClosesIssueIds(parent.description) 
+            : [],
+        },
+      });
+
+      // 2. Upsert all notes with parentEventId set IMMEDIATELY
+      let notesStored = 0;
+      const participantSet = new Set<string>([parent.author.username]);
+      let latestActivityAt = new Date(parent.updated_at);
+      let userCommentCount = 0;
+
+      for (const note of notes) {
+        const noteGitlabEventId = `note-${note.id}`;
+        const noteCreatedAt = new Date(note.created_at);
+
+        // Track participants and activity
+        if (!note.system) {
+          participantSet.add(note.author.username);
+          userCommentCount++;
+        }
+        if (noteCreatedAt > latestActivityAt) {
+          latestActivityAt = noteCreatedAt;
+        }
+
+        // Extract first line as title
+        const firstLine = note.body.split("\n").find(line => line.trim())?.trim() || "Comment";
+        const noteTitle = firstLine.length > 100
+          ? firstLine.substring(0, 97) + "..."
+          : firstLine;
+
+        await tx.event.upsert({
+          where: {
+            gitlabEventId: noteGitlabEventId,
+          },
+          create: {
+            userId,
+            type: "comment",
+            title: `Comment: ${noteTitle}`,
+            body: note.body,
+            author: note.author.username,
+            authorAvatar: note.author.avatar_url,
+            project: parent.project_id.toString(),
+            projectId,
+            labels: [],
+            gitlabEventId: noteGitlabEventId,
+            gitlabUrl: note.web_url,
+            createdAt: noteCreatedAt,
+            parentType: type,
+            parentEventId: parentRecord.id, // Set IMMEDIATELY!
+            gitlabParentId: note.noteable_id,
+            isSystemNote: note.system,
+            assignees: [],
+            participants: [],
+            status: null,
+            lastActivityAt: null,
+            commentCount: 0,
+            unresolvedCommentCount: 0,
+            mentionedInIds: extractMentionedIds(note.body),
+            closesIssueIds: [],
+          },
+          update: {
+            title: `Comment: ${noteTitle}`,
+            body: note.body,
+            author: note.author.username,
+            authorAvatar: note.author.avatar_url,
+            gitlabUrl: note.web_url,
+            parentEventId: parentRecord.id, // Ensure link is correct
+            isSystemNote: note.system,
+            mentionedInIds: extractMentionedIds(note.body),
+          },
+        });
+
+        notesStored++;
+      }
+
+      // 3. Update activity metadata on parent
+      await tx.event.update({
+        where: { id: parentRecord.id },
+        data: {
+          lastActivityAt: latestActivityAt,
+          commentCount: userCommentCount,
+          participants: Array.from(participantSet),
+        },
+      });
+
+      logger.info(
+        { 
+          parentId: parentRecord.id, 
+          gitlabEventId: parentGitlabEventId,
+          notesStored,
+          commentCount: userCommentCount,
+          participants: participantSet.size,
+        },
+        "event-transformer: Stored work item bundle"
+      );
+
+      return { parentId: parentRecord.id, notesStored };
+    },
+    {
+      timeout: DB_TIMEOUT,
+      maxWait: DB_MAX_WAIT,
+    }
+  );
+}
+
+/**
+ * Result of storing multiple work item bundles
+ */
+export interface StoreWorkItemBundlesResult {
+  stored: number;
+  failed: number;
+  totalNotes: number;
+}
+
+/**
+ * Store multiple work item bundles with progress tracking and error isolation.
+ * 
+ * Each bundle is stored independently - if one fails, others continue.
+ * This prevents a single problematic work item from blocking the entire sync.
+ * 
+ * @param db - Prisma client
+ * @param userId - User ID to associate with the events
+ * @param bundles - Array of work item bundles to store
+ * @returns Object with counts of stored, failed, and total notes
+ */
+export async function storeWorkItemBundles(
+  db: PrismaClient,
+  userId: string,
+  bundles: WorkItemWithActivity[]
+): Promise<StoreWorkItemBundlesResult> {
+  let stored = 0;
+  let failed = 0;
+  let totalNotes = 0;
+
+  if (bundles.length === 0) {
+    return { stored: 0, failed: 0, totalNotes: 0 };
+  }
+
+  logger.info(
+    { bundleCount: bundles.length, userId },
+    "event-transformer: Storing work item bundles"
+  );
+
+  for (const bundle of bundles) {
+    try {
+      const result = await storeWorkItemBundle(db, userId, bundle);
+      stored++;
+      totalNotes += result.notesStored;
+    } catch (error) {
+      failed++;
+      const gitlabEventId = bundle.type === "issue"
+        ? `issue-${bundle.parent.id}`
+        : `mr-${bundle.parent.id}`;
+      logger.error(
+        { error, gitlabEventId, type: bundle.type },
+        "event-transformer: Failed to store work item bundle"
+      );
+    }
+  }
+
+  logger.info(
+    { stored, failed, totalNotes, userId },
+    "event-transformer: Finished storing work item bundles"
+  );
+
+  return { stored, failed, totalNotes };
 }
 
 // Batch size for embedding generation

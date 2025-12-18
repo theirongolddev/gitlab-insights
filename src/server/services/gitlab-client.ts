@@ -101,6 +101,9 @@ const GitLabNoteSchema = z.object({
   updated_at: z.string(),
 });
 
+// Export GitLabNoteSchema for use in tests and other modules
+export { GitLabNoteSchema };
+
 const GitLabCommitSchema = z.object({
   id: z.string(),
   short_id: z.string(),
@@ -227,6 +230,22 @@ export interface FetchEventsResult {
   issues: GitLabIssue[];
   mergeRequests: GitLabMergeRequest[];
   notes: Array<GitLabNote & { project_id: number; web_url: string }>;
+}
+
+/**
+ * Work-item-centric data structure: a parent (issue/MR) with ALL its activity
+ */
+export interface WorkItemWithActivity {
+  parent: GitLabIssue | GitLabMergeRequest;
+  notes: Array<GitLabNote & { project_id: number; web_url: string }>;
+  type: "issue" | "merge_request";
+  projectId: string;
+}
+
+export interface FetchWorkItemsOptions {
+  issueLimit?: number;   // default: 25
+  mrLimit?: number;      // default: 25
+  state?: "opened" | "all";  // default: "opened"
 }
 
 export class GitLabAPIError extends Error {
@@ -831,5 +850,215 @@ export class GitLabClient {
     );
 
     return results;
+  }
+
+  /**
+   * Fetch ALL notes for a single work item (issue or MR) without pagination limit.
+   * 
+   * This is the core method for work-item-centric fetching. It fetches ALL notes
+   * for a specific item, ensuring complete activity history.
+   * 
+   * @param projectId - GitLab project ID
+   * @param itemType - Type of work item ('issue' or 'merge_request')
+   * @param itemIid - The IID of the issue or MR
+   * @param webUrl - The web URL of the parent item (used to construct note URLs)
+   * @returns Array of notes with project_id and web_url attached
+   */
+  async fetchAllNotesForItem(
+    projectId: string,
+    itemType: "issue" | "merge_request",
+    itemIid: number,
+    webUrl: string
+  ): Promise<Array<GitLabNote & { project_id: number; web_url: string }>> {
+    const endpoint = itemType === "issue" ? "issues" : "merge_requests";
+    const url = `${this.baseUrl}/projects/${encodeURIComponent(projectId)}/${endpoint}/${itemIid}/notes?per_page=100&order_by=created_at&sort=asc`;
+
+    logger.debug(
+      { projectId, itemType, itemIid },
+      "GitLabClient: Fetching all notes for item"
+    );
+
+    try {
+      // No maxPages - fetch everything
+      const rawNotes = await this.fetchPaginated<GitLabNote>(url);
+      const notes = z.array(GitLabNoteSchema).parse(rawNotes) as GitLabNote[];
+
+      logger.info(
+        { projectId, itemType, itemIid, noteCount: notes.length },
+        "GitLabClient: Fetched all notes for item"
+      );
+
+      return notes.map((note) => ({
+        ...note,
+        project_id: parseInt(projectId, 10),
+        web_url: `${webUrl}#note_${note.id}`,
+      }));
+    } catch (error) {
+      logger.error(
+        { error, projectId, itemType, itemIid },
+        "GitLabClient: Failed to fetch notes for item"
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch work items (issues and MRs) with ALL their notes as complete bundles.
+   * 
+   * This is the main entry point for work-item-centric fetching. For each project:
+   * 1. Fetches top N issues and MRs (most recently updated)
+   * 2. For each item, fetches ALL its notes (no pagination limit)
+   * 3. Returns bundles ready for atomic storage
+   * 
+   * @param projectIds - Array of GitLab project IDs
+   * @param options - Optional limits and filters
+   * @returns Array of work item bundles with complete activity
+   */
+  async fetchWorkItemsComplete(
+    projectIds: string[],
+    options?: FetchWorkItemsOptions
+  ): Promise<WorkItemWithActivity[]> {
+    const bundles: WorkItemWithActivity[] = [];
+    const issueLimit = options?.issueLimit ?? 25;
+    const mrLimit = options?.mrLimit ?? 25;
+    const state = options?.state ?? "opened";
+
+    logger.info(
+      { projectCount: projectIds.length, issueLimit, mrLimit, state },
+      "GitLabClient: Fetching complete work items"
+    );
+
+    // Process projects with concurrency limiting
+    const projectPromises = projectIds.map((projectId) =>
+      projectConcurrencyLimit(async () => {
+        const projectBundles: WorkItemWithActivity[] = [];
+
+        try {
+          // Fetch top issues for this project
+          const issues = await this.fetchIssuesForWorkItems(projectId, issueLimit, state);
+          
+          // Fetch notes for each issue with concurrency limiting
+          for (const issue of issues) {
+            try {
+              const notes = await noteConcurrencyLimit(() =>
+                this.fetchAllNotesForItem(projectId, "issue", issue.iid, issue.web_url)
+              );
+              projectBundles.push({
+                parent: issue,
+                notes,
+                type: "issue",
+                projectId,
+              });
+            } catch (error) {
+              logger.warn(
+                { error, projectId, issueIid: issue.iid },
+                "GitLabClient: Failed to fetch notes for issue, skipping"
+              );
+            }
+          }
+
+          // Fetch top MRs for this project
+          const mrs = await this.fetchMRsForWorkItems(projectId, mrLimit, state);
+          
+          // Fetch notes for each MR with concurrency limiting
+          for (const mr of mrs) {
+            try {
+              const notes = await noteConcurrencyLimit(() =>
+                this.fetchAllNotesForItem(projectId, "merge_request", mr.iid, mr.web_url)
+              );
+              projectBundles.push({
+                parent: mr,
+                notes,
+                type: "merge_request",
+                projectId,
+              });
+            } catch (error) {
+              logger.warn(
+                { error, projectId, mrIid: mr.iid },
+                "GitLabClient: Failed to fetch notes for MR, skipping"
+              );
+            }
+          }
+        } catch (error) {
+          logger.error(
+            { error, projectId },
+            "GitLabClient: Failed to fetch work items for project"
+          );
+        }
+
+        return projectBundles;
+      })
+    );
+
+    const settledResults = await Promise.allSettled(projectPromises);
+
+    for (const result of settledResults) {
+      if (result.status === "fulfilled") {
+        bundles.push(...result.value);
+      }
+    }
+
+    logger.info(
+      { bundleCount: bundles.length, projectCount: projectIds.length },
+      "GitLabClient: Fetched complete work items"
+    );
+
+    return bundles;
+  }
+
+  /**
+   * Fetch top issues for work-item-centric fetching
+   */
+  private async fetchIssuesForWorkItems(
+    projectId: string,
+    limit: number,
+    state: "opened" | "all"
+  ): Promise<GitLabIssue[]> {
+    const params = new URLSearchParams({
+      per_page: String(Math.min(limit, 100)),
+      order_by: "updated_at",
+      sort: "desc",
+    });
+
+    if (state !== "all") {
+      params.set("state", state);
+    }
+
+    const url = `${this.baseUrl}/projects/${encodeURIComponent(projectId)}/issues?${params}`;
+    
+    // Calculate pages needed (up to limit)
+    const pagesNeeded = Math.ceil(limit / 100);
+    const data = await this.fetchPaginated<GitLabIssue>(url, pagesNeeded);
+    const issues = z.array(GitLabIssueSchema).parse(data) as GitLabIssue[];
+    
+    return issues.slice(0, limit);
+  }
+
+  /**
+   * Fetch top MRs for work-item-centric fetching
+   */
+  private async fetchMRsForWorkItems(
+    projectId: string,
+    limit: number,
+    state: "opened" | "all"
+  ): Promise<GitLabMergeRequest[]> {
+    const params = new URLSearchParams({
+      per_page: String(Math.min(limit, 100)),
+      order_by: "updated_at",
+      sort: "desc",
+    });
+
+    if (state !== "all") {
+      params.set("state", state);
+    }
+
+    const url = `${this.baseUrl}/projects/${encodeURIComponent(projectId)}/merge_requests?${params}`;
+    
+    // Calculate pages needed (up to limit)
+    const pagesNeeded = Math.ceil(limit / 100);
+    const data = await this.fetchPaginated<GitLabMergeRequest>(url, pagesNeeded);
+    const mrs = z.array(GitLabMergeRequestSchema).parse(data) as GitLabMergeRequest[];
+    
+    return mrs.slice(0, limit);
   }
 }

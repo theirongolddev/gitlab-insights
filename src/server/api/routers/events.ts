@@ -11,13 +11,7 @@ import { GitLabClient, GitLabAPIError } from "~/server/services/gitlab-client";
 import { getGitLabAccessToken } from "~/server/services/gitlab-token";
 import { logger } from "~/lib/logger";
 import {
-  transformIssues,
-  transformMergeRequests,
-  transformNotes,
-  storeEvents,
-  linkParentEvents,
-  updateActivityMetadata,
-  getProjectMap,
+  storeWorkItemBundles,
   queueEmbeddingGeneration,
 } from "~/server/services/event-transformer";
 import {
@@ -99,57 +93,35 @@ export const eventsRouter = createTRPCRouter({
 
       const projectIds = monitoredProjects.map((p) => p.gitlabProjectId);
 
-      // 3. Fetch events from GitLab API
+      // 3. Fetch work items with complete activity (work-item-centric approach)
       const gitlabClient = new GitLabClient(accessToken);
-
-      // Reuse lastSync from rate limit check for incremental updates
-      const updatedAfter = lastSync?.lastSyncAt.toISOString();
 
       logger.info({
         userId: ctx.session.user.id,
         projectCount: projectIds.length,
-        updatedAfter: updatedAfter ?? "all time",
-      }, "events.manualRefresh: Fetching events");
+      }, "events.manualRefresh: Fetching work items with activity");
 
-      const { issues, mergeRequests, notes } = await gitlabClient.fetchEvents(
-        projectIds,
-        updatedAfter
-      );
+      // NEW: Fetch work items with ALL their notes as bundles
+      const bundles = await gitlabClient.fetchWorkItemsComplete(projectIds, {
+        issueLimit: 50,
+        mrLimit: 50,
+        state: "opened",
+      });
 
       logger.info({
-        issueCount: issues.length,
-        mrCount: mergeRequests.length,
-        noteCount: notes.length,
-      }, "events.manualRefresh: Fetched from GitLab");
+        bundleCount: bundles.length,
+      }, "events.manualRefresh: Fetched work item bundles from GitLab");
 
-      // 4. Transform and store events
-      const projectMap = await getProjectMap(ctx.db, ctx.session.user.id, projectIds);
-
-      const transformedIssues = transformIssues(issues, projectMap);
-      const transformedMRs = transformMergeRequests(mergeRequests, projectMap);
-      const transformedNotes = transformNotes(notes, projectMap);
-
-      const allEvents = [
-        ...transformedIssues,
-        ...transformedMRs,
-        ...transformedNotes,
-      ];
-
-      const storeResult = await storeEvents(
+      // 4. Store bundles atomically (no separate linking step needed!)
+      const storeResult = await storeWorkItemBundles(
         ctx.db,
         ctx.session.user.id,
-        allEvents
+        bundles
       );
 
-      // Link parent-child relationships (comments -> issues/MRs)
-      const linkedCount = await linkParentEvents(ctx.db, ctx.session.user.id);
-
-      // Update activity metadata (lastActivityAt, commentCount, participants)
-      const metadataCount = await updateActivityMetadata(ctx.db, ctx.session.user.id);
-
       logger.info(
-        { linked: linkedCount, metadataUpdated: metadataCount },
-        "events.manualRefresh: Parent linking and metadata complete"
+        { stored: storeResult.stored, failed: storeResult.failed, totalNotes: storeResult.totalNotes },
+        "events.manualRefresh: Work item bundles stored"
       );
 
       // 4b. Fetch and store commits (if enabled)
@@ -165,7 +137,7 @@ export const eventsRouter = createTRPCRouter({
             const commitsWithDiffs = await gitlabClient.fetchCommitsWithDiffs(
               project.gitlabProjectId,
               {
-                since: updatedAfter,
+                since: undefined,
                 maxCommits: commitDepth,
               }
             );
@@ -218,16 +190,16 @@ export const eventsRouter = createTRPCRouter({
       logger.info({
         durationMs: duration,
         stored: storeResult.stored,
-        skipped: storeResult.skipped,
-        errors: storeResult.errors,
+        failed: storeResult.failed,
+        totalNotes: storeResult.totalNotes,
       }, "events.manualRefresh: Completed");
 
       // 7. Return summary
       return {
         success: true,
         stored: storeResult.stored,
-        skipped: storeResult.skipped,
-        errors: storeResult.errors,
+        failed: storeResult.failed,
+        totalNotes: storeResult.totalNotes,
         commits: commitStats,
         duration,
         lastSyncAt: new Date(),
