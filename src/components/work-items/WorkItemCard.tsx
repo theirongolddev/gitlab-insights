@@ -1,59 +1,51 @@
 "use client";
 
 import { useState, useCallback, useMemo, memo } from "react";
-import { Card, CardBody, Chip, Avatar } from "@heroui/react";
+import { Card, CardBody, Chip, Avatar, Checkbox } from "@heroui/react";
 import type { WorkItem } from "~/types/work-items";
 import { formatRelativeTime } from "~/lib/utils";
-import { ActivityTimeline } from "./ActivityTimeline";
 import { ContextBadges, extractKeywords } from "./ContextBadges";
-import { useScrollIntoViewRead } from "~/hooks/useScrollIntoViewRead";
-import styles from "./WorkItemCard.module.css";
 
 interface WorkItemCardProps {
   item: WorkItem;
   onSelect?: (item: WorkItem) => void;
   onMarkAsRead?: (itemId: string) => void;
+  /** When true, hides all read/unread visual indicators (for dashboard view) */
+  hideReadIndicators?: boolean;
+  /** Whether this item is selected (for multi-select) */
+  isSelected?: boolean;
+  /** Callback to toggle selection (for multi-select) */
+  onToggleSelect?: (itemId: string) => void;
 }
 
 /**
- * WorkItemCard - Collapsible card for displaying work items (issues/MRs)
+ * WorkItemCard - Card for displaying work items (issues/MRs)
  *
  * Features:
- * - Collapsed state: Title, activity summary, context signals
- * - Expanded state: Full activity timeline
- * - Visual distinction for read/unread states
+ * - Title, activity summary, context signals
+ * - Visual distinction for read/unread states (unless hideReadIndicators is true)
  * - Badge-specific hover interaction for mark as read
  * - Mobile: Touch-friendly targets (min 44px), tighter padding
  *
  * Performance optimizations:
  * - Memoized with React.memo to prevent unnecessary re-renders
- * - Expensive computations (keywords, activity summaries) memoized with useMemo
+ * - Expensive computations (keywords) memoized with useMemo
  */
-export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkAsRead }: WorkItemCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+export const WorkItemCard = memo(function WorkItemCard({
+  item,
+  onSelect,
+  onMarkAsRead,
+  hideReadIndicators = false,
+  isSelected = false,
+  onToggleSelect,
+}: WorkItemCardProps) {
   const [isBadgeHovered, setIsBadgeHovered] = useState(false);
 
-  // Mobile: scroll-into-view marks as read after 2s at 50% visibility
-  const scrollRef = useScrollIntoViewRead(item.id, item.isUnread, onMarkAsRead);
-
   const handleClick = useCallback(() => {
-    // Mark as read when selecting (opening side panel)
-    if (item.isUnread && onMarkAsRead) {
-      onMarkAsRead(item.id);
-    }
     if (onSelect) {
       onSelect(item);
     }
-  }, [item, onSelect, onMarkAsRead]);
-
-  const handleToggleExpand = useCallback(() => {
-    const willExpand = !isExpanded;
-    setIsExpanded(willExpand);
-    // Mark as read when expanding (if unread)
-    if (willExpand && item.isUnread && onMarkAsRead) {
-      onMarkAsRead(item.id);
-    }
-  }, [isExpanded, item.isUnread, item.id, onMarkAsRead]);
+  }, [item, onSelect]);
 
   const handleMarkAsRead = useCallback(() => {
     if (onMarkAsRead) {
@@ -61,14 +53,15 @@ export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkA
     }
   }, [item.id, onMarkAsRead]);
 
+  const handleToggleSelect = useCallback((e: React.MouseEvent | React.ChangeEvent) => {
+    e.stopPropagation();
+    if (onToggleSelect) {
+      onToggleSelect(item.id);
+    }
+  }, [item.id, onToggleSelect]);
+
   // Memoize expensive computations
   const keywords = useMemo(() => extractKeywords(item.title), [item.title]);
-
-  // Filter activities to show only unread ones in expanded view (AC 1.2)
-  const newActivities = useMemo(() => {
-    if (!item.activities) return [];
-    return item.activities.filter((activity) => activity.isUnread);
-  }, [item.activities]);
 
   const typeIcon = item.type === "issue" ? "I" : "MR";
   const typeColor = item.type === "issue" ? "success" : "secondary";
@@ -80,99 +73,99 @@ export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkA
         ? "secondary"
         : "default";
 
+  // Determine card styling based on read state and hideReadIndicators
+  const showUnreadStyling = item.isUnread && !hideReadIndicators;
+  const cardClassName = hideReadIndicators
+    ? "w-full mb-2 transition-all duration-200 cursor-pointer border-l border-l-default-200 bg-content1"
+    : `w-full mb-2 transition-all duration-200 cursor-pointer ${
+        item.isUnread
+          ? "border-l-2 border-l-[#9DAA5F] bg-content1"
+          : "border-l border-l-default-200 opacity-70"
+      }`;
+
   return (
-    <div ref={scrollRef}>
-      <Card
-        className={`w-full mb-2 transition-all duration-200 cursor-pointer ${item.isUnread
-            ? "border-l-2 border-l-[#9DAA5F] bg-content1"
-            : "border-l border-l-default-200 opacity-70"
-          }`}
-        isPressable
-        onPress={handleClick}
-      >
-        <CardBody className="p-3">
+    <Card
+      className={cardClassName}
+      isPressable
+      onPress={handleClick}
+    >
+      <CardBody className="p-3">
         {/* Header row */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 flex-1 min-w-0">
+            {/* Selection checkbox (catchup view only) */}
+            {onToggleSelect && (
+              <div
+                onClick={handleToggleSelect}
+                className="shrink-0 -ml-1"
+              >
+                <Checkbox
+                  isSelected={isSelected}
+                  onChange={handleToggleSelect}
+                  size="sm"
+                  aria-label={`Select ${item.title}`}
+                  classNames={{
+                    wrapper: "before:border-default-300",
+                  }}
+                />
+              </div>
+            )}
+
             {/* Type badge */}
             <Chip size="sm" color={typeColor} variant="flat" className="shrink-0">
               {typeIcon}
             </Chip>
 
-            {/* Title */}
+            {/* Title - bold only if unread and not hiding indicators */}
             <h3
-              className={`text-sm truncate flex-1 ${item.isUnread ? "font-semibold" : "font-normal"
-                }`}
+              className={`text-sm truncate flex-1 ${
+                showUnreadStyling ? "font-semibold" : "font-normal"
+              }`}
             >
               {item.title}
             </h3>
           </div>
 
-          {/* Right side: NEW badge or Mark Read button */}
-          {/* Mobile: 12px dead zone around badge, 44px min touch target */}
-          <div className="flex items-center gap-2 shrink-0 -mr-1 md:mr-0">
-            {item.isUnread && (
-              <div
-                className="relative p-3 -m-3 md:p-0 md:m-0"
-                onMouseEnter={() => setIsBadgeHovered(true)}
-                onMouseLeave={() => setIsBadgeHovered(false)}
-              >
-                {isBadgeHovered ? (
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleMarkAsRead();
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
+          {/* Right side: NEW badge or Mark Read button (only when not hiding indicators) */}
+          {!hideReadIndicators && (
+            <div className="flex items-center gap-2 shrink-0 -mr-1 md:mr-0">
+              {item.isUnread && (
+                <div
+                  className="relative p-3 -m-3 md:p-0 md:m-0"
+                  onMouseEnter={() => setIsBadgeHovered(true)}
+                  onMouseLeave={() => setIsBadgeHovered(false)}
+                >
+                  {isBadgeHovered ? (
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => {
                         e.stopPropagation();
-                        e.preventDefault();
                         handleMarkAsRead();
-                      }
-                    }}
-                    className="text-xs px-3 py-2 min-h-[44px] flex items-center justify-center rounded-md bg-success-100 text-success-700 hover:bg-success-200 active:bg-success-300 cursor-pointer animate-in fade-in duration-200 md:px-2 md:py-1 md:min-h-0"
-                  >
-                    Mark Read
-                  </div>
-                ) : (
-                  <Chip
-                    size="sm"
-                    className="bg-[#9DAA5F] text-white animate-in fade-in duration-200"
-                  >
-                    NEW
-                  </Chip>
-                )}
-              </div>
-            )}
-
-            {/* Expand/collapse toggle - 44px touch target on mobile */}
-            <div
-              role="button"
-              tabIndex={0}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleToggleExpand();
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  handleToggleExpand();
-                }
-              }}
-              aria-label={isExpanded ? "Collapse" : "Expand"}
-              className="w-11 h-11 md:w-8 md:h-8 flex items-center justify-center rounded-md hover:bg-default-100 active:bg-default-200 cursor-pointer"
-            >
-              <span
-                className={`transform transition-transform duration-200 ${isExpanded ? "rotate-180" : ""
-                  }`}
-              >
-                v
-              </span>
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          handleMarkAsRead();
+                        }
+                      }}
+                      className="text-xs px-3 py-2 min-h-[44px] flex items-center justify-center rounded-md bg-success-100 text-success-700 hover:bg-success-200 active:bg-success-300 cursor-pointer animate-in fade-in duration-200 md:px-2 md:py-1 md:min-h-0"
+                    >
+                      Mark Read
+                    </div>
+                  ) : (
+                    <Chip
+                      size="sm"
+                      className="bg-[#9DAA5F] text-white animate-in fade-in duration-200"
+                    >
+                      NEW
+                    </Chip>
+                  )}
+                </div>
+              )}
             </div>
-          </div>
+          )}
         </div>
 
         {/* Description/body preview (if available) */}
@@ -233,7 +226,7 @@ export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkA
         {item.activitySummary.latestActivity && (
           <div className="mt-2 text-xs text-default-500 truncate">
             <span className="font-medium">{item.activitySummary.latestActivity.author}:</span>{" "}
-            <span className="italic">&ldquo;{item.activitySummary.latestActivity.preview}&ldquo;</span>
+            <span className="italic">&ldquo;{item.activitySummary.latestActivity.preview}&rdquo;</span>
           </div>
         )}
 
@@ -303,25 +296,7 @@ export const WorkItemCard = memo(function WorkItemCard({ item, onSelect, onMarkA
             )}
           </div>
         )}
-
-        {/* Expanded content: Activity timeline with grid-based animation */}
-        <div
-          className={`${styles.expandContainer} ${isExpanded ? styles.expanded : ""}`}
-        >
-          <div className={styles.expandContent}>
-            <div className="mt-4 pt-4 border-t border-default-200">
-              {newActivities.length > 0 ? (
-                <ActivityTimeline activities={newActivities} parentType={item.type} />
-              ) : (
-                <p className="text-center py-4 text-sm text-default-500">
-                  No new activity since you last viewed this item
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-        </CardBody>
-      </Card>
-    </div>
+      </CardBody>
+    </Card>
   );
 });
