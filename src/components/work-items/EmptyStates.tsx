@@ -89,7 +89,7 @@ export const AllReadState = memo(function AllReadState({
         All caught up!
       </p>
       <p className="text-xs text-default-500 text-center mt-1">
-        You've reviewed all work items.
+        You&apos;ve reviewed all work items.
       </p>
     </div>
   );
@@ -125,7 +125,7 @@ export const SearchNoResultsState = memo(function SearchNoResultsState({
       </div>
       <p className="text-sm text-default-500 text-center max-w-xs">
         No work items match{" "}
-        <span className="font-medium text-default-400">"{searchTerm}"</span>.
+        <span className="font-medium text-default-400">&quot;{searchTerm}&quot;</span>.
         Try different keywords.
       </p>
     </div>

@@ -26,7 +26,11 @@ export function useScrollRestoration(key: string): UseScrollRestorationReturn {
   const isRestoringRef = useRef<boolean>(false);
   // Use ref to always access current key value in callbacks (avoids stale closure)
   const keyRef = useRef<string>(key);
-  keyRef.current = key;
+
+  // Update keyRef in effect to avoid updating ref during render
+  useEffect(() => {
+    keyRef.current = key;
+  }, [key]);
 
   // Restore scroll position on mount or key change
   useEffect(() => {

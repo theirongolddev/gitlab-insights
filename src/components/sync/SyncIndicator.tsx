@@ -143,15 +143,21 @@ export function SyncIndicator({ isSyncing = false }: SyncIndicatorProps) {
   // Update timestamp more frequently for accurate relative time display
   // This is independent of query refetch to ensure UI stays fresh
   useEffect(() => {
-    // Update immediately when component mounts or data changes
-    setCurrentTimestamp(Date.now());
-
     // Update every 10 seconds for smooth relative time display
+    // Initial update happens on first interval tick to avoid synchronous setState
     const id = setInterval(() => {
       setCurrentTimestamp(Date.now());
     }, 10000);
 
-    return () => clearInterval(id);
+    // Use requestAnimationFrame for initial update to avoid synchronous setState in effect
+    const rafId = requestAnimationFrame(() => {
+      setCurrentTimestamp(Date.now());
+    });
+
+    return () => {
+      clearInterval(id);
+      cancelAnimationFrame(rafId);
+    };
   }, [dataUpdatedAt]);
 
   // AC 3.6.7: Retry handler for error state
