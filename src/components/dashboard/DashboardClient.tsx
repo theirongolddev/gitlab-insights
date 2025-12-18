@@ -225,6 +225,7 @@ export function DashboardClient() {
             searchQuery={searchQuery}
             showClosed={showClosed}
             onShowClosedChange={handleShowClosedChange}
+            hideReadIndicators={true}
           />
         )}
       </div>
