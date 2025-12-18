@@ -66,6 +66,11 @@ export const apiPollingJob = inngest.createFunction(
 
           const projectIds = user.projects.map((p) => p.gitlabProjectId);
 
+          // Build project name map for display purposes
+          const projectNameMap = new Map<string, string>(
+            user.projects.map((p) => [p.gitlabProjectId, p.projectName])
+          );
+
           // NEW: Fetch work items with ALL their notes as bundles
           const client = new GitLabClient(accessToken);
           const bundles = await client.fetchWorkItemsComplete(projectIds, {
@@ -75,7 +80,7 @@ export const apiPollingJob = inngest.createFunction(
           });
 
           // NEW: Store bundles atomically (no separate linking step needed!)
-          const result = await storeWorkItemBundles(db, user.id, bundles);
+          const result = await storeWorkItemBundles(db, user.id, bundles, projectNameMap);
 
           // Extract people from bundles for person linking
           // Reconstruct raw arrays from bundles for compatibility with extractPeopleFromGitLabResponses

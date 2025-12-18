@@ -779,12 +779,14 @@ export interface StoreWorkItemBundleResult {
  * @param db - Prisma client
  * @param userId - User ID to associate with the events
  * @param bundle - Work item with all its notes
+ * @param projectNameMap - Map of gitlabProjectId -> projectName for display
  * @returns Object with parentId and count of notes stored
  */
 export async function storeWorkItemBundle(
   db: PrismaClient,
   userId: string,
-  bundle: WorkItemWithActivity
+  bundle: WorkItemWithActivity,
+  projectNameMap?: Map<string, string>
 ): Promise<StoreWorkItemBundleResult> {
   const { parent, notes, type, projectId } = bundle;
 
@@ -797,6 +799,9 @@ export async function storeWorkItemBundle(
   const status = type === "issue"
     ? (parent.state === "opened" ? "open" : "closed")
     : (parent.state === "opened" ? "open" : parent.state as "closed" | "merged");
+
+  // Get project name from map, or fallback to project ID
+  const projectName = projectNameMap?.get(projectId) ?? projectId;
 
   return await db.$transaction(
     async (tx) => {
@@ -812,7 +817,7 @@ export async function storeWorkItemBundle(
           body: parent.description,
           author: parent.author.username,
           authorAvatar: parent.author.avatar_url,
-          project: parent.project_id.toString(), // Will be updated with actual name
+          project: projectName,
           projectId,
           labels: parent.labels,
           gitlabEventId: parentGitlabEventId,
@@ -884,7 +889,7 @@ export async function storeWorkItemBundle(
             body: note.body,
             author: note.author.username,
             authorAvatar: note.author.avatar_url,
-            project: parent.project_id.toString(),
+            project: projectName,
             projectId,
             labels: [],
             gitlabEventId: noteGitlabEventId,
@@ -966,12 +971,14 @@ export interface StoreWorkItemBundlesResult {
  * @param db - Prisma client
  * @param userId - User ID to associate with the events
  * @param bundles - Array of work item bundles to store
+ * @param projectNameMap - Map of gitlabProjectId -> projectName for display
  * @returns Object with counts of stored, failed, and total notes
  */
 export async function storeWorkItemBundles(
   db: PrismaClient,
   userId: string,
-  bundles: WorkItemWithActivity[]
+  bundles: WorkItemWithActivity[],
+  projectNameMap?: Map<string, string>
 ): Promise<StoreWorkItemBundlesResult> {
   let stored = 0;
   let failed = 0;
@@ -988,7 +995,7 @@ export async function storeWorkItemBundles(
 
   for (const bundle of bundles) {
     try {
-      const result = await storeWorkItemBundle(db, userId, bundle);
+      const result = await storeWorkItemBundle(db, userId, bundle, projectNameMap);
       stored++;
       totalNotes += result.notesStored;
     } catch (error) {

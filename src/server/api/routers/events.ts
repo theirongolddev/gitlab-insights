@@ -93,6 +93,11 @@ export const eventsRouter = createTRPCRouter({
 
       const projectIds = monitoredProjects.map((p) => p.gitlabProjectId);
 
+      // Build project name map for display purposes
+      const projectNameMap = new Map<string, string>(
+        monitoredProjects.map((p) => [p.gitlabProjectId, p.projectName])
+      );
+
       // 3. Fetch work items with complete activity (work-item-centric approach)
       const gitlabClient = new GitLabClient(accessToken);
 
@@ -116,7 +121,8 @@ export const eventsRouter = createTRPCRouter({
       const storeResult = await storeWorkItemBundles(
         ctx.db,
         ctx.session.user.id,
-        bundles
+        bundles,
+        projectNameMap
       );
 
       logger.info(
