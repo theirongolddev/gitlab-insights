@@ -1,95 +1,9 @@
 "use client";
 
-import { useState, useCallback, useMemo, memo, useRef, useEffect } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { Button, Chip, Skeleton, Tabs, Tab } from "@heroui/react";
 import type { WorkItem, GroupedWorkItems } from "~/types/work-items";
 import { WorkItemCard } from "./WorkItemCard";
-
-interface WorkItemSectionProps {
-  title: string;
-  items: WorkItem[];
-  isCollapsed: boolean;
-  onToggleCollapse: () => void;
-  onMarkAllAsRead: () => void;
-  onItemSelect?: (item: WorkItem) => void;
-  onItemMarkAsRead?: (itemId: string) => void;
-  isMarkingAllAsRead?: boolean;
-}
-
-const WorkItemSection = memo(function WorkItemSection({
-  title,
-  items,
-  isCollapsed,
-  onToggleCollapse,
-  onMarkAllAsRead,
-  onItemSelect,
-  onItemMarkAsRead,
-  isMarkingAllAsRead,
-}: WorkItemSectionProps) {
-  const unreadCount = useMemo(() => items.filter((i) => i.isUnread).length, [items]);
-
-  if (items.length === 0) {
-    return null;
-  }
-
-  return (
-    <div className="mb-6">
-      {/* Section header */}
-      <div className="flex items-center justify-between mb-3 px-1">
-        <button
-          onClick={onToggleCollapse}
-          className="flex items-center gap-2 text-left hover:opacity-80 transition-opacity"
-        >
-          <span
-            className={`transform transition-transform duration-200 text-default-500 ${
-              isCollapsed ? "-rotate-90" : ""
-            }`}
-          >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-              <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="2" fill="none" />
-            </svg>
-          </span>
-          <h2 className="text-base font-semibold text-default-700">{title}</h2>
-          <Chip size="sm" variant="flat" className="text-xs">
-            {items.length}
-          </Chip>
-          {unreadCount > 0 && (
-            <Chip size="sm" className="bg-[#9DAA5F] text-white text-xs">
-              {unreadCount} new
-            </Chip>
-          )}
-        </button>
-
-        {unreadCount > 0 && (
-          <Button
-            size="sm"
-            variant="flat"
-            color="default"
-            onPress={onMarkAllAsRead}
-            isLoading={isMarkingAllAsRead}
-            className="text-xs"
-          >
-            Mark all as read
-          </Button>
-        )}
-      </div>
-
-      {/* Section content */}
-      {!isCollapsed && (
-        <div className="space-y-0">
-          {items.map((item) => (
-            <WorkItemCard
-              key={item.id}
-              item={item}
-              onSelect={onItemSelect}
-              onMarkAsRead={onItemMarkAsRead}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-});
 
 interface WorkItemListProps {
   items: GroupedWorkItems | null;
@@ -99,6 +13,12 @@ interface WorkItemListProps {
   onMarkMultipleAsRead?: (itemIds: string[]) => Promise<void>;
   emptyMessage?: string;
   searchQuery?: string;
+  /** When true, hides read/unread visual indicators on cards (for dashboard view) */
+  hideReadIndicators?: boolean;
+  /** Set of selected item IDs for multi-select (catchup view only) */
+  selectedIds?: Set<string>;
+  /** Callback to toggle selection (catchup view only) */
+  onToggleSelect?: (itemId: string) => void;
 }
 
 /**
@@ -120,6 +40,9 @@ export function WorkItemList({
   onMarkMultipleAsRead,
   emptyMessage = "No work items found",
   searchQuery,
+  hideReadIndicators = false,
+  selectedIds,
+  onToggleSelect,
 }: WorkItemListProps) {
   // AC 5.4: Default tab is Issues
   const [selectedTab, setSelectedTab] = useState<string>("issues");
@@ -258,6 +181,9 @@ export function WorkItemList({
             item={item}
             onSelect={onItemSelect}
             onMarkAsRead={onMarkAsRead}
+            hideReadIndicators={hideReadIndicators}
+            isSelected={selectedIds?.has(item.id) ?? false}
+            onToggleSelect={onToggleSelect}
           />
         ))}
       </div>
@@ -266,29 +192,31 @@ export function WorkItemList({
 
   return (
     <div className="w-full max-w-[1200px] mx-auto px-4 py-6">
-      {/* Header with unread count */}
+      {/* Header with title (and unread count in catchup view only) */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold text-default-800">Work Items</h1>
-        {sortedItems.unreadCount > 0 ? (
-          <Chip size="md" className="bg-[#9DAA5F] text-white font-medium">
-            {sortedItems.unreadCount} unread
-          </Chip>
-        ) : (
-          <Chip
-            size="md"
-            className="bg-[#22C55E] text-white font-medium"
-            startContent={
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            }
-          >
-            All caught up!
-          </Chip>
+        {!hideReadIndicators && (
+          sortedItems.unreadCount > 0 ? (
+            <Chip size="md" className="bg-[#9DAA5F] text-white font-medium">
+              {sortedItems.unreadCount} unread
+            </Chip>
+          ) : (
+            <Chip
+              size="md"
+              className="bg-[#22C55E] text-white font-medium"
+              startContent={
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fillRule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              }
+            >
+              All caught up!
+            </Chip>
+          )
         )}
       </div>
 
@@ -315,7 +243,7 @@ export function WorkItemList({
                 <Chip size="sm" variant="flat" className="text-xs">
                   {sortedItems.issues.length}
                 </Chip>
-                {issuesUnreadCount > 0 && (
+                {!hideReadIndicators && issuesUnreadCount > 0 && (
                   <Chip size="sm" className="bg-[#9DAA5F] text-white text-xs">
                     {issuesUnreadCount} new
                   </Chip>
@@ -331,7 +259,7 @@ export function WorkItemList({
                 <Chip size="sm" variant="flat" className="text-xs">
                   {sortedItems.mergeRequests.length}
                 </Chip>
-                {mrsUnreadCount > 0 && (
+                {!hideReadIndicators && mrsUnreadCount > 0 && (
                   <Chip size="sm" className="bg-[#9DAA5F] text-white text-xs">
                     {mrsUnreadCount} new
                   </Chip>
@@ -341,8 +269,8 @@ export function WorkItemList({
           />
         </Tabs>
 
-        {/* Mark all as read button for current tab */}
-        {currentUnreadCount > 0 && (
+        {/* Mark all as read button for current tab (catchup view only) */}
+        {!hideReadIndicators && currentUnreadCount > 0 && (
           <Button
             size="sm"
             variant="flat"

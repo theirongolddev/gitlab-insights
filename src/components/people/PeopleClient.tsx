@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
-import { Input, Button } from "@heroui/react";
+import { useState, useCallback, useMemo } from "react";
+import { Input } from "@heroui/react";
 import { api } from "~/trpc/react";
 import { PersonCard } from "./PersonCard";
 import { LoadingSpinner } from "~/components/ui/LoadingSpinner";
@@ -55,13 +55,6 @@ export function PeopleClient() {
     }
   });
 
-  // Auto-select first person when search results change
-  useEffect(() => {
-    if (people.length > 0 && !selectedPersonId) {
-      // Don't auto-select - let user navigate with j/k
-    }
-  }, [people, selectedPersonId]);
-
   const handlePersonClick = useCallback((personId: string) => {
     setSelectedPersonId((prev) => (prev === personId ? null : personId));
   }, []);
@@ -103,13 +96,7 @@ export function PeopleClient() {
             <LoadingSpinner size="lg" label="Loading people..." />
           </div>
         ) : people.length === 0 ? (
-          <EmptyState
-            hasSearch={!!debouncedSearch}
-            onExtract={() => {
-              // Note: Extraction happens automatically during GitLab sync
-              // This is informational - people are extracted from events
-            }}
-          />
+          <EmptyState hasSearch={!!debouncedSearch} />
         ) : (
           <SplitView
             listContent={
@@ -186,7 +173,6 @@ function PersonList({
 
 interface EmptyStateProps {
   hasSearch: boolean;
-  onExtract: () => void;
 }
 
 function EmptyState({ hasSearch }: EmptyStateProps) {
