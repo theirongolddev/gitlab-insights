@@ -488,6 +488,7 @@ export async function updateActivityMetadata(
       select: {
         id: true,
         author: true, // Include work item author as participant
+        lastActivityAt: true, // Preserve original value when no children
       },
     });
 
@@ -532,8 +533,9 @@ export async function updateActivityMetadata(
             // Compute metadata
             const userComments = children.filter((c: { isSystemNote: boolean }) => !c.isSystemNote);
             const commentCount = userComments.length;
+            // Use most recent child createdAt, or preserve original lastActivityAt if no children
             const lastActivityAt =
-              children.length > 0 ? children[0]!.createdAt : null;
+              children.length > 0 ? children[0]!.createdAt : workItem.lastActivityAt;
 
             // Build participants array: work item author + all comment authors
             const participantSet = new Set<string>([workItem.author]);
