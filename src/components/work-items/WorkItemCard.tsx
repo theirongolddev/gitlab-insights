@@ -5,6 +5,7 @@ import { Card, CardBody, Chip, Avatar, Checkbox } from "@heroui/react";
 import type { WorkItem } from "~/types/work-items";
 import { formatRelativeTime } from "~/lib/utils";
 import { ContextBadges, extractKeywords } from "./ContextBadges";
+import { HighlightedText } from "~/components/ui/HighlightedText";
 
 interface WorkItemCardProps {
   item: WorkItem;
@@ -117,13 +118,22 @@ export const WorkItemCard = memo(function WorkItemCard({
             </Chip>
 
             {/* Title - bold only if unread and not hiding indicators */}
-            <h3
-              className={`text-sm truncate flex-1 ${
-                showUnreadStyling ? "font-semibold" : "font-normal"
-              }`}
-            >
-              {item.title}
-            </h3>
+            {item.highlightedTitle ? (
+              <HighlightedText
+                html={item.highlightedTitle}
+                className={`text-sm truncate flex-1 ${
+                  showUnreadStyling ? "font-semibold" : "font-normal"
+                }`}
+              />
+            ) : (
+              <h3
+                className={`text-sm truncate flex-1 ${
+                  showUnreadStyling ? "font-semibold" : "font-normal"
+                }`}
+              >
+                {item.title}
+              </h3>
+            )}
           </div>
 
           {/* Right side: NEW badge or Mark Read button (only when not hiding indicators) */}
@@ -170,9 +180,27 @@ export const WorkItemCard = memo(function WorkItemCard({
 
         {/* Description/body preview (if available) */}
         {item.body && (
-          <p className="mt-1 text-xs text-default-500 line-clamp-2">
-            {item.body}
-          </p>
+          item.highlightedSnippet ? (
+            <HighlightedText
+              html={item.highlightedSnippet}
+              className="mt-1 text-xs text-default-500 line-clamp-2"
+            />
+          ) : (
+            <p className="mt-1 text-xs text-default-500 line-clamp-2">
+              {item.body}
+            </p>
+          )
+        )}
+
+        {/* Matching child snippet - shows where the search match was found in comments */}
+        {item.matchingChildSnippet && (
+          <div className="mt-1 text-xs">
+            <span className="text-default-400 italic">Match in comment: </span>
+            <HighlightedText
+              html={item.matchingChildSnippet}
+              className="text-default-500 line-clamp-2"
+            />
+          </div>
         )}
 
         {/* Metadata row */}

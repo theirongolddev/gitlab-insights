@@ -1,15 +1,20 @@
 "use client";
 
+import { useMemo, useEffect, useRef } from "react";
 import { Button, Chip, Avatar, Skeleton } from "@heroui/react";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { api } from "~/trpc/react";
 import { ActivityTimeline } from "./ActivityTimeline";
 import { formatRelativeTime } from "~/lib/utils";
 import type { WorkItem } from "~/types/work-items";
+import { HighlightedText } from "~/components/ui/HighlightedText";
+import { highlightText } from "~/lib/search/highlight-text";
 
 interface WorkItemDetailViewProps {
   workItemId: string;
   onBack: () => void;
+  /** Optional search query for highlighting matching terms */
+  searchQuery?: string;
 }
 
 /**
@@ -22,11 +27,55 @@ interface WorkItemDetailViewProps {
  * - Complete activity timeline
  * - Related work items
  */
-export function WorkItemDetailView({ workItemId, onBack }: WorkItemDetailViewProps) {
+export function WorkItemDetailView({ workItemId, onBack, searchQuery }: WorkItemDetailViewProps) {
   const { data, isLoading, error } = api.workItems.getWithActivity.useQuery(
     { id: workItemId, includeRelated: true },
     { enabled: !!workItemId }
   );
+
+  // Apply highlighting when search query is active
+  // These hooks must be called unconditionally before early returns
+  const highlightedTitle = useMemo(() => {
+    if (!searchQuery || !data?.workItem) return null;
+    return highlightText(data.workItem.title, searchQuery);
+  }, [searchQuery, data]);
+
+  const highlightedBody = useMemo(() => {
+    if (!searchQuery || !data?.workItem?.body) return null;
+    return highlightText(data.workItem.body, searchQuery);
+  }, [searchQuery, data]);
+
+  // Apply highlighting to activities
+  const highlightedActivities = useMemo(() => {
+    if (!data?.activities) return [];
+    if (!searchQuery) return data.activities;
+    return data.activities.map((activity) => ({
+      ...activity,
+      highlightedBody: activity.body ? highlightText(activity.body, searchQuery) : undefined,
+    }));
+  }, [searchQuery, data]);
+
+  // Ref for scrollable content to enable scroll-to-first-match
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to first match when data loads with a search query
+  useEffect(() => {
+    if (!searchQuery || !data || isLoading) return;
+
+    // Small delay to ensure DOM is rendered with highlighted content
+    const timeoutId = setTimeout(() => {
+      const container = scrollContainerRef.current;
+      if (!container) return;
+
+      // Find the first <mark> element (highlighted match)
+      const firstMatch = container.querySelector("mark");
+      if (firstMatch) {
+        firstMatch.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, data, isLoading]);
 
   // Loading state
   if (isLoading) {
@@ -122,9 +171,16 @@ export function WorkItemDetailView({ workItemId, onBack }: WorkItemDetailViewPro
               {workItem.status}
             </Chip>
           </div>
-          <h1 className="text-lg font-semibold text-default-800 line-clamp-2">
-            {workItem.title}
-          </h1>
+          {highlightedTitle ? (
+            <HighlightedText
+              html={highlightedTitle}
+              className="text-lg font-semibold text-default-800 line-clamp-2"
+            />
+          ) : (
+            <h1 className="text-lg font-semibold text-default-800 line-clamp-2">
+              {workItem.title}
+            </h1>
+          )}
           <div className="flex items-center gap-2 mt-1 text-xs text-default-500">
             <Avatar
               src={workItem.authorAvatar ?? undefined}
@@ -154,7 +210,7 @@ export function WorkItemDetailView({ workItemId, onBack }: WorkItemDetailViewPro
       </div>
 
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
         {/* Labels */}
         {workItem.labels.length > 0 && (
           <div className="px-4 py-3 border-b border-default-100">
@@ -188,9 +244,16 @@ export function WorkItemDetailView({ workItemId, onBack }: WorkItemDetailViewPro
         {workItem.body && (
           <div className="px-4 py-3 border-b border-default-100">
             <h3 className="text-xs font-medium text-default-500 mb-2">Description</h3>
-            <div className="text-sm text-default-700 whitespace-pre-wrap">
-              {workItem.body}
-            </div>
+            {highlightedBody ? (
+              <HighlightedText
+                html={highlightedBody}
+                className="text-sm text-default-700 whitespace-pre-wrap"
+              />
+            ) : (
+              <div className="text-sm text-default-700 whitespace-pre-wrap">
+                {workItem.body}
+              </div>
+            )}
           </div>
         )}
 
@@ -200,7 +263,7 @@ export function WorkItemDetailView({ workItemId, onBack }: WorkItemDetailViewPro
             Activity ({activities.length})
           </h3>
           <ActivityTimeline
-            activities={activities}
+            activities={highlightedActivities}
             parentType={workItem.type}
             onActivityClick={(activity) => {
               if (activity.gitlabUrl) {
