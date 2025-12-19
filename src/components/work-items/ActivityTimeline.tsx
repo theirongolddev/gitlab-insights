@@ -1,13 +1,16 @@
 "use client";
 
 import { Avatar } from "@heroui/react";
-import type { ActivityItem, ThreadedActivityItem } from "~/types/work-items";
+import type { ActivityItem, ThreadedActivityItem, Reaction } from "~/types/work-items";
 import { formatRelativeTime } from "~/lib/utils";
 import { HighlightedText } from "~/components/ui/HighlightedText";
+import { getEmoji } from "~/lib/emoji-map";
 
 interface ActivityTimelineProps {
   activities: ThreadedActivityItem[];
   parentType: "issue" | "merge_request";
+  /** Reactions grouped by note ID, fetched on-demand */
+  reactions?: Record<number, Reaction[]>;
   onActivityClick?: (activity: ActivityItem) => void;
 }
 
@@ -19,12 +22,14 @@ function ActivityRow({
   parentType,
   isReply,
   getDotColor,
+  reactions,
   onActivityClick,
 }: {
   activity: ActivityItem;
   parentType: "issue" | "merge_request";
   isReply: boolean;
   getDotColor: (activity: ActivityItem) => string;
+  reactions?: Record<number, Reaction[]>;
   onActivityClick?: (activity: ActivityItem) => void;
 }) {
   const dotSize = isReply ? "w-[10px] h-[10px]" : "w-[14px] h-[14px]";
@@ -104,6 +109,30 @@ function ActivityRow({
           </div>
         )}
 
+        {/* Emoji reactions */}
+        {(() => {
+          const noteReactions = activity.gitlabNoteId
+            ? reactions?.[activity.gitlabNoteId]
+            : undefined;
+          if (!noteReactions || noteReactions.length === 0) return null;
+          return (
+            <div className="mt-2 flex gap-1.5 flex-wrap">
+              {noteReactions.map((reaction) => (
+                <div
+                  key={reaction.emoji}
+                  className="flex items-center gap-1 bg-default-100 hover:bg-default-200 px-2 py-0.5 rounded-full text-xs cursor-default transition-colors"
+                  title={reaction.users.map((u) => u.username).join(", ")}
+                >
+                  <span>{getEmoji(reaction.emoji)}</span>
+                  <span className="text-default-600 font-medium">
+                    {reaction.users.length}
+                  </span>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+
         {/* Activity type indicator for non-comment types */}
         {activity.type !== "comment" && activity.type !== "system" && (
           <div className="mt-1">
@@ -138,6 +167,7 @@ function ActivityRow({
 export function ActivityTimeline({
   activities,
   parentType,
+  reactions,
   onActivityClick,
 }: ActivityTimelineProps) {
   if (activities.length === 0) {
@@ -185,6 +215,7 @@ export function ActivityTimeline({
               parentType={parentType}
               isReply={false}
               getDotColor={getDotColor}
+              reactions={reactions}
               onActivityClick={onActivityClick}
             />
 
@@ -198,6 +229,7 @@ export function ActivityTimeline({
                     parentType={parentType}
                     isReply={true}
                     getDotColor={getDotColor}
+                    reactions={reactions}
                     onActivityClick={onActivityClick}
                   />
                 ))}

@@ -9,6 +9,7 @@ import { formatRelativeTime } from "~/lib/utils";
 import type { WorkItem } from "~/types/work-items";
 import { HighlightedText } from "~/components/ui/HighlightedText";
 import { highlightText } from "~/lib/search/highlight-text";
+import { useReactions } from "~/hooks/useReactions";
 
 interface WorkItemDetailViewProps {
   workItemId: string;
@@ -54,6 +55,22 @@ export function WorkItemDetailView({ workItemId, onBack, searchQuery }: WorkItem
       highlightedBody: activity.body ? highlightText(activity.body, searchQuery) : undefined,
     }));
   }, [searchQuery, data]);
+
+  // Extract note IDs from activities (including replies) for fetching reactions
+  const noteIds = data?.activities
+    ? data.activities
+        .flatMap((thread) => [thread, ...(thread.replies ?? [])])
+        .map((a) => a.gitlabNoteId)
+        .filter((id): id is number => id !== undefined)
+    : [];
+
+  // Fetch reactions on-demand with react-query caching
+  const { data: reactions } = useReactions({
+    repositoryPath: data?.workItem.repositoryPath ?? "",
+    noteableType: data?.workItem.type ?? "issue",
+    noteableIid: data?.workItem.number ?? 0,
+    noteIds,
+  });
 
   // Ref for scrollable content to enable scroll-to-first-match
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -265,6 +282,7 @@ export function WorkItemDetailView({ workItemId, onBack, searchQuery }: WorkItem
           <ActivityTimeline
             activities={highlightedActivities}
             parentType={workItem.type}
+            reactions={reactions}
             onActivityClick={(activity) => {
               if (activity.gitlabUrl) {
                 window.open(activity.gitlabUrl, "_blank", "noopener,noreferrer");
