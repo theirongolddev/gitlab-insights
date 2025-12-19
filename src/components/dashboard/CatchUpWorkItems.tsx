@@ -7,7 +7,7 @@ import { api } from "~/trpc/react";
 import { WorkItemList } from "~/components/work-items/WorkItemList";
 import { WorkItemDetailView } from "~/components/work-items/WorkItemDetailView";
 import { useMarkAsRead } from "~/hooks/useMarkAsRead";
-import type { WorkItem } from "~/types/work-items";
+import type { WorkItem, GroupedWorkItems } from "~/types/work-items";
 
 interface CatchUpWorkItemsProps {
   searchQuery?: string;
@@ -52,15 +52,56 @@ export function CatchUpWorkItems({ searchQuery, showClosed = false, onShowClosed
     };
   }, [searchQuery, showClosed]);
 
-  // Fetch grouped work items
+  // Fetch grouped work items with infinite scroll
   const {
-    data: workItemsData,
+    data,
     isLoading,
     error,
-  } = api.workItems.getGrouped.useQuery({
-    limit: 50,
-    filters,
-  });
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = api.workItems.getGrouped.useInfiniteQuery(
+    {
+      limit: 50,
+      filters,
+    },
+    {
+      getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    }
+  );
+
+  // Flatten paginated results into single GroupedWorkItems object
+  const workItemsData = useMemo(() => {
+    if (!data?.pages) return null;
+
+    const allIssues: WorkItem[] = [];
+    const allMRs: WorkItem[] = [];
+    let totalCount = 0;
+    let unreadCount = 0;
+
+    for (const page of data.pages) {
+      allIssues.push(...page.items.issues);
+      allMRs.push(...page.items.mergeRequests);
+      totalCount += page.items.totalCount;
+      unreadCount += page.items.unreadCount;
+    }
+
+    return {
+      items: {
+        issues: allIssues,
+        mergeRequests: allMRs,
+        totalCount,
+        unreadCount,
+      } as GroupedWorkItems,
+    };
+  }, [data]);
+
+  // Handle loading more items
+  const handleLoadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Read tracking
   const { markAsRead, markMultipleAsRead, isMarkingMultiple } = useMarkAsRead();
@@ -174,7 +215,11 @@ export function CatchUpWorkItems({ searchQuery, showClosed = false, onShowClosed
   if (selectedItemId) {
     return (
       <div className="h-full">
-        <WorkItemDetailView workItemId={selectedItemId} onBack={handleBack} />
+        <WorkItemDetailView
+          workItemId={selectedItemId}
+          onBack={handleBack}
+          searchQuery={searchQuery}
+        />
       </div>
     );
   }
@@ -305,6 +350,9 @@ export function CatchUpWorkItems({ searchQuery, showClosed = false, onShowClosed
           hideReadIndicators={hideReadIndicators}
           selectedIds={hideReadIndicators ? undefined : selectedIds}
           onToggleSelect={hideReadIndicators ? undefined : handleToggleSelect}
+          onLoadMore={handleLoadMore}
+          hasMore={hasNextPage ?? false}
+          isLoadingMore={isFetchingNextPage}
         />
       </div>
     </div>

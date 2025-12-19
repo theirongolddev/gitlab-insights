@@ -19,6 +19,12 @@ interface WorkItemListProps {
   selectedIds?: Set<string>;
   /** Callback to toggle selection (catchup view only) */
   onToggleSelect?: (itemId: string) => void;
+  /** Callback to load more items (infinite scroll) */
+  onLoadMore?: () => void;
+  /** Whether there are more items to load */
+  hasMore?: boolean;
+  /** Whether more items are currently being loaded */
+  isLoadingMore?: boolean;
 }
 
 /**
@@ -43,6 +49,9 @@ export function WorkItemList({
   hideReadIndicators = false,
   selectedIds,
   onToggleSelect,
+  onLoadMore,
+  hasMore,
+  isLoadingMore,
 }: WorkItemListProps) {
   // AC 5.4: Default tab is Issues
   const [selectedTab, setSelectedTab] = useState<string>("issues");
@@ -51,12 +60,35 @@ export function WorkItemList({
   // AC 5.3: Ref for scroll container to reset position
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   
+  // Ref for infinite scroll sentinel element
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  
   // AC 5.3: Reset scroll position when tab changes
   useEffect(() => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = 0;
     }
   }, [selectedTab]);
+
+  // Infinite scroll: IntersectionObserver to trigger loading more
+  useEffect(() => {
+    if (!onLoadMore || !hasMore || isLoadingMore) return;
+
+    const sentinel = loadMoreRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          onLoadMore();
+        }
+      },
+      { rootMargin: "200px" } // Start loading 200px before reaching the bottom
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [onLoadMore, hasMore, isLoadingMore]);
 
   const handleMarkAllAsRead = useCallback(
     async (section: "issues" | "mergeRequests") => {
@@ -287,6 +319,20 @@ export function WorkItemList({
       {/* Tab content with scroll reset (AC 5.3) */}
       <div ref={scrollContainerRef}>
         {renderTabContent(currentItems)}
+        
+        {/* Infinite scroll sentinel and loading indicator */}
+        {hasMore && (
+          <div ref={loadMoreRef} className="py-4 flex justify-center">
+            {isLoadingMore ? (
+              <div className="flex items-center gap-2 text-default-500">
+                <Skeleton className="w-4 h-4 rounded-full" />
+                <span className="text-sm">Loading more...</span>
+              </div>
+            ) : (
+              <span className="text-sm text-default-400">Scroll for more</span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
