@@ -111,6 +111,14 @@ const GitLabDiscussionSchema = z.object({
   notes: z.array(GitLabNoteSchema),
 });
 
+// Award emoji (reaction) schema
+const GitLabAwardEmojiSchema = z.object({
+  id: z.number(),
+  name: z.string(), // "thumbsup", "heart", "smile", etc.
+  user: GitLabAuthorSchema,
+  created_at: z.string(),
+});
+
 const GitLabCommitSchema = z.object({
   id: z.string(),
   short_id: z.string(),
@@ -214,6 +222,21 @@ export interface GitLabDiscussion {
  */
 export interface GitLabNoteWithDiscussion extends GitLabNote {
   discussion_id: string;
+}
+
+/**
+ * GitLab Award Emoji (reaction) on a note
+ */
+export interface GitLabAwardEmoji {
+  id: number;
+  name: string; // "thumbsup", "heart", "smile", etc.
+  user: {
+    id: number;
+    username: string;
+    name?: string;
+    avatar_url: string;
+  };
+  created_at: string;
 }
 
 export interface GitLabProject {
@@ -942,6 +965,67 @@ export class GitLabClient {
         "GitLabClient: Failed to fetch discussions for item"
       );
       throw error;
+    }
+  }
+
+  /**
+   * Fetch award emojis (reactions) for a specific note/comment.
+   *
+   * Used for on-demand fetching of reactions when viewing work item details.
+   * Returns empty array on any error (graceful degradation).
+   *
+   * @param projectPath - Project path (e.g., "group/project") - will be URL-encoded
+   * @param noteableType - Type of parent item ('issue' or 'merge_request')
+   * @param noteableIid - The IID of the parent issue or MR
+   * @param noteId - The ID of the note to fetch reactions for
+   * @returns Array of award emojis, or empty array on error
+   */
+  async fetchNoteAwards(
+    projectPath: string,
+    noteableType: "issue" | "merge_request",
+    noteableIid: number,
+    noteId: number
+  ): Promise<GitLabAwardEmoji[]> {
+    const endpoint = noteableType === "issue" ? "issues" : "merge_requests";
+    const encodedPath = encodeURIComponent(projectPath);
+    const url = `${this.baseUrl}/projects/${encodedPath}/${endpoint}/${noteableIid}/notes/${noteId}/award_emoji`;
+
+    logger.debug(
+      { projectPath, noteableType, noteableIid, noteId },
+      "GitLabClient: Fetching note awards"
+    );
+
+    try {
+      const response = await this.fetchWithRetry(url);
+
+      if (!response.ok) {
+        // 404 means no awards or note doesn't exist - return empty array
+        if (response.status === 404) {
+          return [];
+        }
+        logger.warn(
+          { projectPath, noteableType, noteableIid, noteId, status: response.status },
+          "GitLabClient: Non-OK response fetching note awards"
+        );
+        return [];
+      }
+
+      const rawData = await response.json();
+      const awards = z.array(GitLabAwardEmojiSchema).parse(rawData);
+
+      logger.debug(
+        { projectPath, noteableType, noteableIid, noteId, awardCount: awards.length },
+        "GitLabClient: Fetched note awards"
+      );
+
+      return awards;
+    } catch (error) {
+      // Log but don't throw - reactions are non-critical
+      logger.warn(
+        { error, projectPath, noteableType, noteableIid, noteId },
+        "GitLabClient: Failed to fetch note awards, returning empty"
+      );
+      return [];
     }
   }
 
