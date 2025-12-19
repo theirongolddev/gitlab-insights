@@ -12,11 +12,13 @@ import type {
   WorkItem,
   ActivitySummary,
   ActivityItem,
+  ThreadedActivityItem,
   GroupedWorkItems,
   GetWorkItemsGroupedResponse,
   GetWorkItemWithActivityResponse,
   Participant,
 } from "~/types/work-items";
+import { highlightText } from "~/lib/search/highlight-text";
 
 const workItemFiltersSchema = z.object({
   status: z.array(z.enum(["open", "closed", "merged"])).optional(),
@@ -76,6 +78,17 @@ export const workItemsRouter = createTRPCRouter({
         where.OR = [
           { title: { contains: filters.search, mode: "insensitive" } },
           { body: { contains: filters.search, mode: "insensitive" } },
+          // Search in child comments (events with parentEventId pointing to this work item)
+          {
+            children: {
+              some: {
+                OR: [
+                  { title: { contains: filters.search, mode: "insensitive" } },
+                  { body: { contains: filters.search, mode: "insensitive" } },
+                ],
+              },
+            },
+          },
         ];
       }
 
@@ -176,23 +189,32 @@ export const workItemsRouter = createTRPCRouter({
           : true; // Never read = unread
 
         // Transform children to ActivityItem[] for card expansion
-        const activities: ActivityItem[] = children.map((child) => ({
-          id: child.id,
-          type: child.isSystemNote ? "system" : "comment",
-          author: child.author,
-          authorAvatar: child.authorAvatar,
-          body: child.body,
-          timestamp: child.createdAt,
-          isSystemNote: child.isSystemNote,
-          isUnread: lastReadAt ? child.createdAt > lastReadAt : true,
-          gitlabUrl: child.gitlabUrl,
-        }));
+        const activities: ActivityItem[] = children.map((child) => {
+          const activity: ActivityItem = {
+            id: child.id,
+            type: child.isSystemNote ? "system" : "comment",
+            author: child.author,
+            authorAvatar: child.authorAvatar,
+            body: child.body,
+            timestamp: child.createdAt,
+            isSystemNote: child.isSystemNote,
+            isUnread: lastReadAt ? child.createdAt > lastReadAt : true,
+            gitlabUrl: child.gitlabUrl,
+          };
+
+          // Apply highlighting to activity body when search is active
+          if (filters?.search && child.body) {
+            activity.highlightedBody = highlightText(child.body, filters.search);
+          }
+
+          return activity;
+        });
 
         // Extract issue number from gitlabEventId (e.g., "issue-123" -> 123)
         const numberMatch = event.gitlabEventId.match(/\d+$/);
         const number = numberMatch ? parseInt(numberMatch[0], 10) : 0;
 
-        return {
+        const workItem: WorkItem = {
           id: event.id,
           gitlabEventId: event.gitlabEventId,
           type: event.type as "issue" | "merge_request",
@@ -217,6 +239,33 @@ export const workItemsRouter = createTRPCRouter({
           isUnread,
           lastReadAt,
         };
+
+        // Apply highlighting to work item when search is active
+        if (filters?.search) {
+          workItem.highlightedTitle = highlightText(event.title, filters.search);
+          if (event.body) {
+            workItem.highlightedSnippet = highlightText(event.body, filters.search);
+          }
+
+          // Check if match is in title/body, if not find first matching child
+          const searchLower = filters.search.toLowerCase();
+          const titleHasMatch = event.title.toLowerCase().includes(searchLower);
+          const bodyHasMatch = event.body?.toLowerCase().includes(searchLower) ?? false;
+
+          if (!titleHasMatch && !bodyHasMatch) {
+            // Find first child with a match and show its snippet
+            for (const child of children) {
+              const childBodyLower = child.body?.toLowerCase() ?? "";
+              if (childBodyLower.includes(searchLower)) {
+                const snippet = child.body!.slice(0, 150) + (child.body!.length > 150 ? "..." : "");
+                workItem.matchingChildSnippet = highlightText(snippet, filters.search);
+                break;
+              }
+            }
+          }
+        }
+
+        return workItem;
       });
 
       // Apply unreadOnly filter if requested
@@ -294,6 +343,7 @@ export const workItemsRouter = createTRPCRouter({
               createdAt: true,
               isSystemNote: true,
               gitlabUrl: true,
+              discussionId: true, // For thread grouping
             },
             orderBy: { createdAt: "asc" }, // Chronological for timeline
           },
@@ -314,7 +364,7 @@ export const workItemsRouter = createTRPCRouter({
       const lastReadAt = event.readBy[0]?.readAt ?? null;
 
       // Transform children to ActivityItem[]
-      const activities: ActivityItem[] = event.children.map((child) => ({
+      const flatActivities: ActivityItem[] = event.children.map((child) => ({
         id: child.id,
         type: child.isSystemNote ? "system" : "comment",
         author: child.author,
@@ -324,7 +374,38 @@ export const workItemsRouter = createTRPCRouter({
         isSystemNote: child.isSystemNote,
         isUnread: lastReadAt ? child.createdAt > lastReadAt : true,
         gitlabUrl: child.gitlabUrl,
+        discussionId: child.discussionId ?? undefined,
       }));
+
+      // Group activities by discussionId into threads
+      // System notes and standalone comments (null discussionId) become single-item threads
+      const threadMap = new Map<string, ActivityItem[]>();
+      for (const activity of flatActivities) {
+        // Use discussionId if present, otherwise use id (makes it a single-item thread)
+        const key = activity.discussionId ?? activity.id;
+        const thread = threadMap.get(key) ?? [];
+        thread.push(activity);
+        threadMap.set(key, thread);
+      }
+
+      // Convert to ThreadedActivityItem[], sorted by thread start time
+      const activities: ThreadedActivityItem[] = [];
+      for (const [, thread] of threadMap) {
+        const [first, ...replies] = thread;
+        if (first) {
+          activities.push({
+            ...first,
+            replies,
+            isThreadStart: true,
+            threadStartTime: first.timestamp,
+          });
+        }
+      }
+
+      // Sort threads by when they started (first comment time)
+      activities.sort((a, b) =>
+        a.threadStartTime.getTime() - b.threadStartTime.getTime()
+      );
 
       // Build activity summary
       const participantMap = new Map<string, Participant>();
@@ -337,12 +418,13 @@ export const workItemsRouter = createTRPCRouter({
         }
       }
 
-      const newActivities = activities.filter((a) => a.isUnread);
+      // Count all unread activities (thread starters + replies)
+      const unreadCount = flatActivities.filter((a) => a.isUnread).length;
       const latestChild = event.children[event.children.length - 1];
 
       const activitySummary: ActivitySummary = {
         totalCount: event.commentCount,
-        newCount: newActivities.length,
+        newCount: unreadCount,
         latestActivity: latestChild
           ? {
               author: latestChild.author,
