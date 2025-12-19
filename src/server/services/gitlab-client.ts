@@ -104,6 +104,13 @@ const GitLabNoteSchema = z.object({
 // Export GitLabNoteSchema for use in tests and other modules
 export { GitLabNoteSchema };
 
+// Discussion schema - wraps notes into threads
+const GitLabDiscussionSchema = z.object({
+  id: z.string(), // Discussion ID (e.g., "6a9c1750b37d...")
+  individual_note: z.boolean(), // true if standalone note, false if discussion thread
+  notes: z.array(GitLabNoteSchema),
+});
+
 const GitLabCommitSchema = z.object({
   id: z.string(),
   short_id: z.string(),
@@ -193,6 +200,22 @@ export interface GitLabNote {
   updated_at: string;
 }
 
+/**
+ * GitLab Discussion - wraps notes into threads
+ */
+export interface GitLabDiscussion {
+  id: string;
+  individual_note: boolean;
+  notes: GitLabNote[];
+}
+
+/**
+ * Note with discussion ID attached - used for threading
+ */
+export interface GitLabNoteWithDiscussion extends GitLabNote {
+  discussion_id: string;
+}
+
 export interface GitLabProject {
   id: number;
   name: string;
@@ -239,7 +262,7 @@ export interface FetchEventsResult {
  */
 export interface WorkItemWithActivity {
   parent: GitLabIssue | GitLabMergeRequest;
-  notes: Array<GitLabNote & { project_id: number; web_url: string }>;
+  notes: Array<GitLabNoteWithDiscussion & { project_id: number; web_url: string }>;
   type: "issue" | "merge_request";
   projectId: string;
 }
@@ -858,50 +881,65 @@ export class GitLabClient {
   }
 
   /**
-   * Fetch ALL notes for a single work item (issue or MR) without pagination limit.
-   * 
-   * This is the core method for work-item-centric fetching. It fetches ALL notes
-   * for a specific item, ensuring complete activity history.
-   * 
+   * Fetch ALL discussions for a single work item (issue or MR).
+   *
+   * Uses the Discussions API instead of Notes API to get thread grouping info.
+   * Each note is returned with its discussion_id for threading.
+   *
    * @param projectId - GitLab project ID
    * @param itemType - Type of work item ('issue' or 'merge_request')
    * @param itemIid - The IID of the issue or MR
    * @param webUrl - The web URL of the parent item (used to construct note URLs)
-   * @returns Array of notes with project_id and web_url attached
+   * @returns Array of notes with discussion_id, project_id, and web_url attached
    */
-  async fetchAllNotesForItem(
+  async fetchDiscussionsForItem(
     projectId: string,
     itemType: "issue" | "merge_request",
     itemIid: number,
     webUrl: string
-  ): Promise<Array<GitLabNote & { project_id: number; web_url: string }>> {
+  ): Promise<Array<GitLabNoteWithDiscussion & { project_id: number; web_url: string }>> {
     const endpoint = itemType === "issue" ? "issues" : "merge_requests";
-    const url = `${this.baseUrl}/projects/${encodeURIComponent(projectId)}/${endpoint}/${itemIid}/notes?per_page=100&order_by=created_at&sort=asc`;
+    const url = `${this.baseUrl}/projects/${encodeURIComponent(projectId)}/${endpoint}/${itemIid}/discussions?per_page=100`;
 
     logger.debug(
       { projectId, itemType, itemIid },
-      "GitLabClient: Fetching all notes for item"
+      "GitLabClient: Fetching discussions for item"
     );
 
     try {
-      // No maxPages - fetch everything
-      const rawNotes = await this.fetchPaginated<GitLabNote>(url);
-      const notes = z.array(GitLabNoteSchema).parse(rawNotes) as GitLabNote[];
+      // Fetch all discussions (no maxPages limit)
+      const rawDiscussions = await this.fetchPaginated<GitLabDiscussion>(url);
+      const discussions = z.array(GitLabDiscussionSchema).parse(rawDiscussions) as GitLabDiscussion[];
 
-      logger.info(
-        { projectId, itemType, itemIid, noteCount: notes.length },
-        "GitLabClient: Fetched all notes for item"
+      // Flatten discussions into notes, preserving discussion_id
+      const notes: Array<GitLabNoteWithDiscussion & { project_id: number; web_url: string }> = [];
+
+      for (const discussion of discussions) {
+        for (const note of discussion.notes) {
+          notes.push({
+            ...note,
+            discussion_id: discussion.id,
+            project_id: parseInt(projectId, 10),
+            web_url: `${webUrl}#note_${note.id}`,
+          });
+        }
+      }
+
+      // Sort by created_at to ensure chronological order
+      notes.sort((a, b) =>
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       );
 
-      return notes.map((note) => ({
-        ...note,
-        project_id: parseInt(projectId, 10),
-        web_url: `${webUrl}#note_${note.id}`,
-      }));
+      logger.info(
+        { projectId, itemType, itemIid, discussionCount: discussions.length, noteCount: notes.length },
+        "GitLabClient: Fetched discussions for item"
+      );
+
+      return notes;
     } catch (error) {
       logger.error(
         { error, projectId, itemType, itemIid },
-        "GitLabClient: Failed to fetch notes for item"
+        "GitLabClient: Failed to fetch discussions for item"
       );
       throw error;
     }
@@ -942,11 +980,11 @@ export class GitLabClient {
           // Fetch top issues for this project
           const issues = await this.fetchIssuesForWorkItems(projectId, issueLimit, state);
           
-          // Fetch notes for each issue with concurrency limiting
+          // Fetch discussions for each issue with concurrency limiting
           for (const issue of issues) {
             try {
               const notes = await noteConcurrencyLimit(() =>
-                this.fetchAllNotesForItem(projectId, "issue", issue.iid, issue.web_url)
+                this.fetchDiscussionsForItem(projectId, "issue", issue.iid, issue.web_url)
               );
               projectBundles.push({
                 parent: issue,
@@ -965,11 +1003,11 @@ export class GitLabClient {
           // Fetch top MRs for this project
           const mrs = await this.fetchMRsForWorkItems(projectId, mrLimit, state);
           
-          // Fetch notes for each MR with concurrency limiting
+          // Fetch discussions for each MR with concurrency limiting
           for (const mr of mrs) {
             try {
               const notes = await noteConcurrencyLimit(() =>
-                this.fetchAllNotesForItem(projectId, "merge_request", mr.iid, mr.web_url)
+                this.fetchDiscussionsForItem(projectId, "merge_request", mr.iid, mr.web_url)
               );
               projectBundles.push({
                 parent: mr,

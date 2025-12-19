@@ -899,6 +899,7 @@ export async function storeWorkItemBundle(
             parentEventId: parentRecord.id, // Set IMMEDIATELY!
             gitlabParentId: note.noteable_id,
             isSystemNote: note.system,
+            discussionId: note.discussion_id, // Thread grouping
             assignees: [],
             participants: [],
             status: null,
@@ -916,6 +917,7 @@ export async function storeWorkItemBundle(
             gitlabUrl: note.web_url,
             parentEventId: parentRecord.id, // Ensure link is correct
             isSystemNote: note.system,
+            discussionId: note.discussion_id, // Thread grouping
             mentionedInIds: extractMentionedIds(note.body),
           },
         });
