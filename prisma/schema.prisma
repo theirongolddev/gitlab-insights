@@ -105,6 +105,9 @@ model Event {
   // System note flag
   isSystemNote Boolean @default(false)
 
+  // Discussion threading (for grouping comments into threads)
+  discussionId String? // GitLab discussion ID - comments with same ID are in same thread
+
   // People involvement
   assignees    String[] // Array of assignee usernames
   participants String[] // Everyone who commented/interacted
@@ -143,6 +146,8 @@ model Event {
   @@index([userId, parentEventId, lastActivityAt(sort: Desc)])
   // Work item grouping: index for finding children of a work item
   @@index([userId, parentEventId, createdAt(sort: Asc)])
+  // Thread grouping: index for efficient thread queries
+  @@index([parentEventId, discussionId, createdAt])
 }
 
 model UserQuery {
