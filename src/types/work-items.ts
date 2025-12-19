@@ -29,6 +29,20 @@ export interface ActivitySummary {
 }
 
 /**
+ * Grouped emoji reaction on a comment
+ *
+ * Multiple users can have the same reaction, grouped by emoji name.
+ * Used for displaying reactions like: 👍 3  ❤️ 2
+ */
+export interface Reaction {
+  emoji: string; // GitLab emoji name: "thumbsup", "heart", "smile", etc.
+  users: Array<{
+    username: string;
+    avatar: string | null;
+  }>;
+}
+
+/**
  * Individual activity item (comment, status change, etc.)
  */
 export interface ActivityItem {
@@ -44,6 +58,9 @@ export interface ActivityItem {
 
   // Discussion threading (for grouping comments into threads)
   discussionId?: string;
+
+  // GitLab note ID for fetching reactions on-demand
+  gitlabNoteId?: number;
 
   // Search highlighting (optional, only present when search active)
   highlightedBody?: string;
