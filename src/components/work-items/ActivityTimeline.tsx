@@ -123,7 +123,7 @@ export function ActivityTimeline({
                         : "text-default-600"
                   }`}
                 >
-                  <p className="whitespace-pre-wrap break-words line-clamp-4">
+                  <p className="whitespace-pre-wrap break-words">
                     {activity.body}
                   </p>
                 </div>

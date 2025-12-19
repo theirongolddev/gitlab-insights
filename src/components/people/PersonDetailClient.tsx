@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Avatar, Chip, Divider, Select, SelectItem } from "@heroui/react";
 import { api } from "~/trpc/react";
 import { LoadingSpinner } from "~/components/ui/LoadingSpinner";
 import { PersonActivityStats } from "./PersonActivityStats";
+import { useInfiniteScroll } from "~/hooks/useInfiniteScroll";
 
 interface PersonDetailClientProps {
   personId: string;
@@ -28,11 +29,30 @@ export function PersonDetailClient({ personId }: PersonDetailClientProps) {
     { enabled: !!personId }
   );
 
-  const { data: activityData, isLoading: activityLoading } =
-    api.people.getActivity.useQuery(
-      { personId, limit: 100 },
-      { enabled: !!personId }
-    );
+  const {
+    data: activityData,
+    isLoading: activityLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = api.people.getActivity.useInfiniteQuery(
+    { personId, limit: 50 },
+    {
+      enabled: !!personId,
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+    }
+  );
+
+  const { sentinelRef } = useInfiniteScroll({
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  });
+
+  const allActivities = useMemo(
+    () => activityData?.pages.flatMap((page) => page.items) ?? [],
+    [activityData]
+  );
 
   if (isLoading) {
     return (
@@ -61,10 +81,10 @@ export function PersonDetailClient({ personId }: PersonDetailClientProps) {
     .slice(0, 2)
     .toUpperCase();
 
-  const filteredActivity = activityData?.items.filter((event) => {
-    if (typeFilter === "all") return true;
-    return event.type === typeFilter;
-  }) ?? [];
+  const filteredActivity = useMemo(() => {
+    if (typeFilter === "all") return allActivities;
+    return allActivities.filter((event) => event.type === typeFilter);
+  }, [allActivities, typeFilter]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -143,6 +163,22 @@ export function PersonDetailClient({ personId }: PersonDetailClientProps) {
               {filteredActivity.map((event) => (
                 <ActivityTimelineItem key={event.id} event={event} />
               ))}
+
+              {/* Sentinel for infinite scroll */}
+              <div ref={sentinelRef} className="py-4">
+                {isFetchingNextPage && (
+                  <div className="flex justify-center">
+                    <LoadingSpinner size="sm" label="Loading more..." />
+                  </div>
+                )}
+              </div>
+
+              {/* End of list indicator */}
+              {!hasNextPage && filteredActivity.length > 0 && (
+                <p className="text-center text-xs text-gray-400 dark:text-gray-500 py-2">
+                  End of activity history
+                </p>
+              )}
             </div>
           )}
         </div>

@@ -1,9 +1,11 @@
 "use client";
 
+import { useMemo } from "react";
 import { Avatar, Chip, Divider } from "@heroui/react";
 import { api } from "~/trpc/react";
 import { LoadingSpinner } from "~/components/ui/LoadingSpinner";
 import { PersonActivityStats } from "./PersonActivityStats";
+import { useInfiniteScroll } from "~/hooks/useInfiniteScroll";
 
 interface PersonDetailProps {
   personId: string | null;
@@ -15,11 +17,30 @@ export function PersonDetail({ personId }: PersonDetailProps) {
     { enabled: !!personId }
   );
 
-  const { data: activityData, isLoading: activityLoading } =
-    api.people.getActivity.useQuery(
-      { personId: personId!, limit: 20 },
-      { enabled: !!personId }
-    );
+  const {
+    data: activityData,
+    isLoading: activityLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = api.people.getActivity.useInfiniteQuery(
+    { personId: personId!, limit: 50 },
+    {
+      enabled: !!personId,
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+    }
+  );
+
+  const { sentinelRef } = useInfiniteScroll({
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  });
+
+  const allActivities = useMemo(
+    () => activityData?.pages.flatMap((page) => page.items) ?? [],
+    [activityData]
+  );
 
   if (!personId) {
     return (
@@ -96,15 +117,31 @@ export function PersonDetail({ personId }: PersonDetailProps) {
           </h3>
           {activityLoading ? (
             <LoadingSpinner size="sm" label="Loading activity..." />
-          ) : activityData?.items.length === 0 ? (
+          ) : allActivities.length === 0 ? (
             <p className="text-gray-500 dark:text-gray-400 text-sm">
               No recent activity
             </p>
           ) : (
             <div className="space-y-3">
-              {activityData?.items.map((event) => (
+              {allActivities.map((event) => (
                 <ActivityItem key={event.id} event={event} />
               ))}
+
+              {/* Sentinel for infinite scroll */}
+              <div ref={sentinelRef} className="py-2">
+                {isFetchingNextPage && (
+                  <div className="flex justify-center">
+                    <LoadingSpinner size="sm" label="Loading more..." />
+                  </div>
+                )}
+              </div>
+
+              {/* End of list indicator */}
+              {!hasNextPage && allActivities.length > 0 && (
+                <p className="text-center text-xs text-gray-400 dark:text-gray-500 py-2">
+                  End of activity history
+                </p>
+              )}
             </div>
           )}
         </div>

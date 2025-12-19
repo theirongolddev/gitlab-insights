@@ -131,6 +131,7 @@ export const peopleRouter = createTRPCRouter({
         personId: z.string().min(1),
         limit: z.number().min(1).max(100).default(50),
         cursor: z.string().min(1).optional(),
+        since: z.date().optional(), // Optional: filter events >= this date
       })
     )
     .query(async ({ ctx, input }) => {
@@ -154,6 +155,7 @@ export const peopleRouter = createTRPCRouter({
         where: {
           userId: ctx.session.user.id,
           author: person.username,
+          ...(input.since && { createdAt: { gte: input.since } }),
         },
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: input.limit + 1,

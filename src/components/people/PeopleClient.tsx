@@ -9,10 +9,12 @@ import { SplitView } from "~/components/layout/SplitView";
 import { PersonDetail } from "./PersonDetail";
 import { useDebounce } from "~/hooks/useDebounce";
 import { useShortcutHandler } from "~/hooks/useShortcutHandler";
+import { useDetailPane } from "~/contexts/DetailPaneContext";
 
 export function PeopleClient() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
+  const { setIsOpen } = useDetailPane();
 
   const debouncedSearch = useDebounce(searchQuery, 300);
 
@@ -42,6 +44,7 @@ export function PeopleClient() {
     const nextPerson = people[nextIndex];
     if (nextPerson) {
       setSelectedPersonId(nextPerson.id);
+      setIsOpen(true);
     }
   });
 
@@ -52,12 +55,19 @@ export function PeopleClient() {
     const prevPerson = people[prevIndex];
     if (prevPerson) {
       setSelectedPersonId(prevPerson.id);
+      setIsOpen(true);
     }
   });
 
   const handlePersonClick = useCallback((personId: string) => {
-    setSelectedPersonId((prev) => (prev === personId ? null : personId));
-  }, []);
+    setSelectedPersonId((prev) => {
+      const isDeselecting = prev === personId;
+      if (!isDeselecting) {
+        setIsOpen(true);
+      }
+      return isDeselecting ? null : personId;
+    });
+  }, [setIsOpen]);
 
   const handleLoadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
