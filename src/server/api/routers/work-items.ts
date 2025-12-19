@@ -17,8 +17,10 @@ import type {
   GetWorkItemsGroupedResponse,
   GetWorkItemWithActivityResponse,
   Participant,
+  Reaction,
 } from "~/types/work-items";
 import { highlightText } from "~/lib/search/highlight-text";
+import { GitLabClient } from "~/server/services/gitlab-client";
 
 const workItemFiltersSchema = z.object({
   status: z.array(z.enum(["open", "closed", "merged"])).optional(),
@@ -344,6 +346,7 @@ export const workItemsRouter = createTRPCRouter({
               isSystemNote: true,
               gitlabUrl: true,
               discussionId: true, // For thread grouping
+              gitlabEventId: true, // For fetching reactions on-demand
             },
             orderBy: { createdAt: "asc" }, // Chronological for timeline
           },
@@ -364,18 +367,28 @@ export const workItemsRouter = createTRPCRouter({
       const lastReadAt = event.readBy[0]?.readAt ?? null;
 
       // Transform children to ActivityItem[]
-      const flatActivities: ActivityItem[] = event.children.map((child) => ({
-        id: child.id,
-        type: child.isSystemNote ? "system" : "comment",
-        author: child.author,
-        authorAvatar: child.authorAvatar,
-        body: child.body,
-        timestamp: child.createdAt,
-        isSystemNote: child.isSystemNote,
-        isUnread: lastReadAt ? child.createdAt > lastReadAt : true,
-        gitlabUrl: child.gitlabUrl,
-        discussionId: child.discussionId ?? undefined,
-      }));
+      const flatActivities: ActivityItem[] = event.children.map((child) => {
+        // Extract numeric note ID from gitlabEventId (format: "note-12345")
+        let gitlabNoteId: number | undefined;
+        if (child.gitlabEventId.startsWith("note-")) {
+          const parsed = parseInt(child.gitlabEventId.slice(5), 10);
+          gitlabNoteId = Number.isNaN(parsed) ? undefined : parsed;
+        }
+
+        return {
+          id: child.id,
+          type: child.isSystemNote ? "system" : "comment",
+          author: child.author,
+          authorAvatar: child.authorAvatar,
+          body: child.body,
+          timestamp: child.createdAt,
+          isSystemNote: child.isSystemNote,
+          isUnread: lastReadAt ? child.createdAt > lastReadAt : true,
+          gitlabUrl: child.gitlabUrl,
+          discussionId: child.discussionId ?? undefined,
+          gitlabNoteId,
+        };
+      });
 
       // Group activities by discussionId into threads
       // System notes and standalone comments (null discussionId) become single-item threads
@@ -730,4 +743,96 @@ export const workItemsRouter = createTRPCRouter({
 
       return { success: true };
     }),
+
+  /**
+   * Get reactions (award emojis) for multiple notes
+   *
+   * Fetches reactions from GitLab on-demand for the specified notes.
+   * Returns grouped reactions by emoji for each note.
+   * Errors for individual notes are silently ignored (partial results OK).
+   */
+  getReactions: protectedProcedure
+    .input(
+      z.object({
+        repositoryPath: z.string(), // Project path like "group/project"
+        noteableType: z.enum(["issue", "merge_request"]),
+        noteableIid: z.number(),
+        noteIds: z.array(z.number()).max(100), // Limit batch size
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const account = await ctx.db.account.findFirst({
+        where: { userId: ctx.session.user.id, providerId: "gitlab" },
+        select: { accessToken: true },
+      });
+
+      if (!account?.accessToken) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "GitLab account not connected",
+        });
+      }
+
+      const client = new GitLabClient(account.accessToken);
+
+      // Fetch awards for each note in chunks of 5 (concurrency limit)
+      const chunkSize = 5;
+      const results: Array<{ noteId: number; awards: Awaited<ReturnType<typeof client.fetchNoteAwards>> }> = [];
+
+      for (let i = 0; i < input.noteIds.length; i += chunkSize) {
+        const chunk = input.noteIds.slice(i, i + chunkSize);
+        const chunkResults = await Promise.all(
+          chunk.map(async (noteId) => {
+            const awards = await client.fetchNoteAwards(
+              input.repositoryPath,
+              input.noteableType,
+              input.noteableIid,
+              noteId
+            );
+            return { noteId, awards };
+          })
+        );
+        results.push(...chunkResults);
+      }
+
+      // Group awards by emoji for each note
+      const grouped: Record<number, Reaction[]> = {};
+      for (const { noteId, awards } of results) {
+        if (awards.length > 0) {
+          grouped[noteId] = groupAwardsByEmoji(awards);
+        }
+      }
+
+      return grouped;
+    }),
 });
+
+/**
+ * Group award emojis by emoji name
+ *
+ * Transforms flat list of awards into grouped reactions.
+ * Example: [{ name: "thumbsup", user: A }, { name: "thumbsup", user: B }]
+ *       -> [{ emoji: "thumbsup", users: [A, B] }]
+ */
+function groupAwardsByEmoji(
+  awards: Array<{ name: string; user: { username: string; avatar_url: string } }>
+): Reaction[] {
+  const byEmoji = new Map<string, Reaction>();
+
+  for (const award of awards) {
+    const existing = byEmoji.get(award.name);
+    if (existing) {
+      existing.users.push({
+        username: award.user.username,
+        avatar: award.user.avatar_url,
+      });
+    } else {
+      byEmoji.set(award.name, {
+        emoji: award.name,
+        users: [{ username: award.user.username, avatar: award.user.avatar_url }],
+      });
+    }
+  }
+
+  return Array.from(byEmoji.values());
+}
