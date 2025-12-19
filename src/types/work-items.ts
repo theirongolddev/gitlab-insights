@@ -41,6 +41,29 @@ export interface ActivityItem {
   isSystemNote: boolean;
   isUnread: boolean;
   gitlabUrl: string;
+
+  // Discussion threading (for grouping comments into threads)
+  discussionId?: string;
+
+  // Search highlighting (optional, only present when search active)
+  highlightedBody?: string;
+}
+
+/**
+ * Threaded activity item - a thread starter with nested replies
+ *
+ * Used to group comments by GitLab discussion thread. System notes and
+ * standalone comments (null discussionId) are treated as single-item threads.
+ *
+ * Ordering rules:
+ * 1. Threads ordered by first comment time (threadStartTime)
+ * 2. System notes appear inline chronologically
+ * 3. Within a thread, replies ordered chronologically
+ */
+export interface ThreadedActivityItem extends ActivityItem {
+  replies: ActivityItem[];
+  isThreadStart: boolean;
+  threadStartTime: Date;
 }
 
 /**
@@ -76,6 +99,12 @@ export interface WorkItem {
   // Read state
   isUnread: boolean;
   lastReadAt: Date | null;
+
+  // Search highlighting (optional, only present when search active)
+  highlightedTitle?: string;
+  highlightedSnippet?: string;
+  /** When match is in a child comment, shows the highlighted snippet from that comment */
+  matchingChildSnippet?: string;
 }
 
 /**
@@ -130,7 +159,7 @@ export interface GetWorkItemsGroupedResponse {
  */
 export interface GetWorkItemWithActivityResponse {
   workItem: WorkItem;
-  activities: ActivityItem[];
+  activities: ThreadedActivityItem[];
   relatedWorkItems: {
     closes: WorkItem[];
     closedBy: WorkItem[];
