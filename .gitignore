@@ -50,3 +50,6 @@ prisma/*.db
 .playwright-mcp/
 .DS_Store
 /**/.DS_Store
+
+# bv (beads viewer) local config and caches
+.bv/
