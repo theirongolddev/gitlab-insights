@@ -20,10 +20,14 @@ import {
 } from "~/server/services/commit-transformer";
 import { searchEvents } from "~/lib/search/postgres-fts";
 import {
-  embedEvent,
   prepareTextForEmbedding,
   generateEmbedding,
 } from "~/server/services/embedding-generator";
+import {
+  decodeCursor,
+  buildCursorWhereClause,
+  createCursorFromRecord,
+} from "~/utils/cursor";
 
 export const eventsRouter = createTRPCRouter({
   /**
@@ -266,70 +270,113 @@ export const eventsRouter = createTRPCRouter({
    * GET /api/trpc/events.getRecent
    *
    * Returns events sorted by creation date (newest first)
-   * Supports pagination with cursor-based approach
+   * Supports cursor-based pagination for infinite scroll
    */
-  getRecent: protectedProcedure.query(async ({ ctx }) => {
-    const events = await ctx.db.event.findMany({
-      where: {
-        userId: ctx.session.user.id,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-      take: 50, // Return most recent 50 events
-    });
+  getRecent: protectedProcedure
+    .input(
+      z
+        .object({
+          cursor: z.string().optional(),
+          limit: z.number().min(1).max(100).default(50),
+        })
+        .optional()
+    )
+    .query(async ({ ctx, input }) => {
+      const limit = input?.limit ?? 50;
+      const cursorData = input?.cursor ? decodeCursor(input.cursor) : null;
 
-    return events;
-  }),
+      // Build where clause
+      const where: Record<string, unknown> = {
+        userId: ctx.session.user.id,
+      };
+
+      // Apply cursor filter if provided
+      if (cursorData) {
+        where.OR = buildCursorWhereClause(cursorData);
+      }
+
+      const events = await ctx.db.event.findMany({
+        where,
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: limit + 1, // Fetch one extra to check for more
+      });
+
+      // Check if there are more results
+      const hasMore = events.length > limit;
+      const items = hasMore ? events.slice(0, limit) : events;
+
+      // Build next cursor from last item
+      const lastItem = items[items.length - 1];
+      const nextCursor = hasMore && lastItem ? createCursorFromRecord(lastItem) : null;
+
+      return {
+        items,
+        nextCursor,
+        hasMore,
+      };
+    }),
 
   /**
    * Get events for dashboard with optional label filter
    *
    * GET /api/trpc/events.getForDashboard
    *
-   * Returns events optionally filtered by label, grouped by type
+   * Returns all events in a single sorted stream with cursor pagination.
+   * Optionally filtered by label.
+   *
    * AC-11: PostgreSQL array containment (Prisma: has)
-   * AC-12: Returns { issues: [], mergeRequests: [], comments: [] }
-   * AC-13: Limit 50 per section, ordered by createdAt DESC
+   * AC-12: Returns { items, nextCursor, hasMore }
+   * AC-13: Cursor-based pagination, ordered by createdAt DESC
    */
   getForDashboard: protectedProcedure
     .input(
-      z.object({
-        filterLabel: z.string().nullable().optional(),
-      }).optional()
+      z
+        .object({
+          filterLabel: z.string().nullable().optional(),
+          cursor: z.string().optional(),
+          limit: z.number().min(1).max(100).default(50),
+        })
+        .optional()
     )
     .query(async ({ ctx, input }) => {
       const filterLabel = input?.filterLabel;
+      const limit = input?.limit ?? 50;
+      const cursorData = input?.cursor ? decodeCursor(input.cursor) : null;
 
-      // Build base where clause
-      const baseWhere: { userId: string; labels?: { has: string } } = {
+      // Build where clause
+      const where: Record<string, unknown> = {
         userId: ctx.session.user.id,
       };
 
       if (filterLabel) {
-        baseWhere.labels = { has: filterLabel };
+        where.labels = { has: filterLabel };
       }
 
-      // Run 3 separate queries in parallel - more efficient than fetching 150 and filtering
-      const [issues, mergeRequests, comments] = await Promise.all([
-        ctx.db.event.findMany({
-          where: { ...baseWhere, type: "issue" },
-          orderBy: { createdAt: "desc" },
-          take: 50,
-        }),
-        ctx.db.event.findMany({
-          where: { ...baseWhere, type: "merge_request" },
-          orderBy: { createdAt: "desc" },
-          take: 50,
-        }),
-        ctx.db.event.findMany({
-          where: { ...baseWhere, type: "comment" },
-          orderBy: { createdAt: "desc" },
-          take: 50,
-        }),
-      ]);
+      // Apply cursor filter if provided
+      if (cursorData) {
+        where.OR = buildCursorWhereClause(cursorData);
+      }
 
-      return { issues, mergeRequests, comments };
+      // Single query for all event types, sorted by createdAt
+      const events = await ctx.db.event.findMany({
+        where,
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: limit + 1,
+      });
+
+      // Check if there are more results
+      const hasMore = events.length > limit;
+      const items = hasMore ? events.slice(0, limit) : events;
+
+      // Build next cursor from last item
+      const lastItem = items[items.length - 1];
+      const nextCursor = hasMore && lastItem ? createCursorFromRecord(lastItem) : null;
+
+      return {
+        items,
+        nextCursor,
+        hasMore,
+      };
     }),
 
   /**
