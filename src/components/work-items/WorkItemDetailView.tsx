@@ -10,6 +10,7 @@ import type { WorkItem } from "~/types/work-items";
 import { HighlightedText } from "~/components/ui/HighlightedText";
 import { highlightText } from "~/lib/search/highlight-text";
 import { useReactions } from "~/hooks/useReactions";
+import { GitLabMarkdown, extractInstanceUrl } from "~/components/ui/GitLabMarkdown";
 
 interface WorkItemDetailViewProps {
   workItemId: string;
@@ -269,9 +270,13 @@ export function WorkItemDetailView({ workItemId, onBack, searchQuery }: WorkItem
                 className="text-sm text-default-700 whitespace-pre-wrap"
               />
             ) : (
-              <div className="text-sm text-default-700 whitespace-pre-wrap">
-                {workItem.body}
-              </div>
+              <GitLabMarkdown
+                content={workItem.body}
+                gitlabInstanceUrl={extractInstanceUrl(workItem.gitlabUrl) ?? 'https://gitlab.com'}
+                projectPath={workItem.repositoryPath}
+                projectId={workItem.projectId}
+                className="text-sm text-default-700"
+              />
             )}
           </div>
         )}
@@ -290,6 +295,9 @@ export function WorkItemDetailView({ workItemId, onBack, searchQuery }: WorkItem
                 window.open(activity.gitlabUrl, "_blank", "noopener,noreferrer");
               }
             }}
+            gitlabInstanceUrl={extractInstanceUrl(workItem.gitlabUrl) ?? 'https://gitlab.com'}
+            projectPath={workItem.repositoryPath}
+            projectId={workItem.projectId}
           />
         </div>
 

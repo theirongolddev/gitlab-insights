@@ -1,10 +1,12 @@
 "use client";
 
+import { memo } from "react";
 import { Avatar } from "@heroui/react";
 import type { ActivityItem, ThreadedActivityItem, Reaction } from "~/types/work-items";
 import { formatRelativeTime } from "~/lib/utils";
 import { HighlightedText } from "~/components/ui/HighlightedText";
 import { getEmoji } from "~/lib/emoji-map";
+import { GitLabMarkdown } from "~/components/ui/GitLabMarkdown";
 
 interface ActivityTimelineProps {
   activities: ThreadedActivityItem[];
@@ -12,18 +14,28 @@ interface ActivityTimelineProps {
   /** Reactions grouped by note ID, fetched on-demand */
   reactions?: Record<number, Reaction[]>;
   onActivityClick?: (activity: ActivityItem) => void;
+  /** GitLab instance URL for markdown link resolution */
+  gitlabInstanceUrl?: string;
+  /** Project path for resolving local refs (#123, !456) */
+  projectPath?: string;
+  /** Project ID for resolving upload URLs */
+  projectId?: number;
 }
 
 /**
  * Single activity row - used for both thread starters and replies
+ * Memoized to prevent re-renders when parent re-renders with many activities
  */
-function ActivityRow({
+const ActivityRow = memo(function ActivityRow({
   activity,
   parentType: _parentType,
   isReply,
   getDotColor,
   reactions,
   onActivityClick,
+  gitlabInstanceUrl,
+  projectPath,
+  projectId,
 }: {
   activity: ActivityItem;
   parentType: "issue" | "merge_request";
@@ -31,6 +43,9 @@ function ActivityRow({
   getDotColor: (activity: ActivityItem) => string;
   reactions?: Record<number, Reaction[]>;
   onActivityClick?: (activity: ActivityItem) => void;
+  gitlabInstanceUrl?: string;
+  projectPath?: string;
+  projectId?: number;
 }) {
   const dotSize = isReply ? "w-[10px] h-[10px]" : "w-[14px] h-[14px]";
   const dotMargin = isReply ? "mt-1.5 ml-[2px]" : "mt-1";
@@ -101,6 +116,14 @@ function ActivityRow({
                 html={activity.highlightedBody}
                 className="whitespace-pre-wrap break-words"
               />
+            ) : gitlabInstanceUrl ? (
+              <GitLabMarkdown
+                content={activity.body}
+                gitlabInstanceUrl={gitlabInstanceUrl}
+                projectPath={projectPath}
+                projectId={projectId}
+                className="break-words"
+              />
             ) : (
               <p className="whitespace-pre-wrap break-words">
                 {activity.body}
@@ -152,7 +175,7 @@ function ActivityRow({
       </div>
     </div>
   );
-}
+});
 
 /**
  * ActivityTimeline - Vertical timeline of events within a work item
@@ -169,6 +192,9 @@ export function ActivityTimeline({
   parentType,
   reactions,
   onActivityClick,
+  gitlabInstanceUrl,
+  projectPath,
+  projectId,
 }: ActivityTimelineProps) {
   if (activities.length === 0) {
     return (
@@ -217,6 +243,9 @@ export function ActivityTimeline({
               getDotColor={getDotColor}
               reactions={reactions}
               onActivityClick={onActivityClick}
+              gitlabInstanceUrl={gitlabInstanceUrl}
+              projectPath={projectPath}
+              projectId={projectId}
             />
 
             {/* Replies (indented) */}
@@ -231,6 +260,9 @@ export function ActivityTimeline({
                     getDotColor={getDotColor}
                     reactions={reactions}
                     onActivityClick={onActivityClick}
+                    gitlabInstanceUrl={gitlabInstanceUrl}
+                    projectPath={projectPath}
+                    projectId={projectId}
                   />
                 ))}
               </div>
