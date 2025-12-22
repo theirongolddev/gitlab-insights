@@ -9,10 +9,18 @@ import {
   TableCell,
   TableColumn,
   type Selection,
+  Spinner,
 } from "@heroui/react";
 import { ItemRow, type DashboardEvent } from "./ItemRow";
 import { useShortcutHandler } from "~/hooks/useShortcutHandler";
 import { useScrollRestoration } from "~/hooks/useScrollRestoration";
+import { useInfiniteScroll } from "~/hooks/useInfiniteScroll";
+
+interface InfiniteScrollProps {
+  fetchNextPage: () => void;
+  hasNextPage: boolean | undefined;
+  isFetchingNextPage: boolean;
+}
 
 interface EventTableProps {
   events: DashboardEvent[];
@@ -25,6 +33,8 @@ interface EventTableProps {
   showNewBadges?: boolean;
   /** Query ID for scroll restoration (Story 4.7) - Optional, falls back to unique instance ID */
   queryId?: string;
+  /** Optional infinite scroll configuration */
+  infiniteScroll?: InfiniteScrollProps;
 }
 
 /**
@@ -37,7 +47,7 @@ interface EventTableProps {
  * - Maintains WCAG 2.1 Level AA accessibility compliance
  * - Integrates with existing ItemRow component (Epic 1)
  */
-export function EventTable({ events, onRowClick, selectedEventId, scopeId, showNewBadges = false, queryId }: EventTableProps) {
+export function EventTable({ events, onRowClick, selectedEventId, scopeId, showNewBadges = false, queryId, infiniteScroll }: EventTableProps) {
   // Task 3: Ref for focus management - use wrapper div since React Aria Table
   // doesn't expose onKeyDown directly
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -50,6 +60,13 @@ export function EventTable({ events, onRowClick, selectedEventId, scopeId, showN
   const { scrollContainerRef, handleScroll, isRestoring } = useScrollRestoration(
     queryId ? `table-scroll-${queryId}` : `table-scroll-${instanceId}`
   );
+
+  // Infinite scroll integration - hook manages sentinel observation
+  const { sentinelRef } = useInfiniteScroll({
+    fetchNextPage: infiniteScroll?.fetchNextPage ?? (() => {}),
+    hasNextPage: infiniteScroll?.hasNextPage,
+    isFetchingNextPage: infiniteScroll?.isFetchingNextPage ?? false,
+  });
 
   /**
    * Number of rows to jump for half-page navigation (Ctrl+d/Ctrl+u).
@@ -258,6 +275,20 @@ export function EventTable({ events, onRowClick, selectedEventId, scopeId, showN
           ))}
         </TableBody>
       </Table>
+
+        {/* Infinite scroll sentinel and loading indicator */}
+        {infiniteScroll && (
+          <div ref={sentinelRef} className="flex justify-center py-4">
+            {infiniteScroll.isFetchingNextPage && (
+              <Spinner size="sm" color="primary" />
+            )}
+            {!infiniteScroll.hasNextPage && events.length > 0 && (
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                End of list
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

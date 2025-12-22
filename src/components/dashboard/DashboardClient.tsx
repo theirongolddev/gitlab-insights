@@ -11,7 +11,7 @@
  * PRD FR38: Dashboard shows only open cards by default
  */
 
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type DashboardEvent } from "~/components/dashboard/ItemRow";
 import { EventTable } from "~/components/dashboard/EventTable";
@@ -22,6 +22,7 @@ import { useShortcutHandler } from "~/hooks/useShortcutHandler";
 import { LoadingSpinner } from "~/components/ui/LoadingSpinner";
 import { useNewItems } from "~/contexts/NewItemsContext";
 import { api } from "~/trpc/react";
+import { useInfiniteEvents } from "~/hooks/useInfiniteEvents";
 import { SplitView } from "~/components/layout/SplitView";
 import { EventDetail } from "~/components/events/EventDetail";
 import { useEventDetailPane } from "~/hooks/useEventDetailPane";
@@ -101,34 +102,26 @@ export function DashboardClient() {
     }
   }, [isFlatMode, isSearchActive, clearSearch, router]);
 
-  const { data: dashboardData, isLoading: eventsLoading } =
-    api.events.getForDashboard.useQuery({});
+  const {
+    events: allEvents,
+    isLoading: eventsLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteEvents({ limit: 50 });
 
   // AC 3.4.5: Use shared context for totalNewCount (no duplicate fetching)
   // AC 3.4.8: Data fetched once at AuthenticatedLayout level in NewItemsProvider
   const { totalNewCount } = useNewItems();
 
-  const issues: DashboardEvent[] = (dashboardData?.issues ?? []).map((e) => ({
-    ...e,
-    type: e.type as DashboardEvent["type"],
-    createdAt: new Date(e.createdAt),
-  }));
-
-  const mergeRequests: DashboardEvent[] = (dashboardData?.mergeRequests ?? []).map((e) => ({
-    ...e,
-    type: e.type as DashboardEvent["type"],
-    createdAt: new Date(e.createdAt),
-  }));
-
-  const comments: DashboardEvent[] = (dashboardData?.comments ?? []).map((e) => ({
-    ...e,
-    type: e.type as DashboardEvent["type"],
-    createdAt: new Date(e.createdAt),
-  }));
-
-  const allDashboardEvents: DashboardEvent[] = [...issues, ...mergeRequests, ...comments].sort(
-    (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
-  );
+  // Flatten all pages into a single array and transform to DashboardEvent format
+  const allDashboardEvents: DashboardEvent[] = useMemo(() => {
+    return allEvents.map((e) => ({
+      ...e,
+      type: e.type as DashboardEvent["type"],
+      createdAt: new Date(e.createdAt),
+    }));
+  }, [allEvents]);
 
   const searchEventsAsDashboard: DashboardEvent[] = searchResults.map((e) => ({
     id: e.id,
@@ -214,6 +207,15 @@ export function DashboardClient() {
                   events={displayEvents}
                   selectedEventId={selectedEventId}
                   onRowClick={handleRowClick}
+                  infiniteScroll={
+                    !isSearchActive
+                      ? {
+                          fetchNextPage,
+                          hasNextPage,
+                          isFetchingNextPage,
+                        }
+                      : undefined
+                  }
                 />
               }
               detailContent={<EventDetail eventId={selectedEventId} />}

@@ -3,7 +3,9 @@
 import { api } from "~/trpc/react";
 
 export function SimpleEventList() {
-  const { data: events } = api.events.getRecent.useQuery();
+  const { data } = api.events.getRecent.useQuery({});
+
+  const events = data?.items;
 
   const formatRelativeTime = (date: Date) => {
     const now = new Date();
