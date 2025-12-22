@@ -8,6 +8,7 @@ import { formatRelativeTime, formatEventType } from "~/lib/utils";
 import { useSearch } from "~/components/search/SearchContext";
 import { HighlightedText } from "~/components/ui/HighlightedText";
 import { useToast } from "~/components/ui/Toast/ToastContext";
+import { GitLabMarkdown, extractProjectPath, extractInstanceUrl } from "~/components/ui/GitLabMarkdown";
 
 interface EventDetailProps {
   eventId: string | null;
@@ -207,12 +208,19 @@ export function EventDetail({ eventId }: EventDetailProps) {
           <h3 className="mb-2 font-medium text-gray-700 dark:text-gray-300">
             Description
           </h3>
-          <div className="prose prose-sm max-w-none whitespace-pre-wrap text-gray-900 dark:prose-invert dark:text-gray-50">
-            {/* Story 4.4: Render highlighted body if available, otherwise plain text */}
+          <div className="text-gray-900 dark:text-gray-50">
+            {/* Story 4.4: Render highlighted body if available (for search results) */}
             {"bodyHighlighted" in event && event.bodyHighlighted ? (
-              <HighlightedText html={event.bodyHighlighted} />
+              <div className="prose prose-sm max-w-none whitespace-pre-wrap dark:prose-invert">
+                <HighlightedText html={event.bodyHighlighted} />
+              </div>
             ) : event.body ? (
-              event.body
+              /* Render markdown with GitLab refs support */
+              <GitLabMarkdown
+                content={event.body}
+                gitlabInstanceUrl={extractInstanceUrl(event.gitlabUrl) ?? 'https://gitlab.com'}
+                projectPath={extractProjectPath(event.gitlabUrl) ?? undefined}
+              />
             ) : (
               <em className="text-gray-400 dark:text-gray-600">
                 (No description)
