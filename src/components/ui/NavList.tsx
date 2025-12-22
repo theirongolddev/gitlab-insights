@@ -9,7 +9,7 @@
 
 import { ListBox, ListBoxItem, Text } from "react-aria-components";
 import type { ListBoxProps, ListBoxItemProps } from "react-aria-components";
-import type { ReactNode, Key } from "react";
+import type { ReactNode } from "react";
 
 // Re-export for convenience
 export { Text };

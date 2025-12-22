@@ -19,7 +19,7 @@ interface ActivityTimelineProps {
  */
 function ActivityRow({
   activity,
-  parentType,
+  parentType: _parentType,
   isReply,
   getDotColor,
   reactions,

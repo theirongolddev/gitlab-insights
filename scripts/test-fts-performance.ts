@@ -81,16 +81,16 @@ async function main() {
   });
   console.log(`Total events in database: ${totalEvents}\n`);
 
-  // Test keywords
+  // Test keywords (descriptions kept for documentation)
   const testCases = [
-    { keyword: "authentication", description: "Common security term" },
-    { keyword: "webhook", description: "Integration term" },
-    { keyword: "database", description: "Infrastructure term" },
-    { keyword: "api", description: "Very common term" },
-    { keyword: "refactor", description: "Development term" },
-    { keyword: "fix bug", description: "Multi-word query" },
-    { keyword: "xyznonexistent", description: "No matches expected" },
-    { keyword: "OAuth2 GitLab", description: "Specific technical query" },
+    { keyword: "authentication" },  // Common security term
+    { keyword: "webhook" },         // Integration term
+    { keyword: "database" },        // Infrastructure term
+    { keyword: "api" },             // Very common term
+    { keyword: "refactor" },        // Development term
+    { keyword: "fix bug" },         // Multi-word query
+    { keyword: "xyznonexistent" },  // No matches expected
+    { keyword: "OAuth2 GitLab" },   // Specific technical query
   ];
 
   console.log("Performance Test Results:\n");
@@ -99,7 +99,7 @@ async function main() {
 
   let allPassed = true;
 
-  for (const { keyword, description } of testCases) {
+  for (const { keyword } of testCases) {
     const { results, durationMs } = await testSearch(user.id, keyword);
     const passed = durationMs < 1000;
     if (!passed) allPassed = false;

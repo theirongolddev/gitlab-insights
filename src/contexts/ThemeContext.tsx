@@ -13,7 +13,6 @@ import {
 } from "react";
 import {
   getSystemTheme,
-  resolveTheme,
   applyTheme,
   THEME_STORAGE_KEY,
   type ThemeMode,

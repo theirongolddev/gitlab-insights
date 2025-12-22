@@ -14,7 +14,6 @@
 
 import { PrismaClient } from "../generated/prisma";
 import {
-  embedEvent,
   prepareTextForEmbedding,
   generateEmbedding,
 } from "../src/server/services/embedding-generator";

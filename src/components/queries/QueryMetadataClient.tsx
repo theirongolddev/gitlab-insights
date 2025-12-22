@@ -14,7 +14,7 @@ import { api } from "~/trpc/react";
 import { Button } from "@heroui/react";
 import { useToast } from "~/components/ui/Toast/ToastContext";
 import { Check, Pencil, ArrowLeft } from "lucide-react";
-import { QueryFiltersSchema, type QueryFilters } from "~/lib/filters/types";
+import { QueryFiltersSchema } from "~/lib/filters/types";
 import { formatRelativeTime, formatDate } from "~/lib/utils";
 
 interface QueryMetadataClientProps {

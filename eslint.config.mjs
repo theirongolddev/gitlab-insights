@@ -10,6 +10,7 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     "generated/**",
     ".bmad/**",
+    "app-design/**",
   ]),
 ]);
 

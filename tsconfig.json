@@ -13,6 +13,8 @@
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "checkJs": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     /* Bundled projects */
     "lib": [
       "dom",
@@ -50,6 +52,7 @@
     "node_modules",
     "generated",
     "mcp_agent_mail",
-    "viewer"
+    "viewer",
+    "app-design"
   ]
 }

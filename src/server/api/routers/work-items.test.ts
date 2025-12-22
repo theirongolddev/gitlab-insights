@@ -352,7 +352,7 @@ describe("read tracking state machine", () => {
     }
 
     function revertOptimisticUpdate(
-      state: OptimisticState,
+      _state: OptimisticState,
       previousState: OptimisticState
     ): OptimisticState {
       return previousState;

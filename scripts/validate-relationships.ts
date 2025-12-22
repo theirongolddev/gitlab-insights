@@ -14,7 +14,6 @@
  */
 
 import { PrismaClient } from "../generated/prisma";
-import { GitLabClient } from "../src/server/services/gitlab-client";
 import { getGitLabAccessToken } from "../src/server/services/gitlab-token";
 import { parseClosesIssueIds, extractMentionedIds } from "../src/server/services/event-transformer";
 
@@ -52,9 +51,8 @@ async function validateRelationships() {
   console.log(`Validating data for user: ${user.email}`);
   console.log(`Sample size: ${sampleSize} work items\n`);
 
-  // Get access token
-  const { accessToken } = await getGitLabAccessToken(user.id);
-  const client = new GitLabClient(accessToken);
+  // Get access token (GitLabClient available if needed for future API validation)
+  await getGitLabAccessToken(user.id);
 
   const result: ValidationResult = {
     passed: 0,

@@ -11,11 +11,9 @@ import { logger } from "~/lib/logger";
 import {
   findSimilarWithCombinedScore,
   arePotentialDuplicates,
-  type SimilarityBreakdown,
 } from "~/server/services/similarity-scorer";
 import {
   findSimilarEvents,
-  generateEmbedding,
   prepareTextForEmbedding,
 } from "~/server/services/embedding-generator";
 

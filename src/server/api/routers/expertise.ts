@@ -9,11 +9,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { logger } from "~/lib/logger";
-import {
-  calculateExpertise,
-  type ExpertiseResult,
-  DEFAULT_DECAY_CONFIG,
-} from "~/server/services/expertise-scorer";
+import { calculateExpertise } from "~/server/services/expertise-scorer";
 
 export const expertiseRouter = createTRPCRouter({
   /**
