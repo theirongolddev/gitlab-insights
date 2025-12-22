@@ -86,6 +86,7 @@ model Event {
   projectId     String
   labels        String[] // PostgreSQL array
   gitlabEventId String   @unique // Prevents duplicates
+  iid           Int?     // GitLab IID (human-readable issue/MR number, e.g., #123)
   gitlabUrl     String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
