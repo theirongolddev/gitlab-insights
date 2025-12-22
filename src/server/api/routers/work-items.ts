@@ -124,6 +124,20 @@ export const workItemsRouter = createTRPCRouter({
         ];
       }
 
+      // Fetch monitored projects to get path/ID -> numeric ID mapping
+      const monitoredProjects = await ctx.db.monitoredProject.findMany({
+        where: { userId },
+        select: { projectPath: true, gitlabProjectId: true },
+      });
+      const projectIdMap = new Map<string, number>();
+      for (const p of monitoredProjects) {
+        const numericId = parseInt(p.gitlabProjectId, 10);
+        if (!isNaN(numericId)) {
+          projectIdMap.set(p.projectPath, numericId);      // by path
+          projectIdMap.set(p.gitlabProjectId, numericId);  // by numeric ID string
+        }
+      }
+
       // Fetch work items with children (comments) and read status
       const events = await ctx.db.event.findMany({
         where,
@@ -239,6 +253,7 @@ export const workItemsRouter = createTRPCRouter({
           number,
           repositoryName: event.project,
           repositoryPath: event.projectId,
+          projectId: projectIdMap.get(event.projectId) ?? 0,
           labels: event.labels,
           author: event.author,
           authorAvatar: event.authorAvatar,
@@ -392,6 +407,26 @@ export const workItemsRouter = createTRPCRouter({
         });
       }
 
+      // Fetch monitored project to get numeric ID (try by path first, then by ID string)
+      let monitoredProject = await ctx.db.monitoredProject.findFirst({
+        where: { userId, projectPath: event.projectId },
+        select: { gitlabProjectId: true },
+      });
+      if (!monitoredProject) {
+        // event.projectId might be the numeric ID as a string
+        monitoredProject = await ctx.db.monitoredProject.findFirst({
+          where: { userId, gitlabProjectId: event.projectId },
+          select: { gitlabProjectId: true },
+        });
+      }
+      let numericProjectId = 0;
+      if (monitoredProject) {
+        const parsed = parseInt(monitoredProject.gitlabProjectId, 10);
+        if (!isNaN(parsed)) {
+          numericProjectId = parsed;
+        }
+      }
+
       const lastReadAt = event.readBy[0]?.readAt ?? null;
 
       // Transform children to ActivityItem[]
@@ -497,6 +532,7 @@ export const workItemsRouter = createTRPCRouter({
         number,
         repositoryName: event.project,
         repositoryPath: event.projectId,
+        projectId: numericProjectId,
         labels: event.labels,
         author: event.author,
         authorAvatar: event.authorAvatar,
@@ -521,6 +557,20 @@ export const workItemsRouter = createTRPCRouter({
       };
 
       if (includeRelated) {
+        // Fetch all monitored projects for this user to map paths/IDs -> numeric IDs
+        const allMonitoredProjects = await ctx.db.monitoredProject.findMany({
+          where: { userId },
+          select: { projectPath: true, gitlabProjectId: true },
+        });
+        const relatedProjectIdMap = new Map<string, number>();
+        for (const p of allMonitoredProjects) {
+          const numericId = parseInt(p.gitlabProjectId, 10);
+          if (!isNaN(numericId)) {
+            relatedProjectIdMap.set(p.projectPath, numericId);      // by path
+            relatedProjectIdMap.set(p.gitlabProjectId, numericId);  // by numeric ID string
+          }
+        }
+
         // Find issues this MR closes (by closesIssueIds)
         // closesIssueIds contains IIDs (human-readable issue numbers like 123)
         // We query by iid field, scoped to the same project
@@ -567,6 +617,7 @@ export const workItemsRouter = createTRPCRouter({
             number: e.iid ?? extractIidFromUrl(e.gitlabUrl),
             repositoryName: e.project,
             repositoryPath: e.projectId,
+            projectId: relatedProjectIdMap.get(e.projectId) ?? 0,
             labels: e.labels,
             author: e.author,
             authorAvatar: e.authorAvatar,
@@ -631,6 +682,7 @@ export const workItemsRouter = createTRPCRouter({
             number: e.iid ?? extractIidFromUrl(e.gitlabUrl),
             repositoryName: e.project,
             repositoryPath: e.projectId,
+            projectId: relatedProjectIdMap.get(e.projectId) ?? 0,
             labels: e.labels,
             author: e.author,
             authorAvatar: e.authorAvatar,

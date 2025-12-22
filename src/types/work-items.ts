@@ -96,6 +96,8 @@ export interface WorkItem {
   number: number;
   repositoryName: string;
   repositoryPath: string;
+  /** GitLab project ID for resolving upload URLs */
+  projectId: number;
   labels: string[];
   author: string;
   authorAvatar: string | null;
