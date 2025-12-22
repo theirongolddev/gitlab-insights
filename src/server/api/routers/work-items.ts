@@ -22,6 +22,20 @@ import type {
 import { highlightText } from "~/lib/search/highlight-text";
 import { GitLabClient } from "~/server/services/gitlab-client";
 
+/**
+ * Extract the IID (issue/MR number) from a GitLab URL
+ *
+ * GitLab URLs have format: https://gitlab.com/group/project/-/issues/123
+ * or: https://gitlab.com/group/project/-/merge_requests/456
+ * or: https://gitlab.com/group/project/-/work_items/789
+ *
+ * The IID is the human-readable number (123, 456), NOT the internal database ID.
+ */
+function extractIidFromUrl(gitlabUrl: string): number {
+  const match = gitlabUrl.match(/(?:issues|merge_requests|work_items)\/(\d+)/);
+  return match?.[1] ? parseInt(match[1], 10) : 0;
+}
+
 const workItemFiltersSchema = z.object({
   status: z.array(z.enum(["open", "closed", "merged"])).optional(),
   type: z.array(z.enum(["issue", "merge_request"])).optional(),
@@ -212,9 +226,8 @@ export const workItemsRouter = createTRPCRouter({
           return activity;
         });
 
-        // Extract issue number from gitlabEventId (e.g., "issue-123" -> 123)
-        const numberMatch = event.gitlabEventId.match(/\d+$/);
-        const number = numberMatch ? parseInt(numberMatch[0], 10) : 0;
+        // Use stored IID if available, otherwise extract from URL (fallback for old data)
+        const number = event.iid ?? extractIidFromUrl(event.gitlabUrl);
 
         const workItem: WorkItem = {
           id: event.id,
@@ -449,9 +462,8 @@ export const workItemsRouter = createTRPCRouter({
         participants: Array.from(participantMap.values()),
       };
 
-      // Extract number from gitlabEventId
-      const numberMatch = event.gitlabEventId.match(/\d+$/);
-      const number = numberMatch ? parseInt(numberMatch[0], 10) : 0;
+      // Use stored IID if available, otherwise extract from URL (fallback for old data)
+      const number = event.iid ?? extractIidFromUrl(event.gitlabUrl);
 
       // Determine unread status
       const isUnread = lastReadAt
@@ -495,13 +507,16 @@ export const workItemsRouter = createTRPCRouter({
 
       if (includeRelated) {
         // Find issues this MR closes (by closesIssueIds)
+        // closesIssueIds contains IIDs (human-readable issue numbers like 123)
+        // We query by iid field, scoped to the same project
         if (event.closesIssueIds.length > 0) {
           const closesEvents = await ctx.db.event.findMany({
             where: {
               userId,
               type: "issue",
-              gitlabEventId: {
-                in: event.closesIssueIds.map((iid) => `issue-${iid}`),
+              projectId: event.projectId, // Same project
+              iid: {
+                in: event.closesIssueIds,
               },
             },
             select: {
@@ -523,6 +538,7 @@ export const workItemsRouter = createTRPCRouter({
               closesIssueIds: true,
               mentionedInIds: true,
               commentCount: true,
+              iid: true,
             },
           });
 
@@ -533,7 +549,7 @@ export const workItemsRouter = createTRPCRouter({
             status: (e.status as "open" | "closed" | "merged") ?? "open",
             title: e.title,
             body: e.body,
-            number: parseInt(e.gitlabEventId.match(/\d+$/)?.[0] ?? "0", 10),
+            number: e.iid ?? extractIidFromUrl(e.gitlabUrl),
             repositoryName: e.project,
             repositoryPath: e.projectId,
             labels: e.labels,
@@ -559,11 +575,12 @@ export const workItemsRouter = createTRPCRouter({
 
         // Find MRs that close this issue (if this is an issue)
         if (event.type === "issue") {
-          const issueIid = number;
+          const issueIid = event.iid ?? number;
           const closedByEvents = await ctx.db.event.findMany({
             where: {
               userId,
               type: "merge_request",
+              projectId: event.projectId, // Same project
               closesIssueIds: { has: issueIid },
             },
             select: {
@@ -585,6 +602,7 @@ export const workItemsRouter = createTRPCRouter({
               closesIssueIds: true,
               mentionedInIds: true,
               commentCount: true,
+              iid: true,
             },
           });
 
@@ -595,7 +613,7 @@ export const workItemsRouter = createTRPCRouter({
             status: (e.status as "open" | "closed" | "merged") ?? "open",
             title: e.title,
             body: e.body,
-            number: parseInt(e.gitlabEventId.match(/\d+$/)?.[0] ?? "0", 10),
+            number: e.iid ?? extractIidFromUrl(e.gitlabUrl),
             repositoryName: e.project,
             repositoryPath: e.projectId,
             labels: e.labels,

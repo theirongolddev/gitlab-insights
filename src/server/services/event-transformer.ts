@@ -28,6 +28,7 @@ export interface TransformedEvent {
   projectId: string;
   labels: string[];
   gitlabEventId: string;
+  iid: number | null; // GitLab IID (human-readable issue/MR number)
   gitlabUrl: string;
   createdAt: Date;
   // Work item grouping fields (for comments/notes)
@@ -121,6 +122,7 @@ export function transformIssues(
       projectId: projectPath,
       labels: issue.labels,
       gitlabEventId: `issue-${issue.id}`,
+      iid: issue.iid,
       gitlabUrl: issue.web_url,
       createdAt: new Date(issue.created_at),
       // Issues are top-level items, no parent
@@ -165,6 +167,7 @@ export function transformMergeRequests(
       projectId: projectPath,
       labels: mr.labels,
       gitlabEventId: `mr-${mr.id}`,
+      iid: mr.iid,
       gitlabUrl: mr.web_url,
       createdAt: new Date(mr.created_at),
       // MRs are top-level items, no parent
@@ -227,6 +230,7 @@ export function transformNotes(
       projectId: projectPath,
       labels: [], // Notes don't have labels
       gitlabEventId: `note-${note.id}`,
+      iid: null, // Notes don't have IIDs
       gitlabUrl: note.web_url,
       createdAt: new Date(note.created_at),
       // Work item grouping: link to parent issue/MR
@@ -297,6 +301,7 @@ export async function storeEvents(
               projectId: event.projectId,
               labels: event.labels,
               gitlabEventId: event.gitlabEventId,
+              iid: event.iid,
               gitlabUrl: event.gitlabUrl,
               createdAt: event.createdAt,
               // Work item grouping fields
@@ -821,6 +826,7 @@ export async function storeWorkItemBundle(
           projectId,
           labels: parent.labels,
           gitlabEventId: parentGitlabEventId,
+          iid: parent.iid,
           gitlabUrl: parent.web_url,
           createdAt: new Date(parent.created_at),
           parentType: null,
@@ -843,6 +849,7 @@ export async function storeWorkItemBundle(
           author: parent.author.username,
           authorAvatar: parent.author.avatar_url,
           labels: parent.labels,
+          iid: parent.iid,
           gitlabUrl: parent.web_url,
           assignees: parent.assignees?.map((a) => a.username) ?? [],
           status,
@@ -893,6 +900,7 @@ export async function storeWorkItemBundle(
             projectId,
             labels: [],
             gitlabEventId: noteGitlabEventId,
+            iid: null, // Notes don't have IIDs
             gitlabUrl: note.web_url,
             createdAt: noteCreatedAt,
             parentType: type,
