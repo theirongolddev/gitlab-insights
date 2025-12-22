@@ -49,10 +49,17 @@ export function PersonDetailClient({ personId }: PersonDetailClientProps) {
     isFetchingNextPage,
   });
 
+  // All hooks must be called before any conditional returns
   const allActivities = useMemo(
     () => activityData?.pages.flatMap((page) => page.items) ?? [],
     [activityData]
   );
+
+  // Moved before conditional returns to satisfy React hooks rules
+  const filteredActivity = useMemo(() => {
+    if (typeFilter === "all") return allActivities;
+    return allActivities.filter((event) => event.type === typeFilter);
+  }, [allActivities, typeFilter]);
 
   if (isLoading) {
     return (
@@ -80,11 +87,6 @@ export function PersonDetailClient({ personId }: PersonDetailClientProps) {
     .join("")
     .slice(0, 2)
     .toUpperCase();
-
-  const filteredActivity = useMemo(() => {
-    if (typeFilter === "all") return allActivities;
-    return allActivities.filter((event) => event.type === typeFilter);
-  }, [allActivities, typeFilter]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
