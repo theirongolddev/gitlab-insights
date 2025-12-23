@@ -149,6 +149,8 @@ model Event {
   @@index([userId, parentEventId, createdAt(sort: Asc)])
   // Thread grouping: index for efficient thread queries
   @@index([parentEventId, discussionId, createdAt])
+  // Child counting: simple index on parentEventId for fast COUNT(*) queries
+  @@index([parentEventId])
 }
 
 model UserQuery {

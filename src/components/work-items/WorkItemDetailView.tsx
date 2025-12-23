@@ -57,12 +57,14 @@ export function WorkItemDetailView({ workItemId, onBack, searchQuery }: WorkItem
   }, [searchQuery, data]);
 
   // Extract note IDs from activities (including replies) for fetching reactions
-  const noteIds = data?.activities
-    ? data.activities
-        .flatMap((thread) => [thread, ...(thread.replies ?? [])])
-        .map((a) => a.gitlabNoteId)
-        .filter((id): id is number => id !== undefined)
-    : [];
+  // Memoized to prevent unnecessary refetches when data reference changes but activities don't
+  const noteIds = useMemo(() => {
+    if (!data?.activities) return [];
+    return data.activities
+      .flatMap((thread) => [thread, ...(thread.replies ?? [])])
+      .map((a) => a.gitlabNoteId)
+      .filter((id): id is number => id !== undefined);
+  }, [data?.activities]);
 
   // Fetch reactions on-demand with react-query caching
   const { data: reactions } = useReactions({

@@ -73,6 +73,9 @@ export const queriesRouter = createTRPCRouter({
    *
    * Story 2.8: Sidebar Navigation (AC 2.8.2)
    * Returns queries ordered by creation date (newest first) with count of matching events
+   *
+   * Performance: Uses batched count query to avoid N+1 pattern.
+   * For N saved queries, this executes 2 queries instead of N+1.
    */
   list: protectedProcedure.query(async ({ ctx }) => {
     const queries = await ctx.db.userQuery.findMany({
@@ -84,23 +87,58 @@ export const queriesRouter = createTRPCRouter({
       },
     });
 
-    // AC 2.8.2: Get FTS counts for each query's keywords
-    const queriesWithCounts = await Promise.all(
-      queries.map(async (query) => {
-        const filters = query.filters as QueryFilters;
-        const searchTerms = filters.keywords.join(" ");
+    // Early return if no queries - avoid unnecessary database call
+    if (queries.length === 0) {
+      return [];
+    }
 
-        // Use PostgreSQL FTS to count matching events for this user
-        const countResult = await ctx.db.$queryRaw<[{ count: bigint }]>`
-          SELECT COUNT(*) as count FROM "Event"
-          WHERE "userId" = ${ctx.session.user.id}
-            AND to_tsvector('english', title || ' ' || COALESCE(body, ''))
-                @@ plainto_tsquery('english', ${searchTerms})
-        `;
+    // AC 2.8.2: Get FTS counts for all queries in a single batched query
+    // This avoids N+1 by computing all counts in one database round-trip
+    const querySearchTerms = queries.map((query) => {
+      const filters = query.filters as QueryFilters;
+      return filters.keywords.join(" ");
+    });
 
-        return { ...query, count: Number(countResult[0]?.count ?? 0) };
-      })
-    );
+    // Build a batch query that computes counts for all queries at once
+    // Uses a CTE with query index to match results back to queries
+    interface BatchCountResult {
+      query_index: number;
+      count: bigint;
+    }
+
+    // For queries with empty keywords, we need to handle them specially
+    // plainto_tsquery with empty string matches nothing
+    const batchCounts = await ctx.db.$queryRaw<BatchCountResult[]>`
+      WITH query_terms AS (
+        SELECT 
+          ordinality - 1 as query_index,
+          term
+        FROM unnest(${querySearchTerms}::text[]) WITH ORDINALITY AS t(term, ordinality)
+      )
+      SELECT 
+        qt.query_index::int as query_index,
+        COUNT(e.id)::bigint as count
+      FROM query_terms qt
+      LEFT JOIN "Event" e ON 
+        e."userId" = ${ctx.session.user.id}
+        AND qt.term != ''
+        AND to_tsvector('english', e.title || ' ' || COALESCE(e.body, ''))
+            @@ plainto_tsquery('english', qt.term)
+      GROUP BY qt.query_index
+      ORDER BY qt.query_index
+    `;
+
+    // Build a map of query index to count for O(1) lookup
+    const countMap = new Map<number, number>();
+    for (const row of batchCounts) {
+      countMap.set(row.query_index, Number(row.count));
+    }
+
+    // Merge counts with queries
+    const queriesWithCounts = queries.map((query, index) => ({
+      ...query,
+      count: countMap.get(index) ?? 0,
+    }));
 
     return queriesWithCounts;
   }),
@@ -335,6 +373,8 @@ export const queriesRouter = createTRPCRouter({
         updatedAt: Date;
       }
 
+      // LIMIT 1000 prevents unbounded result sets for users with many events
+      // and queries that haven't been visited in a long time
       const events = await ctx.db.$queryRaw<EventRow[]>`
         SELECT * FROM "Event"
         WHERE "userId" = ${ctx.session.user.id}
@@ -342,6 +382,7 @@ export const queriesRouter = createTRPCRouter({
               @@ plainto_tsquery('english', ${searchTerms})
           AND "createdAt" > ${lastVisited}
         ORDER BY "createdAt" DESC
+        LIMIT 1000
       `;
 
       // AC 3.1.7: Return response with queryId, queryName, newCount, events

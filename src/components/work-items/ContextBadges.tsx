@@ -115,41 +115,38 @@ function KeywordBadge({ keyword }: KeywordBadgeProps) {
 }
 
 /**
+ * Combined regex pattern for keyword extraction
+ * Using a single pattern is more efficient than iterating through 12 separate patterns
+ * This reduces regex operations from O(12 * text.length) to O(text.length)
+ */
+const KEYWORD_PATTERN =
+  /\b(auth|authentication|login|logout|session|api|endpoint|rest|graphql|ui|ux|design|layout|style|bug|fix|hotfix|patch|feature|enhancement|improvement|test|spec|e2e|unit|config|configuration|setup|init|database|db|migration|schema|security|vulnerability|cve|performance|perf|optimization|speed|refactor|cleanup|technical-debt|docs|documentation|readme)\b/gi;
+
+/**
  * Utility to extract keywords from title/description
  * Looks for common patterns like feature names, bug types, etc.
+ *
+ * Performance: Uses a single combined regex pattern instead of iterating
+ * through multiple patterns. With 50 work items visible, this reduces
+ * regex operations significantly.
  */
 export function extractKeywords(text: string): string[] {
+  const matches = text.match(KEYWORD_PATTERN);
+  if (!matches) return [];
+
+  // Deduplicate and normalize to lowercase
+  const seen = new Set<string>();
   const keywords: string[] = [];
 
-  const patterns = [
-    /\b(auth|authentication|login|logout|session)\b/gi,
-    /\b(api|endpoint|rest|graphql)\b/gi,
-    /\b(ui|ux|design|layout|style)\b/gi,
-    /\b(bug|fix|hotfix|patch)\b/gi,
-    /\b(feature|enhancement|improvement)\b/gi,
-    /\b(test|spec|e2e|unit)\b/gi,
-    /\b(config|configuration|setup|init)\b/gi,
-    /\b(database|db|migration|schema)\b/gi,
-    /\b(security|vulnerability|cve)\b/gi,
-    /\b(performance|perf|optimization|speed)\b/gi,
-    /\b(refactor|cleanup|technical-debt)\b/gi,
-    /\b(docs|documentation|readme)\b/gi,
-  ];
-
-  const seen = new Set<string>();
-
-  for (const pattern of patterns) {
-    const matches = text.match(pattern);
-    if (matches) {
-      for (const match of matches) {
-        const normalized = match.toLowerCase();
-        if (!seen.has(normalized)) {
-          seen.add(normalized);
-          keywords.push(normalized);
-        }
-      }
+  for (const match of matches) {
+    const normalized = match.toLowerCase();
+    if (!seen.has(normalized)) {
+      seen.add(normalized);
+      keywords.push(normalized);
+      // Early exit once we have 3 keywords
+      if (keywords.length >= 3) break;
     }
   }
 
-  return keywords.slice(0, 3);
+  return keywords;
 }

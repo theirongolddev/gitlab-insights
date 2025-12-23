@@ -285,6 +285,21 @@ export const workItemsRouter = createTRPCRouter({
 
       // Apply unreadOnly filter if requested
       // This must be done after computing isUnread since it depends on lastReadAt comparison
+      //
+      // KNOWN LIMITATION: Client-side filtering with cursor pagination
+      // When unreadOnly=true, filtering happens AFTER the database fetch, which means:
+      // 1. The cursor points to the last item from the DB, not the last filtered item
+      // 2. This can cause fewer items than `limit` to be returned per page
+      // 3. In rare cases, items near page boundaries may be skipped
+      //
+      // This is acceptable because:
+      // - unreadOnly is typically used for "catch-up" views where users read through all items
+      // - The alternative (subquery with ReadEvent join) would significantly complicate the query
+      // - Users can toggle unreadOnly off to see all items with correct pagination
+      //
+      // Future improvement: Implement database-level filtering using a subquery:
+      // WHERE NOT EXISTS (SELECT 1 FROM "ReadEvent" re WHERE re."eventId" = e.id 
+      //                   AND re."userId" = $userId AND re."readAt" >= e."lastActivityAt")
       const filteredWorkItems = filters?.unreadOnly
         ? workItems.filter((w) => w.isUnread)
         : workItems;

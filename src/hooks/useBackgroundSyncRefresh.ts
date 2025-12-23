@@ -25,6 +25,7 @@ export function useBackgroundSyncRefresh() {
 
   const { data: lastSyncData } = api.events.getLastSync.useQuery(undefined, {
     refetchInterval: 30000, // Poll every 30 seconds
+    refetchIntervalInBackground: false, // Stop polling when tab is in background (saves resources)
     refetchOnWindowFocus: true, // Also check when user returns to tab
     enabled: isAuthenticated, // Don't poll when not authenticated
   });
