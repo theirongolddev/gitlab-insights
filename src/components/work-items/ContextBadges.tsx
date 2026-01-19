@@ -21,6 +21,7 @@ interface ContextBadgesProps {
  * - 11px text (text-xs), medium weight (500)
  * - 2px 8px padding, 4px border-radius
  * - Flex wrap with 8px gap
+ * - Uses semantic color tokens from design system
  */
 export const ContextBadges = memo(function ContextBadges({
   repositoryName,
@@ -51,18 +52,11 @@ interface RepoBadgeProps {
 
 /**
  * Repository badge - blue tint
- * Background: hsl(199, 50%, 30%)
- * Text: hsl(199, 92%, 80%)
+ * Uses semantic tokens: badge-repo-bg, badge-repo-text
  */
 function RepoBadge({ name }: RepoBadgeProps) {
   return (
-    <span
-      className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium"
-      style={{
-        backgroundColor: "hsl(199, 50%, 30%)",
-        color: "hsl(199, 92%, 80%)",
-      }}
-    >
+    <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-badge-repo-bg text-badge-repo-text dark:bg-badge-repo-bg-dark dark:text-badge-repo-text-dark transition-colors duration-fast">
       {name}
     </span>
   );
@@ -74,18 +68,11 @@ interface ComponentBadgeProps {
 
 /**
  * Component badge - purple tint
- * Background: hsl(280, 50%, 30%)
- * Text: hsl(280, 67%, 80%)
+ * Uses semantic tokens: badge-component-bg, badge-component-text
  */
 function ComponentBadge({ name }: ComponentBadgeProps) {
   return (
-    <span
-      className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium"
-      style={{
-        backgroundColor: "hsl(280, 50%, 30%)",
-        color: "hsl(280, 67%, 80%)",
-      }}
-    >
+    <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-badge-component-bg text-badge-component-text dark:bg-badge-component-bg-dark dark:text-badge-component-text-dark transition-colors duration-fast">
       {name}
     </span>
   );
@@ -97,18 +84,11 @@ interface KeywordBadgeProps {
 
 /**
  * Keyword badge - gray
- * Background: hsl(0, 0%, 25%)
- * Text: hsl(0, 0%, 75%)
+ * Uses semantic tokens: badge-keyword-bg, badge-keyword-text
  */
 function KeywordBadge({ keyword }: KeywordBadgeProps) {
   return (
-    <span
-      className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium"
-      style={{
-        backgroundColor: "hsl(0, 0%, 25%)",
-        color: "hsl(0, 0%, 75%)",
-      }}
-    >
+    <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-badge-keyword-bg text-badge-keyword-text dark:bg-badge-keyword-bg-dark dark:text-badge-keyword-text-dark transition-colors duration-fast">
       {keyword}
     </span>
   );

@@ -52,16 +52,26 @@ const ActivityRow = memo(function ActivityRow({
 
   return (
     <div
-      className={`relative flex gap-3 ${
-        onActivityClick ? "cursor-pointer hover:bg-content2 rounded-lg -mx-2 px-2 py-1" : ""
+      role={onActivityClick ? "button" : undefined}
+      tabIndex={onActivityClick ? 0 : undefined}
+      className={`relative flex gap-3 transition-colors duration-fast ${
+        onActivityClick
+          ? "cursor-pointer hover:bg-content2 focus-visible:bg-content2 focus-ring rounded-lg -mx-2 px-2 py-1"
+          : ""
       }`}
       onClick={() => onActivityClick?.(activity)}
+      onKeyDown={(e) => {
+        if (onActivityClick && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          onActivityClick(activity);
+        }
+      }}
     >
       {/* Timeline dot */}
       <div className={`relative z-10 flex-shrink-0 ${dotMargin}`}>
         <div
           className={`${dotSize} rounded-full ${getDotColor(activity)} ${
-            activity.isUnread ? "ring-2 ring-[#9DAA5F] ring-offset-1 ring-offset-content1" : ""
+            activity.isUnread ? "ring-2 ring-olive-light ring-offset-1 ring-offset-content1" : ""
           }`}
         />
       </div>
@@ -162,10 +172,10 @@ const ActivityRow = memo(function ActivityRow({
             <span
               className={`text-[11px] px-1.5 py-0.5 rounded ${
                 activity.type === "status_change"
-                  ? "bg-green-500/10 text-green-600"
+                  ? "bg-success/10 text-success dark:bg-success/20 dark:text-success"
                   : activity.type === "label_change"
-                    ? "bg-yellow-500/10 text-yellow-600"
-                    : "bg-blue-500/10 text-blue-600"
+                    ? "bg-warning/10 text-warning dark:bg-warning/20 dark:text-warning"
+                    : "bg-info/10 text-info dark:bg-info/20 dark:text-info"
               }`}
             >
               {activity.type.replace("_", " ")}
@@ -206,20 +216,22 @@ export function ActivityTimeline({
 
   const getDotColor = (activity: ActivityItem) => {
     if (activity.isSystemNote || activity.type === "system") {
-      return "bg-gray-500";
+      return "bg-default-400 dark:bg-default-500";
     }
     if (activity.type === "comment") {
-      return parentType === "issue" ? "bg-[#B794F4]" : "bg-[#38BDF8]";
+      return parentType === "issue"
+        ? "bg-badge-issue dark:bg-badge-issue-dark"
+        : "bg-badge-mr dark:bg-badge-mr-dark";
     }
     switch (activity.type) {
       case "status_change":
-        return "bg-green-500";
+        return "bg-success dark:bg-success";
       case "label_change":
-        return "bg-yellow-500";
+        return "bg-warning dark:bg-warning";
       case "assignment":
-        return "bg-blue-500";
+        return "bg-info dark:bg-info";
       default:
-        return "bg-gray-500";
+        return "bg-default-400 dark:bg-default-500";
     }
   };
 

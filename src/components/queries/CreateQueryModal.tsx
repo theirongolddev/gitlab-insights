@@ -236,10 +236,11 @@ export function CreateQueryModal({
                 role="alert"
                 className="
                   px-3 py-2
-                  bg-red-50 dark:bg-red-900/20
-                  border border-red-200 dark:border-red-800
+                  bg-danger/10 dark:bg-danger/20
+                  border border-danger/30 dark:border-danger/50
                   rounded-md
-                  text-sm text-red-800 dark:text-red-300
+                  text-sm text-danger dark:text-danger
+                  animate-fade-in
                 "
               >
                 {error}

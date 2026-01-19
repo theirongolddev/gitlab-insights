@@ -68,11 +68,11 @@ export function ProjectSelectionLayout({
 
           {/* Error state */}
           {error && (
-            <div className="rounded-lg border border-red-600 bg-red-50 p-6 dark:bg-red-900/20">
-              <h2 className="mb-2 text-lg font-semibold text-red-800 dark:text-red-400">
+            <div className="rounded-lg border border-danger bg-danger/10 p-6 dark:bg-danger/20 animate-fade-in">
+              <h2 className="mb-2 text-lg font-semibold text-danger dark:text-danger">
                 Error Loading Projects
               </h2>
-              <p className="text-red-700 dark:text-red-300">{error.message}</p>
+              <p className="text-danger/80 dark:text-danger/90">{error.message}</p>
             </div>
           )}
 

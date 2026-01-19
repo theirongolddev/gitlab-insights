@@ -36,12 +36,13 @@ export function SimpleEventList() {
         <div key={event.id} className="bg-white dark:bg-gray-800 border rounded-lg p-4">
           <div className="flex items-start gap-3">
             <span
-              className={`px-2 py-0.5 text-xs font-medium rounded-full ${event.type === "issue"
-                ? "bg-purple-800 text-purple-100"
-                : event.type === "merge_request"
-                  ? "bg-blue-800 text-blue-100"
-                  : "bg-gray-600 text-gray-100"
-                }`}
+              className={`px-2 py-0.5 text-xs font-medium rounded-full transition-colors duration-fast ${
+                event.type === "issue"
+                  ? "bg-badge-issue dark:bg-badge-issue-dark text-white"
+                  : event.type === "merge_request"
+                    ? "bg-badge-mr dark:bg-badge-mr-dark text-white"
+                    : "bg-badge-comment dark:bg-badge-comment-dark text-white"
+              }`}
             >
               {event.type === "merge_request" ? "MR" : event.type}
             </span>

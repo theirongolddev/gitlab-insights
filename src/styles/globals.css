@@ -87,7 +87,115 @@
   /* Layout Dimensions */
   --header-height: 64px;
 
-  /* Animation Durations */
+  /* ==========================================================================
+     Animation Token System - Stripe-Level Micro-Interactions
+
+     Provides consistent timing, easing, and scale values for all animations.
+     Usage: transition-duration-fast, ease-spring, scale-pressed, etc.
+     ========================================================================== */
+
+  /* Duration Scale */
+  --duration-instant: 0ms;
+  --duration-fast: 100ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  --duration-slower: 400ms;
+  --duration-slowest: 500ms;
+
+  /* Easing Curves */
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  /* Scale Transforms */
+  --scale-pressed: 0.97;
+  --scale-hover: 1.02;
+  --scale-pop: 1.05;
+
+  /* Opacity States */
+  --opacity-disabled: 0.5;
+  --opacity-hover-overlay: 0.08;
+  --opacity-pressed-overlay: 0.12;
+
+  /* Shadow Elevations */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-hover: 0 10px 40px -10px rgb(0 0 0 / 0.2);
+
+  /* ==========================================================================
+     Extended Semantic Tokens - State & Component Colors
+     ========================================================================== */
+
+  /* State Colors - Light Mode */
+  --color-state-loading: var(--color-gray-200);
+  --color-state-loading-shimmer: var(--color-gray-300);
+  --color-state-disabled-bg: var(--color-gray-100);
+  --color-state-disabled-text: var(--color-gray-400);
+  --color-state-hover-overlay: hsl(0 0% 0% / 0.04);
+  --color-state-pressed-overlay: hsl(0 0% 0% / 0.08);
+  --color-state-focus-ring: var(--color-olive-light);
+
+  /* State Colors - Dark Mode */
+  --color-state-loading-dark: var(--color-gray-700);
+  --color-state-loading-shimmer-dark: var(--color-gray-600);
+  --color-state-disabled-bg-dark: var(--color-gray-800);
+  --color-state-disabled-text-dark: var(--color-gray-500);
+  --color-state-hover-overlay-dark: hsl(0 0% 100% / 0.06);
+  --color-state-pressed-overlay-dark: hsl(0 0% 100% / 0.1);
+
+  /* Toast/Notification Semantic Colors */
+  --color-toast-success-bg: var(--color-success);
+  --color-toast-success-bg-dark: var(--color-success-dark);
+  --color-toast-error-bg: var(--color-error);
+  --color-toast-error-bg-dark: var(--color-error-dark);
+  --color-toast-info-bg: var(--color-info);
+  --color-toast-info-bg-dark: var(--color-info-dark);
+  --color-toast-warning-bg: var(--color-warning);
+  --color-toast-warning-bg-dark: var(--color-warning-dark);
+
+  /* Activity/Timeline Semantic Colors */
+  --color-activity-issue: var(--color-badge-issue);
+  --color-activity-issue-dark: var(--color-badge-issue-dark);
+  --color-activity-mr: var(--color-badge-mr);
+  --color-activity-mr-dark: var(--color-badge-mr-dark);
+  --color-activity-status: var(--color-success);
+  --color-activity-status-dark: var(--color-success-dark);
+  --color-activity-label: var(--color-warning);
+  --color-activity-label-dark: var(--color-warning-dark);
+  --color-activity-system: var(--color-gray-500);
+  --color-activity-system-dark: var(--color-gray-400);
+
+  /* Unread Indicator */
+  --color-unread-indicator: var(--color-olive-light);
+  --color-unread-ring: var(--color-olive-light);
+
+  /* Context Badge Colors - Light Mode */
+  --color-badge-repo-bg: hsl(199 50% 90%);
+  --color-badge-repo-text: hsl(199 70% 30%);
+  --color-badge-component-bg: hsl(280 50% 90%);
+  --color-badge-component-text: hsl(280 50% 30%);
+  --color-badge-keyword-bg: hsl(0 0% 92%);
+  --color-badge-keyword-text: hsl(0 0% 30%);
+
+  /* Context Badge Colors - Dark Mode */
+  --color-badge-repo-bg-dark: hsl(199 50% 25%);
+  --color-badge-repo-text-dark: hsl(199 92% 80%);
+  --color-badge-component-bg-dark: hsl(280 50% 25%);
+  --color-badge-component-text-dark: hsl(280 67% 80%);
+  --color-badge-keyword-bg-dark: hsl(0 0% 25%);
+  --color-badge-keyword-text-dark: hsl(0 0% 75%);
+
+  /* Empty State Icon Colors */
+  --color-empty-icon-bg: var(--color-gray-200);
+  --color-empty-icon-bg-dark: var(--color-gray-700);
+  --color-empty-icon-success-bg: hsl(142 71% 90%);
+  --color-empty-icon-success-bg-dark: hsl(142 71% 20%);
+
+  /* Legacy compatibility */
   --transition-slide: 200ms ease-out;
 
   /* Keyframes for slide animations */
@@ -109,9 +217,70 @@
     }
   }
 
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes scale-out {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(0.95); }
+  }
+
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes slide-down {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  @keyframes bounce-in {
+    0% { transform: scale(0.3); opacity: 0; }
+    50% { transform: scale(1.05); }
+    70% { transform: scale(0.9); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  @keyframes check-draw {
+    0% { stroke-dashoffset: 100; }
+    100% { stroke-dashoffset: 0; }
+  }
+
   /* Animation Classes */
   --animate-slide-in: slide-in 200ms ease-out;
   --animate-slide-out: slide-out 200ms ease-out;
+  --animate-fade-in: fade-in var(--duration-normal) var(--ease-out);
+  --animate-fade-out: fade-out var(--duration-normal) var(--ease-in);
+  --animate-scale-in: scale-in var(--duration-normal) var(--ease-spring);
+  --animate-scale-out: scale-out var(--duration-fast) var(--ease-in);
+  --animate-slide-up: slide-up var(--duration-normal) var(--ease-out);
+  --animate-slide-down: slide-down var(--duration-normal) var(--ease-out);
+  --animate-shimmer: shimmer 2s infinite linear;
+  --animate-pulse-soft: pulse-soft 2s infinite ease-in-out;
+  --animate-bounce-in: bounce-in var(--duration-slow) var(--ease-spring);
 }
 
 /**
@@ -228,5 +397,199 @@ mark {
   /* Rotate chevron when open */
   & details[open] summary svg {
     transform: rotate(90deg);
+  }
+}
+
+/**
+ * Interactive Element Utility Classes
+ * Stripe-level micro-interactions for buttons, cards, and list items
+ */
+
+/* Button press effect - subtle scale down on active */
+.interactive-press {
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+.interactive-press:active {
+  transform: scale(var(--scale-pressed));
+}
+
+/* Card hover effect - lift with shadow */
+.card-hover {
+  transition: box-shadow var(--duration-normal) var(--ease-out),
+              border-color var(--duration-normal) var(--ease-out),
+              transform var(--duration-normal) var(--ease-out);
+}
+.card-hover:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+/* List item hover - subtle background */
+.list-item-hover {
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+.list-item-hover:hover {
+  background-color: var(--color-state-hover-overlay);
+}
+.dark .list-item-hover:hover {
+  background-color: var(--color-state-hover-overlay-dark);
+}
+
+/* Focus ring utility */
+.focus-ring {
+  outline: none;
+}
+.focus-ring:focus-visible {
+  outline: 2px solid var(--color-state-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Shimmer loading effect */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-state-loading) 0%,
+    var(--color-state-loading-shimmer) 50%,
+    var(--color-state-loading) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite linear;
+}
+.dark .shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-state-loading-dark) 0%,
+    var(--color-state-loading-shimmer-dark) 50%,
+    var(--color-state-loading-dark) 100%
+  );
+  background-size: 200% 100%;
+}
+
+/* Touch target minimum size (44x44px per WCAG) */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Expand clickable area without changing visual size */
+.touch-target-expanded {
+  position: relative;
+}
+.touch-target-expanded::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+}
+
+/* Screen reader only - accessible but hidden */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/**
+ * Accessibility Utilities - WCAG 2.1 AA Compliance
+ */
+
+/* Skip link - hidden until focused */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--color-olive);
+  color: white;
+  padding: 8px 16px;
+  z-index: 100;
+  text-decoration: none;
+  font-weight: 500;
+  border-radius: 0 0 4px 0;
+  transition: top var(--duration-fast) var(--ease-out);
+}
+.skip-link:focus {
+  top: 0;
+}
+
+/* Live region for dynamic content announcements */
+.live-region {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+/* Not visually hidden but semantically available */
+.visually-hidden:not(:focus):not(:active) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Ensure focus is visible on all interactive elements */
+:focus-visible {
+  outline: 2px solid var(--color-state-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Remove default focus outline on mouse click */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: more) {
+  :root {
+    --color-border-default: var(--color-gray-500);
+    --color-border-subtle: var(--color-gray-400);
+    --color-text-secondary: var(--color-gray-700);
+    --color-text-tertiary: var(--color-gray-600);
+  }
+
+  .dark {
+    --color-border-default-dark: var(--color-gray-300);
+    --color-border-subtle-dark: var(--color-gray-400);
+    --color-text-secondary-dark: var(--color-gray-200);
+    --color-text-tertiary-dark: var(--color-gray-300);
+  }
+
+  /* Increase button/input borders */
+  button, input, select, textarea {
+    border-width: 2px;
+  }
+}
+
+/* Forced colors mode (Windows High Contrast) */
+@media (forced-colors: active) {
+  .shimmer {
+    background: ButtonFace;
+    animation: none;
+  }
+
+  .focus-ring:focus-visible {
+    outline: 3px solid Highlight;
   }
 }

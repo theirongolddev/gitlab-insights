@@ -1,6 +1,7 @@
 "use client";
 
 import { memo } from "react";
+import { ClipboardList, CheckCircle, Search, MessageCircle } from "lucide-react";
 
 interface EmptyStateProps {
   className?: string;
@@ -14,7 +15,7 @@ interface SearchEmptyStateProps extends EmptyStateProps {
  * EmptyStates - Components for edge case empty states
  *
  * Design: Clean, minimal (icon + text + optional CTA)
- * Colors:
+ * Colors use semantic tokens from design system:
  * - NO_ITEMS: neutral gray
  * - ALL_READ: green success, celebratory but professional
  * - SEARCH_NO_RESULTS: neutral with search term highlighted
@@ -28,25 +29,12 @@ export const NoItemsState = memo(function NoItemsState({
   className = "",
 }: EmptyStateProps) {
   return (
-    <div className={`flex flex-col items-center justify-center py-12 ${className}`}>
-      <div
-        className="w-12 h-12 mb-4 rounded-full flex items-center justify-center"
-        style={{ backgroundColor: "hsl(0, 0%, 20%)" }}
-      >
-        <svg
-          className="w-6 h-6"
-          style={{ color: "hsl(0, 0%, 50%)" }}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-          />
-        </svg>
+    <div className={`flex flex-col items-center justify-center py-12 animate-fade-in ${className}`}>
+      <div className="w-12 h-12 mb-4 rounded-full flex items-center justify-center bg-default-200 dark:bg-default-100">
+        <ClipboardList
+          className="w-6 h-6 text-default-500"
+          aria-hidden="true"
+        />
       </div>
       <p className="text-sm text-default-500 text-center max-w-xs">
         No work items found. Try adjusting your filters or check back later.
@@ -62,30 +50,14 @@ export const AllReadState = memo(function AllReadState({
   className = "",
 }: EmptyStateProps) {
   return (
-    <div className={`flex flex-col items-center justify-center py-12 ${className}`}>
-      <div
-        className="w-12 h-12 mb-4 rounded-full flex items-center justify-center"
-        style={{ backgroundColor: "hsl(142, 71%, 25%)" }}
-      >
-        <svg
-          className="w-6 h-6"
-          style={{ color: "#22C55E" }}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M5 13l4 4L19 7"
-          />
-        </svg>
+    <div className={`flex flex-col items-center justify-center py-12 animate-fade-in ${className}`}>
+      <div className="w-12 h-12 mb-4 rounded-full flex items-center justify-center bg-success/20 dark:bg-success/10">
+        <CheckCircle
+          className="w-6 h-6 text-success dark:text-success"
+          aria-hidden="true"
+        />
       </div>
-      <p
-        className="text-sm font-medium text-center"
-        style={{ color: "#22C55E" }}
-      >
+      <p className="text-sm font-medium text-center text-success dark:text-success">
         All caught up!
       </p>
       <p className="text-xs text-default-500 text-center mt-1">
@@ -103,30 +75,19 @@ export const SearchNoResultsState = memo(function SearchNoResultsState({
   className = "",
 }: SearchEmptyStateProps) {
   return (
-    <div className={`flex flex-col items-center justify-center py-12 ${className}`}>
-      <div
-        className="w-12 h-12 mb-4 rounded-full flex items-center justify-center"
-        style={{ backgroundColor: "hsl(0, 0%, 20%)" }}
-      >
-        <svg
-          className="w-6 h-6"
-          style={{ color: "hsl(0, 0%, 50%)" }}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-          />
-        </svg>
+    <div className={`flex flex-col items-center justify-center py-12 animate-fade-in ${className}`}>
+      <div className="w-12 h-12 mb-4 rounded-full flex items-center justify-center bg-default-200 dark:bg-default-100">
+        <Search
+          className="w-6 h-6 text-default-500"
+          aria-hidden="true"
+        />
       </div>
       <p className="text-sm text-default-500 text-center max-w-xs">
         No work items match{" "}
-        <span className="font-medium text-default-400">&quot;{searchTerm}&quot;</span>.
-        Try different keywords.
+        <span className="font-medium text-default-700 dark:text-default-300">
+          &quot;{searchTerm}&quot;
+        </span>
+        . Try different keywords.
       </p>
     </div>
   );
@@ -139,7 +100,11 @@ export const NoActivitiesState = memo(function NoActivitiesState({
   className = "",
 }: EmptyStateProps) {
   return (
-    <div className={`flex flex-col items-center justify-center py-6 ${className}`}>
+    <div className={`flex flex-col items-center justify-center py-6 animate-fade-in ${className}`}>
+      <MessageCircle
+        className="w-8 h-8 text-default-300 mb-2"
+        aria-hidden="true"
+      />
       <p className="text-sm text-default-500 text-center">
         No activity yet on this work item.
       </p>

@@ -103,7 +103,10 @@ const getAuthorColor = (
   
   // Use dark text for light backgrounds, light text for dark backgrounds
   // Threshold of 0.5 provides good contrast in most cases
-  const textColor = luminance > 0.5 ? "#1f2937" : "#f9fafb"; // gray-800 or gray-50
+  // Using CSS custom properties for theme consistency
+  const textColor = luminance > 0.5
+    ? "var(--color-gray-800)"
+    : "var(--color-gray-50)";
   
   return {
     bg: bgColor,
@@ -140,9 +143,19 @@ export function ItemRow({ item, isSelected, isNew, onClick }: ItemRowProps) {
   return (
     <div
       onClick={onClick}
-      className={`min-h-10 px-4 mb-2 rounded-lg transition-colors overflow-hidden
-        hover:bg-gray-300 dark:hover:bg-gray-800
-        ${isSelected ? "ring-2 ring-olive-light" : ""}`}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      className={`min-h-10 px-4 mb-2 rounded-lg overflow-hidden
+        transition-all duration-fast
+        hover:bg-default-200 dark:hover:bg-default-100
+        focus-visible:ring-2 focus-visible:ring-olive-light focus-visible:outline-none
+        ${isSelected ? "ring-2 ring-olive-light bg-default-100 dark:bg-default-50" : ""}`}
     >
       {/* Line 1: Badge + Title + Metadata */}
       <div className="flex items-center justify-between min-h-7 pt-1.5 overflow-hidden">
